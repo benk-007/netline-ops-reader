@@ -1,0 +1,164 @@
+<div class="flight-status-container">
+  <div class="page-header">
+    <h1>Statut des vols</h1>
+  </div>
+
+  <div class="search-card">
+    <div class="tabs">
+      <button class="tab" [class.active]="activeTab === 'route'" (click)="setActiveTab('route')">
+        Itinéraire de vol
+      </button>
+      <button class="tab" [class.active]="activeTab === 'number'" (click)="setActiveTab('number')">
+        Numéro de vol
+      </button>
+    </div>
+
+    <div class="search-content">
+      <!-- Route Search -->
+      <div *ngIf="activeTab === 'route'" class="search-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>De</label>
+            <select [(ngModel)]="fromAirport" class="form-select">
+              <option *ngFor="let airport of airports" [value]="airport.code">
+                {{ airport.name }}, {{ airport.code }}
+              </option>
+            </select>
+          </div>
+
+          <div class="swap-icon">⇄</div>
+
+          <div class="form-group">
+            <label>À</label>
+            <select [(ngModel)]="toAirport" class="form-select">
+              <option *ngFor="let airport of airports" [value]="airport.code">
+                {{ airport.name }}, {{ airport.code }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" [(ngModel)]="searchDate" class="form-input" />
+          </div>
+
+          <button class="search-button" (click)="searchFlights()">
+            Récupérer
+          </button>
+        </div>
+      </div>
+
+      <!-- Flight Number Search -->
+      <div *ngIf="activeTab === 'number'" class="search-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Compagnie aérienne</label>
+            <select [(ngModel)]="airline" class="form-select">
+              <option value="AT">AT - Royal Air Maroc</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Numéro de vol</label>
+            <input type="text" [(ngModel)]="flightNumber" placeholder="500" class="form-input" />
+          </div>
+
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" [(ngModel)]="searchDate" class="form-input" />
+          </div>
+
+          <button class="search-button" (click)="searchFlights()">
+            Récupérer
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results Section -->
+  <div class="results-section" *ngIf="searchResults.length > 0">
+    <div class="results-header">
+      <h2>Résultats ({{ searchResults.length }} vol(s))</h2>
+    </div>
+
+    <div class="flights-list">
+      <div *ngFor="let flight of searchResults" class="flight-card" [class.selected]="selectedFlight === flight"
+        (click)="selectFlight(flight)">
+
+        <div class="flight-main">
+          <div class="flight-number">
+            <span class="airline">{{ airline }}</span>
+            <span class="number">{{ flight.TaskName }}</span>
+          </div>
+
+          <div class="flight-route">
+            <div class="airport">
+              <span class="code">{{ flight.Origin }}</span>
+              <span class="time">{{ formatTime(flight.StartDate) }}</span>
+            </div>
+            <div class="route-line">
+              <div class="plane-icon">✈</div>
+            </div>
+            <div class="airport">
+              <span class="code">{{ flight.Destination }}</span>
+              <span class="time">{{ formatTime(flight.EndDate) }}</span>
+            </div>
+          </div>
+
+          <div class="flight-status">
+            <span class="status-badge" [ngClass]="getStatusClass(flight.Status)">
+              {{ getStatusLabel(flight.Status) }}
+            </span>
+          </div>
+
+          <div class="flight-date">
+            {{ formatDate(flight.StartDate) }}
+          </div>
+        </div>
+
+        <div class="flight-details" *ngIf="selectedFlight === flight">
+          <div class="details-grid">
+            <div class="detail-item">
+              <span class="label">Aircraft:</span>
+              <span class="value">{{ flight.Aircraft }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Passengers:</span>
+              <span class="value">{{ flight.PaxCount }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Scheduled Departure:</span>
+              <span class="value">{{ formatTime(flight.BaselineStartDate) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Actual Departure:</span>
+              <span class="value">{{ formatTime(flight.OutTime) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Scheduled Arrival:</span>
+              <span class="value">{{ formatTime(flight.BaselineEndDate) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="label">Actual Arrival:</span>
+              <span class="value">{{ formatTime(flight.InTime) }}</span>
+            </div>
+            <div class="detail-item" *ngIf="flight.DelayMinutes && flight.DelayMinutes > 0">
+              <span class="label">Delay:</span>
+              <span class="value delay">{{ flight.DelayMinutes }} min</span>
+            </div>
+            <div class="detail-item" *ngIf="flight.DelayCode">
+              <span class="label">Delay Code:</span>
+              <span class="value">{{ flight.DelayCode }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="no-results" *ngIf="searchResults.length === 0">
+    <div class="info-icon">ℹ</div>
+    <p>Aucun vol disponible à cette date</p>
+  </div>
+</div>

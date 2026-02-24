@@ -1,0 +1,18 @@
+<nav class="sidebar">
+  <div class="nav-items">
+    <a routerLink="/gantt" routerLinkActive="active" class="nav-item" title="Gantt Dashboard">
+      <i-lucide name="home"></i-lucide>
+    </a>
+    <a routerLink="/status" routerLinkActive="active" class="nav-item" title="Flight Status">
+      <i-lucide name="plane"></i-lucide>
+    </a>
+    <a routerLink="/settings" routerLinkActive="active" class="nav-item" title="Settings">
+      <i-lucide name="settings"></i-lucide>
+    </a>
+  </div>
+  <div class="nav-bottom">
+    <button (click)="logout()" class="nav-item logout-btn" title="Log Out">
+      <i-lucide name="log-out"></i-lucide>
+    </button>
+  </div>
+</nav>

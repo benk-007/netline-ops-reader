@@ -1,0 +1,181 @@
+<div class="station-root" (click)="isProfileMenuOpen = false">
+
+  <!-- ══ HEADER ══════════════════════════════════════════════════════════ -->
+  <header class="station-header">
+    <!-- Left: Brand -->
+    <div class="sh-left">
+      <div class="sh-logo">
+        <svg width="28" height="18" viewBox="0 0 200 80" fill="none">
+          <rect width="200" height="80" fill="#D71920" rx="3" />
+          <path d="M25 60L50 18L75 60H25Z" fill="white" />
+          <circle cx="50" cy="28" r="9" fill="white" />
+        </svg>
+      </div>
+      <div class="sh-brand">
+        <span class="sh-title">NetLine Ops <em>Reader</em></span>
+        <span class="sh-version">v4.2.1 · ROYAL AIR MAROC · GROUND OPS</span>
+      </div>
+    </div>
+
+    <!-- Center: Station badge -->
+    <div class="sh-center">
+      <div class="sh-station-badge">
+        <span class="station-dot"></span>
+        <div>
+          <p class="sh-station-name">Paris Orly (ORY)</p>
+          <p class="sh-station-sub">STATION VIEW — INBOUND TRACKING</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Weather + Profile -->
+    <div class="sh-right">
+      <div class="sh-weather">
+        <svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="22"
+          height="22">
+          <circle cx="12" cy="12" r="5" />
+          <line x1="12" y1="1" x2="12" y2="3" />
+          <line x1="12" y1="21" x2="12" y2="23" />
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+          <line x1="1" y1="12" x2="3" y2="12" />
+          <line x1="21" y1="12" x2="23" y2="12" />
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+        </svg>
+        <div class="sh-weather-info">
+          <span class="weather-temp">18°C</span>
+          <span class="weather-loc">Paris Orly</span>
+        </div>
+      </div>
+      <div class="sh-time">
+        <span class="time-val">{{ currentTime }}</span>
+        <span class="time-tz">LOCAL</span>
+      </div>
+      <div class="sh-profile" (click)="toggleProfileMenu($event)">
+        <div class="profile-av">AM</div>
+        <div class="sh-profile-info">
+          <span class="profile-name">A. Moussaoui</span>
+          <span class="profile-role">Station Manager</span>
+        </div>
+        <div class="profile-dropdown" *ngIf="isProfileMenuOpen" (click)="$event.stopPropagation()">
+          <button class="pd-item" routerLink="/gantt">Switch to CCO View</button>
+          <button class="pd-item" routerLink="/settings">Settings</button>
+          <div class="pd-divider"></div>
+          <button class="pd-item danger" (click)="logout()">Log Out</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ MAP AREA ═════════════════════════════════════════════════════════ -->
+  <div class="station-body">
+    <!-- Full-screen Leaflet map -->
+    <div id="station-map" class="map-container"></div>
+
+    <!-- Map Legend -->
+    <div class="map-legend">
+      <p class="legend-title">FLIGHT STATUS</p>
+      <div class="legend-item"><span class="legend-dot" style="background:#27AE60"></span> On Time</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#D71920"></span> Delayed</div>
+      <div class="legend-item"><span class="legend-dot" style="background:#64748b"></span> Scheduled</div>
+      <div class="legend-item">
+        <span class="legend-dash"></span> Flight path
+      </div>
+    </div>
+
+    <!-- ══ RIGHT SIDEBAR: Inbound Flights ════════════════════════════════ -->
+    <aside class="sidebar-panel">
+      <div class="sidebar-header">
+        <div>
+          <h3 class="sidebar-title">Inbound Flights</h3>
+          <p class="sidebar-sub">Paris Orly Station</p>
+        </div>
+        <span class="flight-count">{{ flights.length }}</span>
+      </div>
+
+      <div class="sidebar-live-row">
+        <span class="live-dot-anim"></span>
+        <span class="live-text">LIVE</span>
+        <span class="live-time">{{ currentTime }}</span>
+      </div>
+
+      <!-- Flight Cards -->
+      <div class="flight-list">
+        <div *ngFor="let f of flights" class="flight-card" [class.selected]="selectedFlight?.id === f.id"
+          [class.fc-delayed]="f.status === 'Delayed'" (click)="selectFlight(f)">
+
+          <div class="fc-top">
+            <div class="fc-plane-icon" [style.color]="getStatusColor(f.status)">
+              <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
+                <path
+                  d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+              </svg>
+            </div>
+            <div class="fc-flight-info">
+              <p class="fc-fno">{{ f.flightNo }}</p>
+              <p class="fc-aircraft">{{ f.aircraft }}</p>
+            </div>
+            <div class="fc-landing">
+              <span class="fc-landing-label">LANDING IN</span>
+              <span class="fc-landing-min">{{ f.landingInMin }}m</span>
+            </div>
+          </div>
+
+          <div class="fc-route">
+            <span class="fc-airport">{{ f.origin }}</span>
+            <svg width="20" height="10" viewBox="0 0 20 10">
+              <line x1="0" y1="5" x2="16" y2="5" stroke="#94a3b8" stroke-width="1" />
+              <polygon points="16,2 20,5 16,8" fill="#94a3b8" />
+            </svg>
+            <span class="fc-airport">{{ f.destination }}</span>
+            <span class="fc-eta">ETA {{ f.etaTime }}</span>
+          </div>
+
+          <div class="fc-bottom">
+            <span class="fc-status-badge" [style.color]="getStatusColor(f.status)"
+              [style.background]="getStatusColor(f.status) + '18'">
+              <span class="fc-status-dot" [style.background]="getStatusColor(f.status)"></span>
+              {{ getStatusLabel(f) }}
+            </span>
+            <span class="fc-gate">Gate {{ f.gate }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Station Summary -->
+      <div class="station-summary">
+        <p class="summary-title">STATION SUMMARY</p>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span class="si-count green">{{ onTimeCount }}</span>
+            <span class="si-label">On Time</span>
+          </div>
+          <div class="summary-item">
+            <span class="si-count red">{{ delayedCount }}</span>
+            <span class="si-label">Delayed</span>
+          </div>
+          <div class="summary-item">
+            <span class="si-count gray">{{ scheduledCount }}</span>
+            <span class="si-label">Scheduled</span>
+          </div>
+        </div>
+        <div class="crew-readiness">
+          <span>Ground crew readiness</span>
+          <span class="crew-status">Ready</span>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ══ BOTTOM STATUS BAR ════════════════════════════════════════════════ -->
+  <div class="station-statusbar">
+    <div class="sb-left">
+      <span class="sb-item online">● ACARS ONLINE</span>
+      <span class="sb-item online">● FIDS ONLINE</span>
+      <span class="sb-item online">● DCS ONLINE</span>
+      <span class="sb-item sync">● SRS SYNC</span>
+    </div>
+    <div class="sb-right">DATA: SITA ACARS · EUROCONTROL NM · DGAC FR · Last sync: {{ currentTime }}</div>
+  </div>
+</div>

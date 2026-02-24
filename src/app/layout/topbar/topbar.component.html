@@ -1,0 +1,28 @@
+<header class="topbar">
+  <div class="topbar-left">
+    <h1 class="app-title">NetLine Ops Reader</h1>
+    <span class="app-subtitle">Airline Operations Control Dashboard</span>
+  </div>
+  <div class="topbar-right">
+    <div class="user-menu" (click)="toggleDropdown()">
+      <div class="user-avatar">
+        <i-lucide name="user" class="header-icon"></i-lucide>
+      </div>
+      <span class="user-name" *ngIf="currentUser$ | async as user">{{ user.name }}</span>
+      <i-lucide name="chevron-down" class="header-chevron"></i-lucide>
+
+      <div class="dropdown-menu" *ngIf="showDropdown">
+        <button class="dropdown-item" (click)="navigateToProfile()">
+          Profile
+        </button>
+        <button class="dropdown-item" (click)="navigateToSettings()">
+          Settings
+        </button>
+        <div class="dropdown-divider"></div>
+        <button class="dropdown-item logout" (click)="logout()">
+          Log Out
+        </button>
+      </div>
+    </div>
+  </div>
+</header>

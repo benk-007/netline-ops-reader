@@ -1,0 +1,228 @@
+<div class="dashboard-container" (click)="closeProfileMenu()">
+
+  <!-- ═══ HEADER ════════════════════════════════════════════════════════════ -->
+  <header class="header-section">
+    <div class="header-top-row">
+      <!-- Brand -->
+      <div class="brand">
+        <svg width="36" height="24" viewBox="0 0 200 80" fill="none">
+          <rect width="200" height="80" fill="#D71920" rx="4" />
+          <path d="M30 65L55 20L80 65H30Z" fill="white" />
+          <circle cx="55" cy="30" r="10" fill="white" />
+          <text x="92" y="50" fill="white" font-family="Arial" font-size="20" font-weight="bold">Royal Air Maroc</text>
+        </svg>
+        <div class="brand-text">
+          <span class="brand-title">NetLine Ops Reader</span>
+          <span class="brand-sub">Airline Operations Control Dashboard</span>
+        </div>
+      </div>
+
+      <!-- Right Controls (Feature 5: Profile Menu) -->
+      <div class="header-actions">
+        <div class="live-badge">
+          <span class="live-dot"></span>LIVE
+        </div>
+        <div class="profile-trigger" (click)="$event.stopPropagation(); toggleProfileMenu()">
+          <div class="avatar">OCC</div>
+          <span class="user-label">Controller</span>
+          <i-lucide name="chevron-down" class="chevron-icon" [class.rotated]="isProfileMenuOpen"></i-lucide>
+
+          <!-- Profile Dropdown -->
+          <div class="profile-dropdown" *ngIf="isProfileMenuOpen" (click)="$event.stopPropagation()">
+            <div class="dropdown-header">
+              <div class="avatar lg">OCC</div>
+              <div>
+                <p class="dropdown-name">OCC Controller</p>
+                <p class="dropdown-role">Operations Control</p>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item">
+              <i-lucide name="user" class="di-icon"></i-lucide> Profile
+            </button>
+            <button class="dropdown-item" routerLink="/settings">
+              <i-lucide name="settings" class="di-icon"></i-lucide> Settings
+            </button>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger">
+              <i-lucide name="log-out" class="di-icon"></i-lucide> Log Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Filter Row (Feature 2) ─────────────────────────────────────── -->
+    <div class="filter-row">
+      <div class="filter-item">
+        <span class="filter-label">FROM</span>
+        <input type="date" [(ngModel)]="filterStartDate" (ngModelChange)="applyFilters()" class="filter-input">
+      </div>
+      <div class="filter-item">
+        <span class="filter-label">TO</span>
+        <input type="date" [(ngModel)]="filterEndDate" (ngModelChange)="applyFilters()" class="filter-input">
+      </div>
+      <div class="filter-item">
+        <span class="filter-label">AIRPORT</span>
+        <select [(ngModel)]="filterAirport" (ngModelChange)="applyFilters()" class="filter-input">
+          <option value="ALL">All Airports</option>
+          <option *ngFor="let a of airports" [value]="a.code">{{ a.name }}</option>
+        </select>
+      </div>
+      <div class="filter-item search-item">
+        <span class="filter-label">FLIGHT</span>
+        <div class="search-wrapper">
+          <i-lucide name="search" class="search-icon"></i-lucide>
+          <input type="text" [(ngModel)]="filterFlightNumber" (ngModelChange)="applyFilters()" placeholder="e.g. AT123"
+            class="filter-input search-input">
+        </div>
+      </div>
+      <div class="filter-item date-display-item">
+        <span class="current-date">{{ displayDate }}</span>
+        <span class="today-badge">UTC</span>
+      </div>
+      <button class="icon-btn" (click)="clearFilters()" title="Clear Filters">
+        <i-lucide name="x"></i-lucide>
+      </button>
+      <button class="icon-btn" (click)="onRefresh()" title="Refresh Data">
+        <i-lucide name="refresh-cw"></i-lucide>
+      </button>
+    </div>
+
+    <!-- ─── Status Legend ──────────────────────────────────────────────── -->
+    <div class="status-legend-row">
+      <div class="legend-items">
+        <span class="legend-item"><span class="dot" style="background:#27AE60"></span>On Time</span>
+        <span class="legend-item"><span class="dot" style="background:#F39C12"></span>Minor Delay</span>
+        <span class="legend-item"><span class="dot" style="background:#D71920"></span>Critical Delay</span>
+        <span class="legend-item">
+          <span class="swatch outlined" style="border-color:#27AE60"></span>Scheduled
+        </span>
+        <span class="legend-item">
+          <span class="swatch solid" style="background:#27AE60"></span>Actual
+        </span>
+      </div>
+      <div class="stats-row">
+        <span class="stat-chip">{{ totalAircraft }} aircraft</span>
+        <span class="stat-chip">{{ totalFlights }} flights</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ TIMELINE ═════════════════════════════════════════════════════════ -->
+  <div class="timeline-section">
+    <div #timeline class="timeline-container"></div>
+  </div>
+
+  <!-- ═══ DETAIL PANEL (Feature 4) ════════════════════════════════════════ -->
+  <div class="detail-panel" *ngIf="showDetailsPanel && selectedFlight" [@slideUp]>
+    <div class="detail-panel-inner">
+      <div class="detail-header">
+        <div class="detail-title-group">
+          <i-lucide name="plane" class="detail-plane-icon"></i-lucide>
+          <div>
+            <h2>{{ selectedFlight.flightNumber }}</h2>
+            <p>{{ selectedFlight.origin }} → {{ selectedFlight.destination }} · {{ selectedFlight.aircraft }}</p>
+          </div>
+          <span class="detail-status-badge" [class.badge-green]="selectedFlight.status === 'OnTime'"
+            [class.badge-orange]="selectedFlight.status === 'MinorDelay'"
+            [class.badge-red]="selectedFlight.status === 'CriticalDelay'">
+            {{ getStatusText(selectedFlight.status) }}
+          </span>
+        </div>
+        <button class="close-btn" (click)="closeDetailsPanel()">
+          <i-lucide name="x"></i-lucide>
+        </button>
+      </div>
+
+      <div class="detail-grid">
+        <!-- OOOI Estimated -->
+        <div class="detail-card">
+          <h3 class="detail-card-title"><span class="dot-est"></span>Scheduled (OOOI)</h3>
+          <table class="oooi-table">
+            <tr>
+              <td>Out (ETD)</td>
+              <td>{{ formatTime(selectedFlight.estimatedOut) }}</td>
+            </tr>
+            <tr>
+              <td>Off</td>
+              <td>{{ formatTime(selectedFlight.estimatedOff) }}</td>
+            </tr>
+            <tr>
+              <td>On</td>
+              <td>{{ formatTime(selectedFlight.estimatedOn) }}</td>
+            </tr>
+            <tr>
+              <td>In (ETA)</td>
+              <td>{{ formatTime(selectedFlight.estimatedIn) }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- OOOI Actual -->
+        <div class="detail-card">
+          <h3 class="detail-card-title"><span class="dot-act"></span>Actual (OOOI)</h3>
+          <table class="oooi-table">
+            <tr>
+              <td>Out (ATD)</td>
+              <td>{{ formatTime(selectedFlight.actualOut) }}</td>
+            </tr>
+            <tr>
+              <td>Off</td>
+              <td>{{ formatTime(selectedFlight.actualOff) }}</td>
+            </tr>
+            <tr>
+              <td>On</td>
+              <td>{{ formatTime(selectedFlight.actualOn) }}</td>
+            </tr>
+            <tr>
+              <td>In (ATA)</td>
+              <td>{{ formatTime(selectedFlight.actualIn) }}</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Flight Info -->
+        <div class="detail-card">
+          <h3 class="detail-card-title">Flight Info</h3>
+          <table class="oooi-table">
+            <tr>
+              <td>Aircraft</td>
+              <td>{{ selectedFlight.aircraft }}</td>
+            </tr>
+            <tr>
+              <td>Passengers</td>
+              <td>{{ selectedFlight.paxCount }}</td>
+            </tr>
+            <tr>
+              <td>Delay</td>
+              <td>{{ selectedFlight.delayMinutes }}m ({{ selectedFlight.delayCode }})</td>
+            </tr>
+            <tr>
+              <td>Route</td>
+              <td>{{ selectedFlight.route }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ FOOTER NAV (Feature 3) ═══════════════════════════════════════════ -->
+  <footer class="dashboard-footer">
+    <div class="footer-info">
+      <span>© 2026 Royal Air Maroc OCC</span>
+    </div>
+    <div class="nav-buttons">
+      <button class="nav-btn prev-btn" (click)="onPrevious()" title="Previous 24h">
+        <i-lucide name="chevron-left"></i-lucide> Prev. Day
+      </button>
+      <button class="nav-btn now-btn" (click)="onNow()" title="Jump to Now">
+        <i-lucide name="clock"></i-lucide> Now
+      </button>
+      <button class="nav-btn next-btn" (click)="onNext()" title="Next 24h">
+        Next Day <i-lucide name="chevron-right"></i-lucide>
+      </button>
+    </div>
+  </footer>
+</div>

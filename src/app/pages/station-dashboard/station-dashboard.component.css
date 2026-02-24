@@ -1,0 +1,927 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   NetLine Ops Reader – Station Dashboard CSS
+   FlightRadar-style map dashboard for Station Managers (Chef d'Escale)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.station-root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: #0f172a;
+}
+
+/* ── HEADER ──────────────────────────────────────────────────────────────── */
+.station-header {
+  height: 52px;
+  background: #0f172a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  flex-shrink: 0;
+  z-index: 1000;
+}
+
+/* Left */
+.sh-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.sh-brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.sh-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.sh-title em {
+  color: #D71920;
+  font-style: normal;
+}
+
+.sh-version {
+  font-size: 9px;
+  color: #475569;
+  letter-spacing: .05em;
+}
+
+/* Center */
+.sh-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+}
+
+.sh-station-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, .06);
+  border: 1px solid rgba(255, 255, 255, .1);
+  padding: 5px 14px;
+  border-radius: 8px;
+}
+
+.station-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #D71920;
+  box-shadow: 0 0 6px #D71920;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1
+  }
+
+  50% {
+    opacity: .3
+  }
+}
+
+.sh-station-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.sh-station-sub {
+  font-size: 9px;
+  color: #64748b;
+  letter-spacing: .05em;
+  margin: 0;
+}
+
+/* Right */
+.sh-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.sh-weather {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+}
+
+.weather-temp {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.weather-loc {
+  font-size: 10px;
+  color: #64748b;
+  display: block;
+}
+
+.sh-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.time-val {
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  font-family: 'Courier New', monospace;
+}
+
+.time-tz {
+  font-size: 9px;
+  color: #475569;
+}
+
+.sh-profile {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  transition: background .15s;
+}
+
+.sh-profile:hover {
+  background: rgba(255, 255, 255, .07);
+}
+
+.profile-av {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #D71920;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sh-profile-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.profile-role {
+  font-size: 9px;
+  color: #64748b;
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 10px;
+  min-width: 180px;
+  z-index: 2000;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  animation: fadeIn .15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px)
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0)
+  }
+}
+
+.pd-item {
+  display: block;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  color: #cbd5e1;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s;
+}
+
+.pd-item:hover {
+  background: rgba(255, 255, 255, .07);
+}
+
+.pd-item.danger {
+  color: #f87171;
+}
+
+.pd-item.danger:hover {
+  background: rgba(239, 68, 68, .12);
+}
+
+.pd-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, .08);
+}
+
+/* ── MAP BODY ────────────────────────────────────────────────────────────── */
+.station-body {
+  position: relative;
+  height: calc(100vh - 52px - 28px);
+  /* viewport minus header (52px) and status bar (28px) */
+  width: 100vw;
+  overflow: hidden;
+}
+
+.map-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  background: #e8edf2;
+  /* fallback while tiles load */
+}
+
+/* ── MAP LEGEND ──────────────────────────────────────────────────────────── */
+.map-legend {
+  position: absolute;
+  bottom: 32px;
+  left: 12px;
+  background: rgba(15, 23, 42, .88);
+  border: 1px solid rgba(255, 255, 255, .1);
+  backdrop-filter: blur(8px);
+  border-radius: 10px;
+  padding: 12px 14px;
+  z-index: 900;
+  color: #cbd5e1;
+}
+
+.legend-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: #64748b;
+  margin: 0 0 8px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-dash {
+  width: 18px;
+  height: 2px;
+  border-top: 2px dashed #64748b;
+}
+
+/* ── RIGHT SIDEBAR ─ Glassmorphism ──────────────────────────────────────── */
+.sidebar-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 300px;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 16px;
+  padding: 16px;
+  z-index: 900;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, .1) transparent;
+  color: #f1f5f9;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.sidebar-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.sidebar-sub {
+  font-size: 10px;
+  color: #64748b;
+  margin: 2px 0 0;
+}
+
+.flight-count {
+  background: #D71920;
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-live-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  margin-bottom: 12px;
+}
+
+.live-dot-anim {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: blink 1.2s infinite;
+}
+
+.live-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.live-time {
+  font-size: 11px;
+  color: #64748b;
+  margin-left: auto;
+  font-family: monospace;
+}
+
+/* Flight Cards */
+.flight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.flight-card {
+  padding: 12px;
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.flight-card:hover {
+  background: rgba(255, 255, 255, .1);
+}
+
+.flight-card.selected {
+  border-color: rgba(255, 255, 255, .3);
+  background: rgba(255, 255, 255, .1);
+}
+
+.flight-card.fc-delayed {
+  border-color: rgba(215, 25, 32, .35);
+}
+
+.fc-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.fc-plane-icon {
+  flex-shrink: 0;
+}
+
+.fc-flight-info {
+  flex: 1;
+}
+
+.fc-fno {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f1f5f9;
+  margin: 0;
+}
+
+.fc-aircraft {
+  font-size: 10px;
+  color: #64748b;
+  margin: 1px 0 0;
+}
+
+.fc-landing {
+  text-align: right;
+}
+
+.fc-landing-label {
+  display: block;
+  font-size: 9px;
+  color: #64748b;
+  letter-spacing: .05em;
+}
+
+.fc-landing-min {
+  font-size: 14px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.fc-route {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.fc-airport {
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.fc-eta {
+  margin-left: auto;
+  font-size: 10px;
+  color: #64748b;
+}
+
+.fc-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fc-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+
+.fc-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.fc-gate {
+  font-size: 10px;
+  color: #64748b;
+}
+
+/* Station Summary */
+.station-summary {
+  border-top: 1px solid rgba(255, 255, 255, .08);
+  padding-top: 12px;
+}
+
+.summary-title {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  color: #64748b;
+  margin: 0 0 10px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.summary-item {
+  text-align: center;
+}
+
+.si-count {
+  display: block;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.si-count.green {
+  color: #27AE60;
+}
+
+.si-count.red {
+  color: #D71920;
+}
+
+.si-count.gray {
+  color: #64748b;
+}
+
+.si-label {
+  font-size: 9px;
+  color: #64748b;
+}
+
+.crew-readiness {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.crew-status {
+  font-weight: 700;
+  color: #27AE60;
+}
+
+/* ── CUSTOM LEAFLET MARKERS ──────────────────────────────────────────────── */
+/* Airport */
+::ng-deep .airport-marker {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+::ng-deep .airport-pulse {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(215, 25, 32, .2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(.8);
+    opacity: 1
+  }
+
+  100% {
+    transform: scale(2);
+    opacity: 0
+  }
+}
+
+::ng-deep .airport-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #D71920;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(215, 25, 32, .5);
+  z-index: 1;
+}
+
+::ng-deep .airport-tooltip {
+  background: #1e293b !important;
+  color: #f1f5f9 !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  padding: 4px 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3) !important;
+}
+
+::ng-deep .airport-tooltip::before {
+  display: none !important;
+}
+
+/* Plane */
+::ng-deep .plane-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, .35));
+}
+
+::ng-deep .plane-label {
+  background: rgba(15, 23, 42, .85);
+  color: #f1f5f9;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+/* ── LEAFLET POPUP OVERRIDES ─────────────────────────────────────────────── */
+::ng-deep .flight-popup .leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 14px !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .25) !important;
+  overflow: hidden;
+}
+
+::ng-deep .flight-popup .leaflet-popup-content {
+  margin: 0 !important;
+  width: auto !important;
+}
+
+::ng-deep .flight-popup .leaflet-popup-tip-container {
+  display: none;
+}
+
+::ng-deep .flight-popup .leaflet-popup-close-button {
+  top: 10px !important;
+  right: 10px !important;
+  color: #fff !important;
+  font-size: 18px !important;
+  z-index: 10;
+}
+
+/* Popup card itself */
+::ng-deep .pop-card {
+  width: 320px;
+  font-family: 'Segoe UI', sans-serif;
+  background: #fff;
+}
+
+::ng-deep .pop-header {
+  background: #0f172a;
+  padding: 14px 16px 10px;
+}
+
+::ng-deep .pop-flight-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+::ng-deep .pop-fno {
+  font-size: 18px;
+  font-weight: 900;
+  color: #f1f5f9;
+}
+
+::ng-deep .pop-aircraft {
+  background: rgba(255, 255, 255, .15);
+  color: #f1f5f9;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+::ng-deep .pop-live {
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 800;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+::ng-deep .pop-route {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+::ng-deep .pop-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+::ng-deep .pop-badge {
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+::ng-deep .pop-badge.delayed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+::ng-deep .pop-badge.ontime {
+  background: #dcfce7;
+  color: #166534;
+}
+
+::ng-deep .pop-badge.scheduled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+::ng-deep .pop-landing {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+::ng-deep .pop-times {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+::ng-deep .pop-time-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: .06em;
+  margin: 0 0 4px;
+}
+
+::ng-deep .pop-time-val {
+  font-size: 28px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+}
+
+::ng-deep .pop-load-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+::ng-deep .pop-load-lbl {
+  font-size: 9px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: .06em;
+  margin: 0 0 4px;
+}
+
+::ng-deep .pop-load-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+}
+
+::ng-deep .pop-load-val span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+::ng-deep .pop-occupancy {
+  padding: 8px 16px 12px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+::ng-deep .pop-occ-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+::ng-deep .pop-occ-bar {
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+::ng-deep .pop-occ-fill {
+  height: 100%;
+  border-radius: 100px;
+}
+
+::ng-deep .pop-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+::ng-deep .pop-gate {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+::ng-deep .pop-gate strong {
+  color: #0f172a;
+  font-size: 15px;
+}
+
+::ng-deep .pop-btn {
+  background: #D71920;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+::ng-deep .pop-btn:hover {
+  background: #b91c1c;
+}
+
+/* ── BOTTOM STATUS BAR ───────────────────────────────────────────────────── */
+.station-statusbar {
+  height: 28px;
+  background: #020617;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, .05);
+}
+
+.sb-left {
+  display: flex;
+  gap: 16px;
+}
+
+.sb-item {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.sb-item.online {
+  color: #22c55e;
+}
+
+.sb-item.sync {
+  color: #60a5fa;
+}
+
+.sb-right {
+  font-size: 10px;
+  color: #334155;
+}

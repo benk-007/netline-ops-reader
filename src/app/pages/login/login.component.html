@@ -1,0 +1,105 @@
+<div class="login-page">
+  <!-- LEFT PANEL: Login Form -->
+  <div class="login-left-panel">
+    <div class="login-card">
+      <div class="login-header">
+        <div class="ram-logo">
+          <svg width="80" height="40" viewBox="0 0 200 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect width="200" height="100" fill="#D71920" rx="4" />
+            <path d="M40 75L60 30L80 75H40Z" fill="white" />
+            <circle cx="60" cy="45" r="10" fill="white" />
+            <text x="95" y="65" fill="white" font-family="Arial" font-size="18" font-weight="bold">ROYAL AIR
+              MAROC</text>
+          </svg>
+        </div>
+        <h1 class="login-title">NetLine Ops Reader</h1>
+        <p class="login-subtitle">Airline Operations Control</p>
+      </div>
+
+      <form (ngSubmit)="onSubmit()" class="login-form">
+
+        <!-- Role Selection -->
+        <div class="form-group role-group">
+          <label class="field-label">Select Your Role</label>
+          <div class="role-cards">
+            <label *ngFor="let role of roles" class="role-card" [class.selected]="selectedRole === role.value"
+              [for]="'role-' + role.value">
+              <input type="radio" [id]="'role-' + role.value" name="role" [(ngModel)]="selectedRole"
+                [value]="role.value" class="role-radio">
+              <div class="role-card-inner">
+                <i-lucide [name]="role.icon" class="role-icon"></i-lucide>
+                <div>
+                  <p class="role-label">{{ role.label }}</p>
+                  <p class="role-sub">{{ role.sublabel }}</p>
+                </div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Staff ID -->
+        <div class="form-group">
+          <label for="matricule" class="field-label">Staff ID</label>
+          <div class="input-with-icon">
+            <i-lucide name="user" class="input-icon"></i-lucide>
+            <input type="text" id="matricule" [(ngModel)]="matricule" name="matricule" placeholder="Ex: 12345"
+              class="form-input" [disabled]="isLoading" />
+          </div>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password" class="field-label">Password</label>
+          <div class="input-with-icon">
+            <i-lucide name="lock" class="input-icon"></i-lucide>
+            <input [type]="showPassword ? 'text' : 'password'" id="password" [(ngModel)]="password" name="password"
+              placeholder="••••••••" class="form-input" [disabled]="isLoading" />
+            <button type="button" class="eye-btn" (click)="togglePassword()">
+              <i-lucide [name]="showPassword ? 'eye-off' : 'eye'" class="eye-icon"></i-lucide>
+            </button>
+          </div>
+        </div>
+
+        <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <button type="submit" class="login-button" [disabled]="isLoading">
+          <span *ngIf="!isLoading">
+            <i-lucide name="log-in" class="btn-icon"></i-lucide>
+            Login as {{ selectedRole === 'CCO' ? 'CCO Operator' : 'Station Manager' }}
+          </span>
+          <span *ngIf="isLoading">Authenticating...</span>
+        </button>
+
+        <a href="#" class="forgot-password">Forgot password?</a>
+      </form>
+
+      <div class="login-footer">
+        <p>© 2026 Royal Air Maroc. All rights reserved.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: Info / Branding -->
+  <div class="login-right-panel">
+    <div class="info-content">
+      <div class="info-badge">
+        <i-lucide name="plane" class="badge-icon"></i-lucide>
+      </div>
+      <h2 class="info-title">NetLine Ops Reader</h2>
+      <p class="info-subtitle">Airline operations management system</p>
+      <ul class="features-list">
+        <li><span class="dot"></span> CCO Gantt Dashboard</li>
+        <li><span class="dot"></span> Station Manager Map View</li>
+        <li><span class="dot"></span> Real-time flight data</li>
+        <li><span class="dot"></span> OOOI tracking & turnaround</li>
+      </ul>
+    </div>
+    <div class="bottom-branding">
+      <div class="separator"></div>
+      <div class="branding-items">
+        <span class="footer-ram-text">Royal Air Maroc — الخطوط الملكية المغربية</span>
+        <span class="footer-occ-text">Operations Control Center (OCC)</span>
+      </div>
+    </div>
+  </div>
+</div>
