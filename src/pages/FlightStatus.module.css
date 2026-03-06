@@ -1,0 +1,381 @@
+.page {
+  flex: 1;
+  overflow-y: auto;
+  background: #f0f2f5;
+  padding: 24px;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Page header */
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.pageSub {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Search Card */
+.searchCard {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  text-align: center;
+}
+
+.tab:hover {
+  color: #475569;
+}
+
+.tab.tabActive {
+  color: #D71920;
+  border-bottom-color: #D71920;
+  background: #fff;
+}
+
+/* Search form */
+.searchForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 20px 24px;
+  flex-wrap: wrap;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.formLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.formInput {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .15s;
+  appearance: none;
+  width: 100%;
+}
+
+.formInput:focus {
+  border-color: #D71920;
+  background: #fff;
+}
+
+.retrieveBtn {
+  height: 38px;
+  padding: 0 20px;
+  background: #D71920;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: background .15s;
+  align-self: flex-end;
+}
+
+.retrieveBtn:hover:not(:disabled) {
+  background: #b91419;
+}
+
+.retrieveBtn:disabled {
+  opacity: .7;
+}
+
+/* ── Summary strip ───────────────────────────────────────────────── */
+.summaryStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 18px;
+  border: 1px solid #e2e8f0;
+}
+
+.summaryTotal {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.summaryCounts {
+  display: flex;
+  gap: 16px;
+}
+
+.countGreen,
+.countRed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.countGreen {
+  color: #27AE60;
+}
+
+.countRed {
+  color: #D71920;
+}
+
+/* ── Result list ─────────────────────────────────────────────────── */
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Flight Card ─────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .04);
+  transition: box-shadow .15s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+}
+
+/* Coloured left accent bar */
+.cardAccent {
+  width: 4px;
+  align-self: stretch;
+  background: var(--accent, #27AE60);
+  flex-shrink: 0;
+}
+
+.cardMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 20px;
+}
+
+/* Route section */
+.routeBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.routeAirport {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: .04em;
+}
+
+.routeArrow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.routeLine {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+  min-width: 16px;
+}
+
+.routePlane {
+  color: #94a3b8;
+}
+
+/* Times section */
+.timesBlock {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: 24px;
+}
+
+.timeCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.timeLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #94a3b8;
+}
+
+.timeVal {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+  font-family: 'Courier New', monospace;
+}
+
+.timeDelay {
+  font-size: 14px;
+  font-weight: 800;
+  color: #D71920;
+  font-family: 'Courier New', monospace;
+}
+
+.timeDivider {
+  width: 1px;
+  height: 28px;
+  background: #f1f5f9;
+}
+
+/* Card right panel */
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 14px 20px;
+  border-left: 1px solid #f1f5f9;
+  min-width: 148px;
+  flex-shrink: 0;
+}
+
+.flightNo {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: .04em;
+}
+
+.aircraftLbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.pax {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Status badges */
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Empty state */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.emptyIcon {
+  opacity: .4;
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, .4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
