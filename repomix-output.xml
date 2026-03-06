@@ -1,0 +1,3317 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+src/
+  auth/
+    AuthContext.jsx
+  components/
+    DetailPanel.jsx
+    DetailPanel.module.css
+    GanttTimeline.css
+    GanttTimeline.jsx
+    Layout.jsx
+    Sidebar.jsx
+    Sidebar.module.css
+    Topbar.jsx
+    Topbar.module.css
+  data/
+    FlightData.js
+  pages/
+    Dashboard.jsx
+    FlightStatus.jsx
+    FlightStatus.module.css
+    Login.jsx
+    Login.module.css
+    Settings.jsx
+    Settings.module.css
+  App.css
+  App.jsx
+  index.css
+  main.jsx
+.gitignore
+index.html
+package.json
+vite.config.js
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="src/auth/AuthContext.jsx">
+import { createContext, useContext, useState } from 'react'
+import { Navigate } from 'react-router-dom'
+
+// ── Auth Context ────────────────────────────────────────────────────────────
+
+const AuthContext = createContext(null)
+
+export function AuthProvider({ children }) {
+  const stored = localStorage.getItem('ram_user')
+  const [user, setUser] = useState(stored ? JSON.parse(stored) : null)
+
+  function login(data) {
+    localStorage.setItem('ram_user', JSON.stringify(data))
+    setUser(data)
+  }
+
+  function logout() {
+    localStorage.removeItem('ram_user')
+    setUser(null)
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  return useContext(AuthContext)
+}
+
+// ── Protected Route ─────────────────────────────────────────────────────────
+
+export function RequireAuth({ children }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  return children
+}
+</file>
+
+<file path="src/components/DetailPanel.jsx">
+import { X, Plane } from 'lucide-react'
+import styles from './DetailPanel.module.css'
+
+function fmt(date) {
+  if (!date) return '--:--'
+  return new Date(date).toLocaleTimeString('en-US', {
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  })
+}
+
+const STATUS_LABEL = {
+  OnTime: 'On Time',
+  MinorDelay: 'Minor Delay',
+  CriticalDelay: 'Critical Delay',
+}
+
+const BADGE_CLASS = {
+  OnTime: 'green',
+  MinorDelay: 'orange',
+  CriticalDelay: 'red',
+}
+
+export default function DetailPanel({ flight, onClose }) {
+  if (!flight) return null
+
+  const badgeClass = BADGE_CLASS[flight.status] || 'green'
+
+  return (
+    <div className={styles.panel}>
+      <div className={styles.inner}>
+        {/* Header */}
+        <div className={styles.header}>
+          <div className={styles.titleGroup}>
+            <Plane size={20} className={styles.planeIcon} />
+            <div>
+              <h2 className={styles.flightNo}>{flight.flightNumber}</h2>
+              <p className={styles.route}>
+                {flight.origin} → {flight.destination} · {flight.aircraft}
+              </p>
+            </div>
+            <span className={`${styles.badge} ${styles[badgeClass]}`}>
+              {STATUS_LABEL[flight.status]}
+            </span>
+          </div>
+          <button className={styles.closeBtn} onClick={onClose}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Grid */}
+        <div className={styles.grid}>
+          {/* Scheduled OOOI */}
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>
+              <span className={styles.dotEst} /> Scheduled (OOOI)
+            </h3>
+            <table className={styles.table}>
+              <tbody>
+                <tr><td>Out (ETD)</td><td>{fmt(flight.estStart)}</td></tr>
+                <tr><td>Off</td>     <td>{fmt(flight.offTime)}</td></tr>
+                <tr><td>On</td>      <td>{fmt(flight.onTime)}</td></tr>
+                <tr><td>In (ETA)</td><td>{fmt(flight.estEnd)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Actual OOOI */}
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>
+              <span className={styles.dotAct} /> Actual (OOOI)
+            </h3>
+            <table className={styles.table}>
+              <tbody>
+                <tr><td>Out (ATD)</td><td>{fmt(flight.outTime)}</td></tr>
+                <tr><td>Off</td>     <td>{fmt(flight.offTime)}</td></tr>
+                <tr><td>On</td>      <td>{fmt(flight.onTime)}</td></tr>
+                <tr><td>In (ATA)</td><td>{fmt(flight.actEnd)}</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          {/* Flight Info */}
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Flight Info</h3>
+            <table className={styles.table}>
+              <tbody>
+                <tr><td>Aircraft</td>   <td>{flight.aircraft}</td></tr>
+                <tr><td>Passengers</td> <td>{flight.paxCount} pax</td></tr>
+                <tr>
+                  <td>Delay</td>
+                  <td>
+                    {flight.delayMinutes > 0
+                      ? `${flight.delayMinutes}m (${flight.delayCode})`
+                      : '—'}
+                  </td>
+                </tr>
+                <tr><td>Route</td> <td>{flight.route}</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/components/DetailPanel.module.css">
+.panel {
+  position: fixed;
+  bottom: 0;
+  left: 64px;
+  /* sidebar width */
+  right: 0;
+  height: 280px;
+  background: #fff;
+  border-top: 2px solid #D71920;
+  box-shadow: 0 -6px 30px rgba(0, 0, 0, .12);
+  z-index: 900;
+  overflow-y: auto;
+  animation: slideUp .22s cubic-bezier(.4, 0, .2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.inner {
+  padding: 14px 24px;
+  max-width: 1300px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.planeIcon {
+  color: #D71920;
+  flex-shrink: 0;
+}
+
+.flightNo {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.1;
+}
+
+.route {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 1px;
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.closeBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: all .15s;
+}
+
+.closeBtn:hover {
+  background: #fee2e2;
+  color: #D71920;
+}
+
+/* Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.card {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.cardTitle {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 8px;
+}
+
+.dotEst {
+  width: 8px;
+  height: 8px;
+  border: 2px solid #27AE60;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dotAct {
+  width: 8px;
+  height: 8px;
+  background: #27AE60;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table td {
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.table td:first-child {
+  color: #94a3b8;
+  font-weight: 600;
+  width: 50%;
+}
+
+.table td:last-child {
+  color: #1e293b;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+}
+</file>
+
+<file path="src/components/GanttTimeline.css">
+/* ════════════════════════════════════════════════════════════════
+   GanttTimeline.css  –  vis-timeline overrides + dual-bar pill
+════════════════════════════════════════════════════════════════ */
+
+/* ── Import vis-timeline base styles ─────────────────────────── */
+@import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
+
+/* ── Gantt wrapper layout ─────────────────────────────────────── */
+.gantt-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #F0F2F5;
+  position: relative;
+}
+
+.gantt-canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+/* ── Legend bar ───────────────────────────────────────────────── */
+.gantt-legend {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 6px 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.legend-items {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.leg-swatch {
+  width: 18px;
+  height: 9px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.leg-sep {
+  width: 1px;
+  height: 14px;
+  background: #e2e8f0;
+}
+
+/* ── Footer navigation ────────────────────────────────────────── */
+.gantt-footer {
+  background: #1e293b;
+  padding: 8px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.gantt-window-label {
+  font-size: 12px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.nav-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.nav-btn {
+  background: #334155;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background .15s, color .15s;
+}
+
+.nav-btn:hover {
+  background: #475569;
+  color: #fff;
+}
+
+.nav-now {
+  background: #D71920;
+  color: #fff;
+}
+
+.nav-now:hover {
+  background: #b91419;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   VIS-TIMELINE OVERRIDES
+════════════════════════════════════════════════════════════════ */
+
+/* Kill vis defaults on items – our pill controls everything */
+.vis-item {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.vis-item.vis-selected {
+  outline: 2px solid #D71920 !important;
+  outline-offset: 1px !important;
+  z-index: 100 !important;
+}
+
+.vis-item-content {
+  padding: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Timeline chrome */
+.vis-timeline {
+  border: none !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+.vis-panel.vis-background {
+  background: #FAFAFA;
+}
+
+.vis-panel.vis-center,
+.vis-panel.vis-left,
+.vis-panel.vis-top,
+.vis-panel.vis-bottom {
+  border-color: #e2e8f0 !important;
+}
+
+/* Time axis labels */
+.vis-time-axis .vis-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.vis-time-axis .vis-text.vis-major {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* Group labels (aircraft rows) */
+.vis-labelset .vis-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e293b;
+  border-bottom: 1px solid #f1f5f9 !important;
+  background: #fff !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+.vis-labelset .vis-label .vis-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1e293b;
+  display: block;
+}
+
+.group-type {
+  font-size: 9px;
+  font-weight: 500;
+  color: #94a3b8;
+  display: block;
+}
+
+/* Current time marker */
+.vis-current-time {
+  background: #D71920 !important;
+  width: 2px !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   DUAL-BAR PILL  (critical – injected as HTML string)
+════════════════════════════════════════════════════════════════ */
+
+.flight-pill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: filter .15s;
+}
+
+.flight-pill:hover {
+  filter: brightness(0.9);
+}
+
+.bar-est,
+.bar-act {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  min-height: 0;
+  box-sizing: border-box;
+}
+
+.bar-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* colour inherited from parent bar inline style */
+}
+
+.bar-lbl-white {
+  color: #fff !important;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   TOOLTIP CARD  (injected as HTML via vis title prop)
+════════════════════════════════════════════════════════════════ */
+
+.vis-tooltip {
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.tt-card {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .16);
+  min-width: 250px;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.tt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+  /* border-left set inline */
+  padding-left: 10px;
+}
+
+.tt-fno {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.tt-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.tt-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tt-lbl {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.tt-val {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.tt-status {
+  margin-top: 4px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 6px;
+}
+
+.tt-delay {
+  font-size: 11px;
+  font-weight: 700;
+  color: #D71920;
+}
+
+.tt-ok {
+  font-size: 11px;
+  font-weight: 700;
+  color: #27AE60;
+}
+</file>
+
+<file path="src/components/GanttTimeline.jsx">
+import { useRef, useEffect, useState, useCallback } from 'react'
+import { Timeline } from 'vis-timeline/standalone'
+import { DataSet } from 'vis-data'
+import { generateMockData, STATUS_COLOR } from '../data/FlightData'
+import DetailPanel from './DetailPanel'
+import './GanttTimeline.css'
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+function fmt(date) {
+  if (!date) return '--:--'
+  return new Date(date).toLocaleTimeString('en-US', {
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  })
+}
+
+// ── Build flight-pill HTML string ──────────────────────────────────────────
+function buildItemTemplate(item) {
+  const color = STATUS_COLOR[item.status] ?? '#27AE60'
+  const fn = item.flightNumber || ''
+  const estS = fmt(item.estStart)
+  const estE = fmt(item.estEnd)
+  const actS = fmt(item.actStart)
+  const actE = fmt(item.actEnd)
+
+  return `
+    <div class="flight-pill">
+      <div class="bar-est" style="background-color:${color}40; border:1px solid ${color};">
+        <span class="bar-lbl">${fn} | ETD ${estS} – ETA ${estE}</span>
+      </div>
+      <div class="bar-act" style="background-color:${color};">
+        <span class="bar-lbl bar-lbl-white">${fn} | ATD ${actS} – ATA ${actE}</span>
+      </div>
+    </div>`
+}
+
+// ── Build tooltip HTML card ────────────────────────────────────────────────
+function buildTooltip(item) {
+  const color = STATUS_COLOR[item.status] ?? '#27AE60'
+  const labels = { OnTime: 'On Time', MinorDelay: 'Minor Delay', CriticalDelay: 'Critical Delay' }
+  const delayBadge = item.delayMinutes > 0
+    ? `<span class="tt-delay">⚠ +${item.delayMinutes}m (${item.delayCode || '—'})</span>`
+    : `<span class="tt-ok">✓ On Time</span>`
+
+  return `
+    <div class="tt-card">
+      <div class="tt-head" style="border-left:4px solid ${color}">
+        <span class="tt-fno">${item.flightNumber}</span>
+        <span class="tt-badge" style="background:${color}">${labels[item.status] || ''}</span>
+      </div>
+      <div class="tt-body">
+        <div class="tt-row"><span class="tt-lbl">Aircraft</span><span class="tt-val">${item.aircraft}</span></div>
+        <div class="tt-row"><span class="tt-lbl">Route</span><span class="tt-val">${item.route}</span></div>
+        <div class="tt-row"><span class="tt-lbl">Passengers</span><span class="tt-val">${item.paxCount} pax</span></div>
+        <div class="tt-row"><span class="tt-lbl">ETD – ETA</span><span class="tt-val">${fmt(item.estStart)} – ${fmt(item.estEnd)}</span></div>
+        <div class="tt-status">${delayBadge}</div>
+      </div>
+    </div>`
+}
+
+// ── Apply filters ──────────────────────────────────────────────────────────
+function applyFilters(flights, filters) {
+  let out = flights
+
+  if (filters.airport && filters.airport !== 'ALL') {
+    out = out.filter(f => f.origin === filters.airport || f.destination === filters.airport)
+  }
+  if (filters.flight?.trim()) {
+    const q = filters.flight.trim().toLowerCase()
+    out = out.filter(f => f.flightNumber.toLowerCase().includes(q))
+  }
+  if (filters.fromDate) {
+    const from = new Date(filters.fromDate)
+    from.setHours(0, 0, 0, 0)
+    out = out.filter(f => new Date(f.estStart) >= from)
+  }
+  if (filters.toDate) {
+    const to = new Date(filters.toDate)
+    to.setHours(23, 59, 59, 999)
+    out = out.filter(f => new Date(f.estStart) <= to)
+  }
+  return out
+}
+
+export default function GanttTimeline({ filters }) {
+  const containerRef = useRef(null)
+  const timelineRef = useRef(null)
+  const itemsDS = useRef(null)
+  const allFlights = useRef([])
+
+  const [selected, setSelected] = useState(null)
+  const [winStart, setWinStart] = useState(() => new Date())
+  const [winEnd, setWinEnd] = useState(() => new Date(Date.now() + DAY_MS))
+
+  // ── Build/refresh timeline items ─────────────────────────────────────────
+  const pushItems = useCallback((flights) => {
+    if (!itemsDS.current) return
+    const items = flights.map(f => ({
+      id: f.id,
+      group: f.group,
+      start: f.start,
+      end: f.end,
+      type: 'range',
+      content: buildItemTemplate(f),
+      title: buildTooltip(f),
+      // Data payload for events
+      _flight: f,
+    }))
+    itemsDS.current.clear()
+    itemsDS.current.add(items)
+  }, [])
+
+  // ── Initialise timeline once on mount ────────────────────────────────────
+  useEffect(() => {
+    const { groups, flights } = generateMockData()
+    allFlights.current = flights
+
+    const now = new Date()
+    const start = now
+    const end = new Date(now.getTime() + DAY_MS)
+    setWinStart(start)
+    setWinEnd(end)
+
+    itemsDS.current = new DataSet([])
+    const groupsDS = new DataSet(groups)
+
+    const options = {
+      start,
+      end,
+      min: new Date(now.getTime() - 365 * DAY_MS),
+      max: new Date(now.getTime() + 365 * DAY_MS),
+      height: '100%',
+      maxHeight: '100%',
+      zoomable: true,
+      zoomMin: 1000 * 60 * 60,          // 1 h
+      zoomMax: 1000 * 60 * 60 * 24 * 7, // 7 d
+      moveable: true,
+      horizontalScroll: true,
+      verticalScroll: true,
+      stack: false,
+      showCurrentTime: true,
+      orientation: 'top',
+      tooltip: {
+        followMouse: true,
+        overflowMethod: 'cap',
+      },
+      format: {
+        minorLabels: { hour: 'HH:mm', minute: 'HH:mm' },
+        majorLabels: { day: 'ddd DD MMM', month: 'MMMM YYYY' },
+      },
+    }
+
+    const tl = new Timeline(
+      containerRef.current,
+      itemsDS.current,
+      groupsDS,
+      options
+    )
+    timelineRef.current = tl
+
+    // Click handler
+    tl.on('select', ({ items }) => {
+      if (items.length === 0) { setSelected(null); return }
+      const item = itemsDS.current.get(items[0])
+      if (item?._flight) setSelected(item._flight)
+    })
+
+    pushItems(flights)
+
+    // Refresh event from Topbar button
+    const handleRefresh = () => {
+      allFlights.current = generateMockData().flights
+      pushItems(applyFilters(allFlights.current, filters))
+    }
+    window.addEventListener('gantt-refresh', handleRefresh)
+
+    return () => {
+      tl.destroy()
+      window.removeEventListener('gantt-refresh', handleRefresh)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Re-filter when filters prop changes ──────────────────────────────────
+  useEffect(() => {
+    if (!itemsDS.current) return
+    pushItems(applyFilters(allFlights.current, filters))
+  }, [filters, pushItems])
+
+  // ── Navigation helpers ────────────────────────────────────────────────────
+  function shift(ms) {
+    const ns = new Date(winStart.getTime() + ms)
+    const ne = new Date(winEnd.getTime() + ms)
+    setWinStart(ns); setWinEnd(ne)
+    timelineRef.current?.setWindow(ns, ne)
+  }
+
+  function goNow() {
+    const now = new Date()
+    const ne = new Date(now.getTime() + DAY_MS)
+    setWinStart(now); setWinEnd(ne)
+    timelineRef.current?.setWindow(now, ne)
+  }
+
+  return (
+    <div className="gantt-wrapper">
+      {/* Legend bar */}
+      <div className="gantt-legend">
+        <div className="legend-items">
+          <span className="leg-item"><span className="leg-dot" style={{ background: '#27AE60' }} />On Time</span>
+          <span className="leg-item"><span className="leg-dot" style={{ background: '#F39C12' }} />Minor Delay</span>
+          <span className="leg-item"><span className="leg-dot" style={{ background: '#D71920' }} />Critical Delay</span>
+          <span className="leg-sep" />
+          <span className="leg-item">
+            <span className="leg-swatch" style={{ border: '1.5px solid #27AE60', background: 'transparent' }} />Scheduled
+          </span>
+          <span className="leg-item">
+            <span className="leg-swatch" style={{ background: '#27AE60' }} />Actual
+          </span>
+        </div>
+      </div>
+
+      {/* Timeline canvas */}
+      <div className="gantt-canvas" ref={containerRef} />
+
+      {/* Footer nav */}
+      <div className="gantt-footer">
+        <span className="gantt-window-label">
+          {winStart.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })} —{' '}
+          {winEnd.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+        </span>
+        <div className="nav-btns">
+          <button className="nav-btn" onClick={() => shift(-DAY_MS)}>‹ Prev Day</button>
+          <button className="nav-btn nav-now" onClick={goNow}>Now</button>
+          <button className="nav-btn" onClick={() => shift(+DAY_MS)}>Next Day ›</button>
+        </div>
+      </div>
+
+      {/* Detail panel overlay */}
+      {selected && (
+        <DetailPanel
+          flight={selected}
+          onClose={() => { setSelected(null); timelineRef.current?.setSelection([]) }}
+        />
+      )}
+    </div>
+  )
+}
+</file>
+
+<file path="src/components/Layout.jsx">
+import { Outlet } from 'react-router-dom'
+import { useState } from 'react'
+import Sidebar from './Sidebar'
+import Topbar from './Topbar'
+
+export default function Layout({ filters, onFilterChange }) {
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <div className="main-col">
+        <Topbar filters={filters} onFilterChange={onFilterChange} />
+        <div className="content-area">
+          <Outlet />
+        </div>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/components/Sidebar.jsx">
+import { NavLink, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, Activity, Settings, Plane, LogOut } from 'lucide-react'
+import { useAuth } from '../auth/AuthContext'
+import styles from './Sidebar.module.css'
+
+const NAV = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/status', icon: Activity, label: 'Flight Status' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
+]
+
+export default function Sidebar() {
+  const { logout } = useAuth()
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    logout()
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <aside className={styles.sidebar}>
+      {/* Logo */}
+      <div className={styles.logo}>
+        <div className={styles.logoIcon}>
+          <Plane size={20} />
+        </div>
+      </div>
+
+      {/* Nav */}
+      <nav className={styles.nav}>
+        {NAV.map(({ to, icon: Icon, label }) => (
+          <NavLink
+            key={to}
+            to={to}
+            title={label}
+            className={({ isActive }) =>
+              [styles.navItem, isActive ? styles.active : ''].join(' ')
+            }
+          >
+            <Icon size={20} />
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* Logout + RAM brand */}
+      <div className={styles.bottom}>
+        <button className={styles.logoutBtn} title="Log Out" onClick={handleLogout}>
+          <LogOut size={16} />
+        </button>
+        <div className={styles.ram}>RAM</div>
+      </div>
+    </aside>
+  )
+}
+</file>
+
+<file path="src/components/Sidebar.module.css">
+.sidebar {
+  width: 64px;
+  height: 100vh;
+  background: #1e293b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.logo {
+  margin-bottom: 24px;
+}
+
+.logoIcon {
+  width: 40px;
+  height: 40px;
+  background: #D71920;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  width: 100%;
+  align-items: center;
+}
+
+.navItem {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: #94a3b8;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.navItem:hover {
+  background: #334155;
+  color: #fff;
+}
+
+.navItem.active {
+  background: #D71920;
+  color: #fff;
+}
+
+.bottom {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.logoutBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #334155;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+
+.logoutBtn:hover {
+  background: #D71920;
+  color: #fff;
+}
+
+.ram {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #D71920;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.05em;
+}
+</file>
+
+<file path="src/components/Topbar.jsx">
+import { useState } from 'react'
+import { RefreshCw, Search, User, ChevronDown, LogOut, Settings } from 'lucide-react'
+import styles from './Topbar.module.css'
+
+const AIRPORTS = [
+  { code: 'ALL', name: 'All Airports' },
+  { code: 'CMN', name: 'CMN – Casablanca' },
+  { code: 'RAK', name: 'RAK – Marrakech' },
+  { code: 'AGA', name: 'AGA – Agadir' },
+  { code: 'FEZ', name: 'FEZ – Fez' },
+  { code: 'TNG', name: 'TNG – Tangier' },
+]
+
+export default function Topbar({ filters, onFilterChange }) {
+  const [showDropdown, setShowDropdown] = useState(false)
+
+  function handleField(key, val) {
+    onFilterChange(prev => ({ ...prev, [key]: val }))
+  }
+
+  function handleRefresh() {
+    // Notify the GanttTimeline to re-generate data
+    window.dispatchEvent(new CustomEvent('gantt-refresh'))
+  }
+
+  return (
+    <header className={styles.topbar}>
+      {/* Left: title */}
+      <div className={styles.brand}>
+        <h1 className={styles.title}>NetLine Ops Reader</h1>
+        <span className={styles.subtitle}>Airline Operations Control</span>
+      </div>
+
+      {/* Centre: filters */}
+      <div className={styles.filters}>
+        <label className={styles.filterGroup}>
+          <span className={styles.filterLabel}>FROM</span>
+          <input
+            type="date"
+            className={styles.filterInput}
+            value={filters.fromDate}
+            onChange={e => handleField('fromDate', e.target.value)}
+          />
+        </label>
+
+        <label className={styles.filterGroup}>
+          <span className={styles.filterLabel}>TO</span>
+          <input
+            type="date"
+            className={styles.filterInput}
+            value={filters.toDate}
+            onChange={e => handleField('toDate', e.target.value)}
+          />
+        </label>
+
+        <label className={styles.filterGroup}>
+          <span className={styles.filterLabel}>AIRPORT</span>
+          <select
+            className={styles.filterInput}
+            value={filters.airport}
+            onChange={e => handleField('airport', e.target.value)}
+          >
+            {AIRPORTS.map(a => (
+              <option key={a.code} value={a.code}>{a.name}</option>
+            ))}
+          </select>
+        </label>
+
+        <label className={styles.filterGroup}>
+          <span className={styles.filterLabel}>FLIGHT</span>
+          <div className={styles.searchWrap}>
+            <Search size={13} className={styles.searchIcon} />
+            <input
+              type="text"
+              className={`${styles.filterInput} ${styles.searchInput}`}
+              placeholder="e.g. AT123"
+              value={filters.flight}
+              onChange={e => handleField('flight', e.target.value)}
+            />
+          </div>
+        </label>
+
+        <button className={styles.refreshBtn} onClick={handleRefresh} title="Refresh">
+          <RefreshCw size={14} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Right: live badge + user */}
+      <div className={styles.rightActions}>
+        <div className={styles.liveBadge}>
+          <span className={styles.liveDot} /> LIVE
+        </div>
+
+        <div className={styles.userMenu} onClick={() => setShowDropdown(v => !v)}>
+          <div className={styles.avatar}>OCC</div>
+          <span className={styles.userName}>Controller</span>
+          <ChevronDown size={14} className={showDropdown ? styles.chevronUp : styles.chevron} />
+
+          {showDropdown && (
+            <div className={styles.dropdown} onClick={e => e.stopPropagation()}>
+              <div className={styles.dropdownHeader}>
+                <div className={`${styles.avatar} ${styles.avatarLg}`}>OCC</div>
+                <div>
+                  <p className={styles.dropdownName}>OCC Controller</p>
+                  <p className={styles.dropdownRole}>Operations Control</p>
+                </div>
+              </div>
+              <div className={styles.ddivider} />
+              <button className={styles.ddItem}>
+                <User size={14} /> Profile
+              </button>
+              <button className={styles.ddItem}>
+                <Settings size={14} /> Settings
+              </button>
+              <div className={styles.ddivider} />
+              <button className={`${styles.ddItem} ${styles.ddDanger}`}>
+                <LogOut size={14} /> Log Out
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
+  )
+}
+</file>
+
+<file path="src/components/Topbar.module.css">
+.topbar {
+  background: #fff;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 0 20px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+  z-index: 10;
+  position: relative;
+}
+
+/* Brand */
+.brand {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.subtitle {
+  font-size: 10px;
+  color: #94a3b8;
+  font-weight: 500;
+  letter-spacing: .04em;
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.filterLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+
+.filterInput {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .15s;
+}
+
+.filterInput:focus {
+  border-color: #D71920;
+  background: #fff;
+}
+
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 8px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.searchInput {
+  padding-left: 26px;
+  width: 140px;
+}
+
+/* Refresh button */
+.refreshBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  background: #D71920;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background .15s;
+  flex-shrink: 0;
+}
+
+.refreshBtn:hover {
+  background: #b91419;
+}
+
+/* Right actions */
+.rightActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.liveBadge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  color: #16a34a;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 9px;
+  border-radius: 100px;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: .5;
+    transform: scale(1.3);
+  }
+}
+
+/* User menu */
+.userMenu {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 8px;
+  transition: background .15s;
+}
+
+.userMenu:hover {
+  background: #f8fafc;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: #D71920;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatarLg {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  font-size: 12px;
+}
+
+.userName {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.chevron,
+.chevronUp {
+  color: #94a3b8;
+  transition: transform .2s;
+}
+
+.chevronUp {
+  transform: rotate(180deg);
+}
+
+/* Dropdown */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+  min-width: 210px;
+  z-index: 1000;
+  overflow: hidden;
+  animation: fadeIn .15s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdownHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #f8fafc;
+}
+
+.dropdownName {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.dropdownRole {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.ddivider {
+  height: 1px;
+  background: #f1f5f9;
+}
+
+.ddItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 14px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #1e293b;
+  text-align: left;
+  transition: background .12s;
+}
+
+.ddItem:hover {
+  background: #f8fafc;
+}
+
+.ddDanger {
+  color: #ef4444;
+}
+
+.ddDanger:hover {
+  background: #fff5f5;
+}
+</file>
+
+<file path="src/data/FlightData.js">
+/* ──────────────────────────────────────────────────────────
+   FlightData.js  –  Mock data generator
+   35 Aircraft × 10 flights per day
+─────────────────────────────────────────────────────────── */
+
+export const STATUS = {
+  OnTime: 'OnTime',
+  MinorDelay: 'MinorDelay',
+  CriticalDelay: 'CriticalDelay',
+};
+
+export const STATUS_COLOR = {
+  OnTime: '#27AE60',
+  MinorDelay: '#F39C12',
+  CriticalDelay: '#D71920',
+};
+
+/** Generate 35 aircraft IDs: CN-RAM → CN-RZZ */
+function buildAircraftList() {
+  const list = [];
+  const types = ['B787', 'B737', 'E190'];
+  // Two-letter suffix starting at AM
+  // A=65, M=77 → index 0..25 for second letter, outer for first
+  let firstCode = 'A'.charCodeAt(0); // fixed first letter = A for all 35
+  let secondCode = 'M'.charCodeAt(0); // start at M (AM, AN, AO … AZ, BA, BB …)
+
+  for (let i = 0; i < 35; i++) {
+    const suffix = String.fromCharCode(firstCode) + String.fromCharCode(secondCode);
+    list.push({
+      id: `CN-R${suffix}`,
+      label: `CN-R${suffix}`,
+      type: types[i % 3],
+    });
+    secondCode++;
+    if (secondCode > 'Z'.charCodeAt(0)) {
+      secondCode = 'A'.charCodeAt(0);
+      firstCode++;
+    }
+  }
+  return list;
+}
+
+const AIRPORTS = ['CMN', 'ORY', 'CDG', 'LHR', 'MAD', 'BCN', 'IST', 'FCO', 'DXB', 'JFK'];
+
+function randomStatus() {
+  const r = Math.random();
+  if (r > 0.90) return STATUS.CriticalDelay;
+  if (r > 0.70) return STATUS.MinorDelay;
+  return STATUS.OnTime;
+}
+
+let _idCounter = 1;
+
+function buildFlightsForDay(aircraft, dayDate) {
+  const flights = [];
+  let cursor = 0; // minutes from midnight
+
+  for (let f = 0; f < 10; f++) {
+    const gap = 40 + Math.floor(Math.random() * 20); // 40–60 min gap
+    const duration = 60 + Math.floor(Math.random() * 90); // 60–150 min flight
+
+    const estStart = cursor + gap;
+    const estEnd = estStart + duration;
+    if (estEnd >= 24 * 60) break;
+
+    const status = randomStatus();
+    const delayMin = status === STATUS.CriticalDelay
+      ? 45 + Math.floor(Math.random() * 75)
+      : status === STATUS.MinorDelay
+        ? 5 + Math.floor(Math.random() * 35)
+        : 0;
+    const delayCode = status === STATUS.CriticalDelay ? 'TECH'
+      : status === STATUS.MinorDelay ? 'WX' : '';
+
+    const baseMs = dayDate.getTime();
+    const ms = (m) => new Date(baseMs + m * 60_000);
+
+    const origin = 'CMN';
+    const dest = AIRPORTS[Math.floor(Math.random() * AIRPORTS.length)];
+    const fno = `AT${100 + Math.floor(Math.random() * 800)}`;
+    const pax = 50 + Math.floor(Math.random() * 180);
+
+    flights.push({
+      id: _idCounter++,
+      flightNumber: fno,
+      aircraft: `${aircraft.id} (${aircraft.type})`,
+      group: aircraft.id,
+      origin,
+      destination: dest,
+      route: `${origin}–${dest}`,
+      paxCount: pax,
+      status,
+      delayMinutes: delayMin,
+      delayCode,
+      // Estimated (baseline)
+      estStart: ms(estStart),
+      estEnd: ms(estEnd),
+      // Actual (baseline + delay)
+      actStart: ms(estStart + delayMin),
+      actEnd: ms(estEnd + delayMin),
+      // Timeline window: union of est + act
+      start: ms(Math.min(estStart, estStart + delayMin)),
+      end: ms(Math.max(estEnd, estEnd + delayMin)),
+      // OOOI
+      outTime: ms(estStart + delayMin),
+      offTime: ms(estStart + delayMin + 15),
+      onTime: ms(estEnd + delayMin - 15),
+      inTime: ms(estEnd + delayMin),
+    });
+
+    cursor = estEnd;
+  }
+  return flights;
+}
+
+/** Returns { aircraft: [...], flights: [...] } */
+export function generateMockData() {
+  _idCounter = 1;
+  const aircraft = buildAircraftList();
+  const flights = [];
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const ac of aircraft) {
+    [-1, 0, 1].forEach(offset => {
+      const day = new Date(today);
+      day.setDate(day.getDate() + offset);
+      flights.push(...buildFlightsForDay(ac, day));
+    });
+  }
+
+  const groups = aircraft.map(ac => ({
+    id: ac.id,
+    content: `<span class="group-label">${ac.id}</span><span class="group-type">${ac.type}</span>`,
+  }));
+
+  return { aircraft, groups, flights };
+}
+</file>
+
+<file path="src/pages/Dashboard.jsx">
+import GanttTimeline from '../components/GanttTimeline'
+
+export default function Dashboard({ filters }) {
+  return <GanttTimeline filters={filters} />
+}
+</file>
+
+<file path="src/pages/FlightStatus.jsx">
+import { useState, useMemo } from 'react'
+import { Search, Plane, Clock, AlertTriangle, CheckCircle } from 'lucide-react'
+import { generateMockData, STATUS_COLOR } from '../data/FlightData'
+import styles from './FlightStatus.module.css'
+
+const { flights: ALL_FLIGHTS } = generateMockData()
+
+// Unique airports from the data
+const AIRPORTS = ['ALL', 'CMN', 'CDG', 'LHR', 'ORY', 'MAD', 'BCN', 'IST', 'FCO', 'DXB', 'JFK']
+
+function fmtTime(date) {
+  if (!date) return '--:--'
+  return new Date(date).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+function fmtDate(date) {
+  if (!date) return ''
+  return new Date(date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+function todayStr() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+const STATUS_META = {
+  OnTime: { label: 'On Time', cls: 'green', Icon: CheckCircle },
+  MinorDelay: { label: 'Minor Delay', cls: 'orange', Icon: AlertTriangle },
+  CriticalDelay: { label: 'Critical Delay', cls: 'red', Icon: AlertTriangle },
+}
+
+function FlightCard({ flight }) {
+  const meta = STATUS_META[flight.status] || STATUS_META.OnTime
+  const color = STATUS_COLOR[flight.status] || '#27AE60'
+  const { Icon } = meta
+
+  return (
+    <div className={styles.card} style={{ '--accent': color }}>
+      <div className={styles.cardAccent} />
+
+      <div className={styles.cardMain}>
+        {/* Route */}
+        <div className={styles.routeBlock}>
+          <div className={styles.routeAirport}>{flight.origin}</div>
+          <div className={styles.routeArrow}>
+            <span className={styles.routeLine} />
+            <Plane size={13} className={styles.routePlane} />
+            <span className={styles.routeLine} />
+          </div>
+          <div className={styles.routeAirport}>{flight.destination}</div>
+        </div>
+
+        {/* Times */}
+        <div className={styles.timesBlock}>
+          <div className={styles.timeCol}>
+            <span className={styles.timeLabel}>ETD</span>
+            <span className={styles.timeVal}>{fmtTime(flight.estStart)}</span>
+          </div>
+          <div className={styles.timeDivider} />
+          <div className={styles.timeCol}>
+            <span className={styles.timeLabel}>ETA</span>
+            <span className={styles.timeVal}>{fmtTime(flight.estEnd)}</span>
+          </div>
+          {flight.delayMinutes > 0 && (
+            <>
+              <div className={styles.timeDivider} />
+              <div className={styles.timeCol}>
+                <span className={styles.timeLabel}>Delay</span>
+                <span className={styles.timeDelay}>+{flight.delayMinutes}m</span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.cardRight}>
+        {/* Flight number */}
+        <div className={styles.flightNo}>{flight.flightNumber}</div>
+        <div className={styles.aircraftLbl}>{flight.aircraft.split(' ')[0]}</div>
+
+        {/* Status badge */}
+        <span className={`${styles.badge} ${styles[meta.cls]}`}>
+          <Icon size={12} />
+          {meta.label}
+        </span>
+
+        {/* Pax */}
+        <div className={styles.pax}>{flight.paxCount} pax</div>
+      </div>
+    </div>
+  )
+}
+
+export default function FlightStatus() {
+  const [tab, setTab] = useState('route') // 'route' | 'flight'
+
+  // Tab 1: Route
+  const [fromAirport, setFromAirport] = useState('CMN')
+  const [toAirport, setToAirport] = useState('ALL')
+  const [routeDate, setRouteDate] = useState(todayStr)
+
+  // Tab 2: Flight number
+  const [airline, setAirline] = useState('AT')
+  const [flightNo, setFlightNo] = useState('')
+  const [flightDate, setFlightDate] = useState(todayStr)
+
+  const [results, setResults] = useState(null)
+  const [loading, setLoading] = useState(false)
+
+  async function retrieve() {
+    setLoading(true)
+    await new Promise(r => setTimeout(r, 500))
+
+    let filtered = ALL_FLIGHTS
+
+    if (tab === 'route') {
+      if (fromAirport !== 'ALL') filtered = filtered.filter(f => f.origin === fromAirport)
+      if (toAirport !== 'ALL') filtered = filtered.filter(f => f.destination === toAirport)
+      if (routeDate) {
+        const d = new Date(routeDate); d.setHours(0, 0, 0, 0)
+        const e = new Date(routeDate); e.setHours(23, 59, 59, 999)
+        filtered = filtered.filter(f => new Date(f.estStart) >= d && new Date(f.estStart) <= e)
+      }
+    } else {
+      const q = `${airline}${flightNo}`.toLowerCase()
+      if (q.length > 2) filtered = filtered.filter(f => f.flightNumber.toLowerCase().includes(q))
+      if (flightDate) {
+        const d = new Date(flightDate); d.setHours(0, 0, 0, 0)
+        const e = new Date(flightDate); e.setHours(23, 59, 59, 999)
+        filtered = filtered.filter(f => new Date(f.estStart) >= d && new Date(f.estStart) <= e)
+      }
+    }
+
+    // Sort by departure time
+    filtered = [...filtered].sort((a, b) => new Date(a.estStart) - new Date(b.estStart))
+    setResults(filtered)
+    setLoading(false)
+  }
+
+  const summaryStats = useMemo(() => {
+    if (!results) return null
+    const onTime = results.filter(f => f.status === 'OnTime').length
+    const delayed = results.filter(f => f.status !== 'OnTime').length
+    return { total: results.length, onTime, delayed }
+  }, [results])
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.container}>
+        {/* Page header */}
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>Flight Status</h1>
+          <p className={styles.pageSub}>Search and monitor flight status across the Royal Air Maroc network</p>
+        </div>
+
+        {/* Search card */}
+        <div className={styles.searchCard}>
+          {/* Tabs */}
+          <div className={styles.tabs}>
+            <button
+              className={`${styles.tab} ${tab === 'route' ? styles.tabActive : ''}`}
+              onClick={() => { setTab('route'); setResults(null) }}
+            >
+              By Route — Itinéraire
+            </button>
+            <button
+              className={`${styles.tab} ${tab === 'flight' ? styles.tabActive : ''}`}
+              onClick={() => { setTab('flight'); setResults(null) }}
+            >
+              By Flight Number — Numéro de vol
+            </button>
+          </div>
+
+          {/* Tab 1: Route */}
+          {tab === 'route' && (
+            <div className={styles.searchForm}>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>From (Départ)</label>
+                <select className={styles.formInput} value={fromAirport} onChange={e => setFromAirport(e.target.value)}>
+                  {AIRPORTS.map(a => <option key={a} value={a}>{a === 'ALL' ? 'All Airports' : a}</option>)}
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>To (Arrivée)</label>
+                <select className={styles.formInput} value={toAirport} onChange={e => setToAirport(e.target.value)}>
+                  {AIRPORTS.map(a => <option key={a} value={a}>{a === 'ALL' ? 'All Airports' : a}</option>)}
+                </select>
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Date</label>
+                <input type="date" className={styles.formInput} value={routeDate} onChange={e => setRouteDate(e.target.value)} />
+              </div>
+              <button className={styles.retrieveBtn} onClick={retrieve} disabled={loading}>
+                {loading ? <span className={styles.spinner} /> : <><Search size={14} /> Récupérer</>}
+              </button>
+            </div>
+          )}
+
+          {/* Tab 2: Flight number */}
+          {tab === 'flight' && (
+            <div className={styles.searchForm}>
+              <div className={styles.formGroup} style={{ maxWidth: '90px' }}>
+                <label className={styles.formLabel}>Airline</label>
+                <input className={styles.formInput} value={airline} maxLength={3} onChange={e => setAirline(e.target.value.toUpperCase())} />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Flight No</label>
+                <input
+                  className={styles.formInput}
+                  placeholder="e.g. 123"
+                  value={flightNo}
+                  onChange={e => setFlightNo(e.target.value)}
+                />
+              </div>
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Date</label>
+                <input type="date" className={styles.formInput} value={flightDate} onChange={e => setFlightDate(e.target.value)} />
+              </div>
+              <button className={styles.retrieveBtn} onClick={retrieve} disabled={loading}>
+                {loading ? <span className={styles.spinner} /> : <><Search size={14} /> Récupérer</>}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Results */}
+        {summaryStats && (
+          <>
+            {/* Summary strip */}
+            <div className={styles.summaryStrip}>
+              <span className={styles.summaryTotal}>{summaryStats.total} flights found</span>
+              <div className={styles.summaryCounts}>
+                <span className={styles.countGreen}><CheckCircle size={13} /> {summaryStats.onTime} On Time</span>
+                <span className={styles.countRed}><AlertTriangle size={13} /> {summaryStats.delayed} Delayed</span>
+              </div>
+            </div>
+
+            {/* Flight cards list */}
+            <div className={styles.resultList}>
+              {results.length === 0 ? (
+                <div className={styles.empty}>
+                  <Plane size={40} className={styles.emptyIcon} />
+                  <p>No flights found matching your search criteria.</p>
+                </div>
+              ) : (
+                results.map(f => <FlightCard key={f.id} flight={f} />)
+              )}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/pages/FlightStatus.module.css">
+.page {
+  flex: 1;
+  overflow-y: auto;
+  background: #f0f2f5;
+  padding: 24px;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Page header */
+.pageTitle {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.pageSub {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+/* Search Card */
+.searchCard {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.tab {
+  flex: 1;
+  padding: 14px 20px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  text-align: center;
+}
+
+.tab:hover {
+  color: #475569;
+}
+
+.tab.tabActive {
+  color: #D71920;
+  border-bottom-color: #D71920;
+  background: #fff;
+}
+
+/* Search form */
+.searchForm {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 20px 24px;
+  flex-wrap: wrap;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.formLabel {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.formInput {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .15s;
+  appearance: none;
+  width: 100%;
+}
+
+.formInput:focus {
+  border-color: #D71920;
+  background: #fff;
+}
+
+.retrieveBtn {
+  height: 38px;
+  padding: 0 20px;
+  background: #D71920;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  transition: background .15s;
+  align-self: flex-end;
+}
+
+.retrieveBtn:hover:not(:disabled) {
+  background: #b91419;
+}
+
+.retrieveBtn:disabled {
+  opacity: .7;
+}
+
+/* ── Summary strip ───────────────────────────────────────────────── */
+.summaryStrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 10px;
+  padding: 12px 18px;
+  border: 1px solid #e2e8f0;
+}
+
+.summaryTotal {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.summaryCounts {
+  display: flex;
+  gap: 16px;
+}
+
+.countGreen,
+.countRed {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.countGreen {
+  color: #27AE60;
+}
+
+.countRed {
+  color: #D71920;
+}
+
+/* ── Result list ─────────────────────────────────────────────────── */
+.resultList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Flight Card ─────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .04);
+  transition: box-shadow .15s;
+}
+
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, .08);
+}
+
+/* Coloured left accent bar */
+.cardAccent {
+  width: 4px;
+  align-self: stretch;
+  background: var(--accent, #27AE60);
+  flex-shrink: 0;
+}
+
+.cardMain {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 14px 20px;
+}
+
+/* Route section */
+.routeBlock {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 160px;
+}
+
+.routeAirport {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: .04em;
+}
+
+.routeArrow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+}
+
+.routeLine {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+  min-width: 16px;
+}
+
+.routePlane {
+  color: #94a3b8;
+}
+
+/* Times section */
+.timesBlock {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-left: 24px;
+}
+
+.timeCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.timeLabel {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #94a3b8;
+}
+
+.timeVal {
+  font-size: 16px;
+  font-weight: 800;
+  color: #1e293b;
+  font-family: 'Courier New', monospace;
+}
+
+.timeDelay {
+  font-size: 14px;
+  font-weight: 800;
+  color: #D71920;
+  font-family: 'Courier New', monospace;
+}
+
+.timeDivider {
+  width: 1px;
+  height: 28px;
+  background: #f1f5f9;
+}
+
+/* Card right panel */
+.cardRight {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 14px 20px;
+  border-left: 1px solid #f1f5f9;
+  min-width: 148px;
+  flex-shrink: 0;
+}
+
+.flightNo {
+  font-size: 18px;
+  font-weight: 800;
+  color: #1e293b;
+  letter-spacing: .04em;
+}
+
+.aircraftLbl {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.pax {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Status badges */
+.badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+
+.green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Empty state */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 56px;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.emptyIcon {
+  opacity: .4;
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, .4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</file>
+
+<file path="src/pages/Login.jsx">
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../auth/AuthContext'
+import { LogIn, Eye, EyeOff, Plane } from 'lucide-react'
+import styles from './Login.module.css'
+
+const ROLES = [
+  { value: 'CCO', label: 'CCO – Operations Control' },
+  { value: 'Station', label: 'Station Manager' },
+]
+
+export default function Login() {
+  const { login } = useAuth()
+  const navigate = useNavigate()
+
+  const [form, setForm] = useState({ matricule: '', password: '', role: 'CCO' })
+  const [showPwd, setShowPwd] = useState(false)
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  function handle(field, val) {
+    setForm(p => ({ ...p, [field]: val }))
+    setError('')
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (!form.matricule.trim() || !form.password.trim()) {
+      setError('Please fill in all fields.')
+      return
+    }
+    setLoading(true)
+    // Simulate auth delay
+    await new Promise(r => setTimeout(r, 700))
+    login({ matricule: form.matricule, role: form.role, name: form.matricule })
+    navigate(form.role === 'CCO' ? '/dashboard' : '/status', { replace: true })
+    setLoading(false)
+  }
+
+  return (
+    <div className={styles.page}>
+      {/* Left panel — branding */}
+      <div className={styles.heroPanel}>
+        <div className={styles.heroContent}>
+          <div className={styles.heroLogo}>
+            <Plane size={32} />
+          </div>
+          <h1 className={styles.heroTitle}>NetLine Ops Reader</h1>
+          <p className={styles.heroSub}>
+            Royal Air Maroc · Operations Control Centre
+          </p>
+          <div className={styles.heroDivider} />
+          <ul className={styles.heroFeatures}>
+            <li>Real-time Gantt flight scheduling</li>
+            <li>OOOI times &amp; delay monitoring</li>
+            <li>35+ aircraft across all routes</li>
+          </ul>
+        </div>
+        <div className={styles.heroFooter}>© 2026 Royal Air Maroc OCC</div>
+      </div>
+
+      {/* Right panel — form */}
+      <div className={styles.formPanel}>
+        <form className={styles.card} onSubmit={handleSubmit}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardLogo}>
+              <span>RAM</span>
+            </div>
+            <h2 className={styles.cardTitle}>Welcome back</h2>
+            <p className={styles.cardSub}>Sign in to your OCC account</p>
+          </div>
+
+          {error && <div className={styles.errorBox}>{error}</div>}
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label}>Matricule</label>
+            <input
+              className={styles.input}
+              type="text"
+              placeholder="e.g. M123456"
+              value={form.matricule}
+              onChange={e => handle('matricule', e.target.value)}
+              autoComplete="username"
+            />
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label}>Password</label>
+            <div className={styles.pwdWrap}>
+              <input
+                className={`${styles.input} ${styles.pwdInput}`}
+                type={showPwd ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={form.password}
+                onChange={e => handle('password', e.target.value)}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                className={styles.eyeBtn}
+                onClick={() => setShowPwd(v => !v)}
+                tabIndex={-1}
+              >
+                {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.label}>Role</label>
+            <select
+              className={`${styles.input} ${styles.roleSelect}`}
+              value={form.role}
+              onChange={e => handle('role', e.target.value)}
+            >
+              {ROLES.map(r => (
+                <option key={r.value} value={r.value}>{r.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            className={styles.loginBtn}
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? (
+              <span className={styles.spinner} />
+            ) : (
+              <>
+                <LogIn size={16} /> Sign In
+              </>
+            )}
+          </button>
+
+          <p className={styles.hint}>
+            Any matricule / password combination will work for this demo.
+          </p>
+        </form>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/pages/Login.module.css">
+/* Login page — split screen */
+.page {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Left hero panel ─────────────────────────────────────────────── */
+.heroPanel {
+  width: 420px;
+  flex-shrink: 0;
+  background: linear-gradient(160deg, #D71920 0%, #8b0f13 100%);
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.heroPanel::before {
+  content: '';
+  position: absolute;
+  top: -120px;
+  right: -120px;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  pointer-events: none;
+}
+
+.heroPanel::after {
+  content: '';
+  position: absolute;
+  bottom: -80px;
+  left: -80px;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.04);
+  pointer-events: none;
+}
+
+.heroContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.heroLogo {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: rgba(255,255,255,.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.heroTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.heroSub {
+  font-size: 13px;
+  color: rgba(255,255,255,.75);
+  font-weight: 500;
+}
+
+.heroDivider {
+  width: 48px;
+  height: 2px;
+  background: rgba(255,255,255,.3);
+  border-radius: 2px;
+  margin: 4px 0;
+}
+
+.heroFeatures {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0;
+  margin-top: 8px;
+}
+
+.heroFeatures li {
+  font-size: 13px;
+  color: rgba(255,255,255,.85);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heroFeatures li::before {
+  content: '✓';
+  font-weight: 800;
+  color: rgba(255,255,255,.6);
+}
+
+.heroFooter {
+  font-size: 11px;
+  color: rgba(255,255,255,.5);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Right form panel ─────────────────────────────────────────────── */
+.formPanel {
+  flex: 1;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 32px rgba(0,0,0,.08);
+  padding: 36px 40px;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.cardHeader {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.cardLogo {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #D71920;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.cardTitle {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.cardSub {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.errorBox {
+  background: #fee2e2;
+  border: 1px solid #fca5a5;
+  color: #991b1b;
+  font-size: 13px;
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: .04em;
+}
+
+.input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color .15s, background .15s;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: #D71920;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(215,25,32,.08);
+}
+
+.pwdWrap {
+  position: relative;
+}
+
+.pwdInput {
+  padding-right: 40px;
+}
+
+.eyeBtn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  line-height: 0;
+}
+
+.eyeBtn:hover { color: #1e293b; }
+
+.roleSelect {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 34px;
+}
+
+.loginBtn {
+  height: 44px;
+  background: #D71920;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background .15s, transform .1s;
+  margin-top: 4px;
+}
+
+.loginBtn:hover:not(:disabled) {
+  background: #b91419;
+}
+
+.loginBtn:active:not(:disabled) {
+  transform: scale(.98);
+}
+
+.loginBtn:disabled {
+  opacity: .7;
+  cursor: not-allowed;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.hint {
+  font-size: 11px;
+  color: #94a3b8;
+  text-align: center;
+  margin-top: -6px;
+}
+</file>
+
+<file path="src/pages/Settings.jsx">
+import { useState, useEffect } from 'react'
+import { Moon, Bell, Clock, Save, CheckCircle } from 'lucide-react'
+import styles from './Settings.module.css'
+
+const DEFAULTS = { darkMode: false, notifications: true, timezone: 'UTC' }
+
+function loadSettings() {
+  try {
+    const stored = localStorage.getItem('ram_settings')
+    return stored ? { ...DEFAULTS, ...JSON.parse(stored) } : { ...DEFAULTS }
+  } catch { return { ...DEFAULTS } }
+}
+
+export default function Settings() {
+  const [s, setS] = useState(loadSettings)
+  const [saved, setSaved] = useState(false)
+
+  function toggle(key) {
+    setS(p => ({ ...p, [key]: !p[key] }))
+    setSaved(false)
+  }
+
+  function setTimezone(val) {
+    setS(p => ({ ...p, timezone: val }))
+    setSaved(false)
+  }
+
+  function save() {
+    localStorage.setItem('ram_settings', JSON.stringify(s))
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Settings</h1>
+          <p className={styles.subtitle}>Manage your OCC dashboard preferences</p>
+        </div>
+
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Appearance</h2>
+
+          {/* Dark Mode */}
+          <div className={styles.row}>
+            <div className={styles.rowLeft}>
+              <div className={styles.rowIcon} style={{ background: '#1e293b' }}>
+                <Moon size={16} />
+              </div>
+              <div>
+                <p className={styles.rowLabel}>Dark Mode</p>
+                <p className={styles.rowDesc}>Switch interface to dark theme</p>
+              </div>
+            </div>
+            <button
+              className={`${styles.toggle} ${s.darkMode ? styles.toggleOn : ''}`}
+              onClick={() => toggle('darkMode')}
+              aria-pressed={s.darkMode}
+            >
+              <span className={styles.toggleKnob} />
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Notifications</h2>
+
+          <div className={styles.row}>
+            <div className={styles.rowLeft}>
+              <div className={styles.rowIcon} style={{ background: '#2563eb' }}>
+                <Bell size={16} />
+              </div>
+              <div>
+                <p className={styles.rowLabel}>Push Notifications</p>
+                <p className={styles.rowDesc}>Receive alerts for delays and status changes</p>
+              </div>
+            </div>
+            <button
+              className={`${styles.toggle} ${s.notifications ? styles.toggleOn : ''}`}
+              onClick={() => toggle('notifications')}
+              aria-pressed={s.notifications}
+            >
+              <span className={styles.toggleKnob} />
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.section}>
+          <h2 className={styles.sectionTitle}>Time &amp; Date</h2>
+
+          <div className={styles.row}>
+            <div className={styles.rowLeft}>
+              <div className={styles.rowIcon} style={{ background: '#D71920' }}>
+                <Clock size={16} />
+              </div>
+              <div>
+                <p className={styles.rowLabel}>Timezone</p>
+                <p className={styles.rowDesc}>Used across Gantt chart and status views</p>
+              </div>
+            </div>
+            <div className={styles.tzSegment}>
+              <button
+                className={`${styles.tzBtn} ${s.timezone === 'UTC' ? styles.tzActive : ''}`}
+                onClick={() => setTimezone('UTC')}
+              >UTC</button>
+              <button
+                className={`${styles.tzBtn} ${s.timezone === 'Local' ? styles.tzActive : ''}`}
+                onClick={() => setTimezone('Local')}
+              >Local</button>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.actions}>
+          <button className={styles.saveBtn} onClick={save}>
+            {saved
+              ? <><CheckCircle size={16} /> Saved!</>
+              : <><Save size={16} /> Save Changes</>
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="src/pages/Settings.module.css">
+.page {
+  flex: 1;
+  overflow-y: auto;
+  background: #f8fafc;
+  padding: 32px;
+}
+
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.header {
+  margin-bottom: 4px;
+}
+
+.title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #1e293b;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 4px;
+}
+
+.section {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: #94a3b8;
+  padding: 14px 20px 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px;
+  gap: 16px;
+}
+
+.row+.row {
+  border-top: 1px solid #f8fafc;
+}
+
+.rowLeft {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.rowIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.rowLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.rowDesc {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+/* Toggle switch */
+.toggle {
+  width: 44px;
+  height: 24px;
+  border-radius: 100px;
+  background: #e2e8f0;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background .2s;
+  flex-shrink: 0;
+}
+
+.toggle.toggleOn {
+  background: #27AE60;
+}
+
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
+  transition: transform .2s;
+}
+
+.toggle.toggleOn .toggleKnob {
+  transform: translateX(20px);
+}
+
+/* Timezone segment control */
+.tzSegment {
+  display: flex;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.tzBtn {
+  padding: 5px 14px;
+  border-radius: 6px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  background: transparent;
+  transition: all .15s;
+}
+
+.tzBtn.tzActive {
+  background: #fff;
+  color: #D71920;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+}
+
+/* Save button */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveBtn {
+  height: 40px;
+  padding: 0 24px;
+  background: #D71920;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background .15s;
+}
+
+.saveBtn:hover {
+  background: #b91419;
+}
+</file>
+
+<file path="src/App.css">
+/* App Shell layout */
+.app-shell {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.content-area {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+</file>
+
+<file path="src/App.jsx">
+import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, RequireAuth } from './auth/AuthContext'
+import Layout from './components/Layout'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import FlightStatus from './pages/FlightStatus'
+import Settings from './pages/Settings'
+import './App.css'
+
+export default function App() {
+  const [filters, setFilters] = useState({
+    fromDate: '',
+    toDate: '',
+    airport: 'ALL',
+    flight: '',
+  })
+
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <Routes>
+          {/* Public */}
+          <Route path="/login" element={<Login />} />
+
+          {/* Protected — all wrapped in Layout shell */}
+          <Route
+            path="/"
+            element={
+              <RequireAuth>
+                <Layout filters={filters} onFilterChange={setFilters} />
+              </RequireAuth>
+            }
+          >
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard filters={filters} />} />
+            <Route path="status" element={<FlightStatus />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </AuthProvider>
+    </BrowserRouter>
+  )
+}
+</file>
+
+<file path="src/index.css">
+/* ──────────────────────────────────────────────────────────
+   NetLine Ops Reader – Global Reset & Base Styles
+─────────────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Brand */
+  --red:    #D71920;
+  --green:  #27AE60;
+  --orange: #F39C12;
+
+  /* UI Neutrals */
+  --navy:       #1e293b;
+  --navy-light: #334155;
+  --slate:      #64748b;
+  --muted:      #94a3b8;
+  --border:     #e2e8f0;
+  --surface:    #f8fafc;
+  --bg:         #F0F2F5;
+  --white:      #fff;
+
+  /* Sidebar */
+  --sidebar-w: 64px;
+}
+
+html, body, #root {
+  height: 100%;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--navy);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input, select {
+  font-family: inherit;
+}
+</file>
+
+<file path="src/main.jsx">
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
+</file>
+
+<file path=".gitignore">
+node_modules
+dist
+.env
+.DS_Store
+</file>
+
+<file path="index.html">
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="NetLine Ops Reader – Airline Operations Control Dashboard" />
+    <title>NetLine Ops Reader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="package.json">
+{
+  "name": "netline-ops-react",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.22.3",
+    "vis-timeline": "^7.7.3",
+    "vis-data": "^7.1.9",
+    "lucide-react": "^0.344.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.64",
+    "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^4.2.1",
+    "vite": "^5.1.6"
+  }
+}
+</file>
+
+<file path="vite.config.js">
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+export default defineConfig({
+  plugins: [react()],
+})
+</file>
+
+</files>
