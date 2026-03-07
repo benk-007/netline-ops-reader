@@ -94,7 +94,7 @@
   font-family: 'Bebas Neue', cursive;
   font-size: 32px;
   letter-spacing: 3px;
-  color: var(--color-text);
+  color: #aa90b3;
   line-height: 1;
 }
 
@@ -127,7 +127,7 @@
   top: 50%;
   transform: translate(-50%, -50%) scaleX(-1);
   font-size: 10px;
-  color: var(--color-text);
+  color: #aa90b3;
 }
 
 .bp-route-service {
@@ -244,7 +244,8 @@
 .bp-card-value {
   font-size: 13px;
   font-weight: 700;
-  color: var(--color-text);
+  /*color: var(--color-text);*/
+  color: #aa90b3;
   font-family: 'JetBrains Mono', monospace;
 }
 
