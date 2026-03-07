@@ -1,0 +1,292 @@
+/* ═══════════════════════════════════════════════════════════
+   GANTT CSS — vis-timeline professional dark theme
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Wrapper ── */
+.gantt-wrapper {
+  height: 100%;
+  width: 100%;
+  border-radius: 0;
+  overflow: hidden;
+}
+
+/* ── Timeline base ── */
+.vis-timeline {
+  background: var(--gantt-bg) !important;
+  color: var(--color-text) !important;
+  font-family: 'Inter', sans-serif !important;
+  border: none !important;
+  border-top: 1px solid var(--color-border) !important;
+}
+
+/* ── Axis / time header ── */
+.vis-time-axis {
+  background: var(--gantt-header-bg) !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+.vis-time-axis .vis-text {
+  color: var(--color-muted) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.5px !important;
+  padding: 4px 8px !important;
+}
+
+.vis-time-axis .vis-text.vis-major {
+  color: var(--color-text) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  border-bottom: 1px solid var(--color-border) !important;
+}
+
+/* ── Grid lines ── */
+.vis-grid.vis-minor {
+  border-color: var(--gantt-axis-color) !important;
+  border-style: dashed !important;
+  opacity: 0.4;
+}
+
+.vis-grid.vis-major {
+  border-color: var(--color-border) !important;
+  border-width: 1px !important;
+}
+
+/* ── Row groups (aircraft rows) ── */
+.vis-group {
+  background: var(--gantt-row-even) !important;
+  border-bottom: 1px solid var(--color-border-2) !important;
+}
+
+.vis-group:nth-child(odd) {
+  background: var(--gantt-row-odd) !important;
+}
+
+/* ── Group labels (left column: aircraft reg) ── */
+.vis-label {
+  background: var(--gantt-label-bg) !important;
+  border-bottom: 1px solid var(--color-border-2) !important;
+  border-right: 1px solid var(--color-border) !important;
+}
+
+.vis-label .vis-inner {
+  color: var(--gantt-label-text) !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  letter-spacing: 1px !important;
+  padding: 0 16px !important;
+}
+
+/* ── Leg bars (vis-item.vis-range) ── */
+.vis-item.vis-range {
+  /* Spherical pill shape — MANDATORY */
+  border-radius: 9999px !important;
+  height: 28px !important;
+  padding: 0 16px !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+
+  /* Default RAM red gradient (overridden per-item via JS className) */
+  background: linear-gradient(135deg, var(--ram-red) 0%, var(--ram-red-dark) 100%) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+
+  font-family: 'Inter', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+
+  display: flex !important;
+  align-items: center !important;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  /*transition: transform 0.12s ease, box-shadow 0.12s ease !important;*/
+  cursor: pointer !important;
+}
+
+.vis-item .vis-inner {
+  padding: 0 !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: visible !important;
+}
+
+/* ── Rich Leg Content (NetLine Style) ── */
+.leg-content {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+  padding: 0 8px;
+  line-height: 1.2;
+  pointer-events: none;
+  width: 100%;
+}
+
+.leg-top-row,
+.leg-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.leg-fn {
+  font-weight: 800;
+  font-size: 11px;
+}
+
+.leg-route {
+  font-weight: 700;
+  font-size: 10px;
+  opacity: 0.95;
+}
+
+.leg-times {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  opacity: 0.85;
+}
+
+.leg-subtype {
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+
+/* ── Hover ── */
+.vis-item.vis-range:hover {
+
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
+  /* Below dropdowns, above other legs */
+  filter: brightness(1.12) !important;
+}
+
+/* ── Selected ── */
+.vis-item.vis-range.vis-selected {
+  outline: 2px solid rgba(255, 255, 255, 0.5) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(200, 16, 46, 0.3), 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ── Item content (flight text) ── */
+.vis-item .vis-item-content {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  padding: 0 !important;
+}
+
+/* ── Service-colored item classes ───────────────────────── */
+/* Applied via item.className from FlightGantt.jsx          */
+
+.vis-item.svc-PAX.vis-range {
+  background: linear-gradient(135deg, var(--svc-pax-bar), #9b0821) !important;
+}
+
+.vis-item.svc-Charter.vis-range {
+  background: linear-gradient(135deg, var(--svc-charter-bar), #5b21b6) !important;
+}
+
+.vis-item.svc-Cargo.vis-range {
+  background: linear-gradient(135deg, var(--svc-cargo-bar), #0369a1) !important;
+}
+
+.vis-item.svc-Ferry.vis-range {
+  background: linear-gradient(135deg, var(--svc-ferry-bar), #027857) !important;
+}
+
+.vis-item.svc-Maintenance.vis-range {
+  background: linear-gradient(135deg, var(--svc-maint-bar), #b45309) !important;
+}
+
+/* Hover brightens each type */
+.vis-item.svc-PAX.vis-range:hover {
+  background: linear-gradient(135deg, #e8122e, var(--svc-pax-bar)) !important;
+}
+
+.vis-item.svc-Charter.vis-range:hover {
+  background: linear-gradient(135deg, #8b5cf6, var(--svc-charter-bar)) !important;
+}
+
+.vis-item.svc-Cargo.vis-range:hover {
+  background: linear-gradient(135deg, #0ea5e9, var(--svc-cargo-bar)) !important;
+}
+
+.vis-item.svc-Ferry.vis-range:hover {
+  background: linear-gradient(135deg, #10b981, var(--svc-ferry-bar)) !important;
+}
+
+.vis-item.svc-Maintenance.vis-range:hover {
+  background: linear-gradient(135deg, #f59e0b, var(--svc-maint-bar)) !important;
+}
+
+/* ── Current time indicator ── */
+.vis-current-time {
+  background-color: var(--gantt-now-color) !important;
+  width: 2px !important;
+  opacity: 0.85;
+}
+
+.vis-current-time::after {
+  content: 'NOW';
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--gantt-now-color);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+/* ── Panel background (bottom section) ── */
+.vis-panel.vis-background {
+  background: var(--gantt-bg) !important;
+}
+
+/* ── Scrollbar inside timeline ── */
+.vis-panel.vis-left .vis-content,
+.vis-panel.vis-center .vis-content {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+/* ── Animation when gantt mounts ── */
+.gantt-wrapper .vis-timeline {
+  animation: fadeIn 0.3s ease;
+}
+
+/* ── Empty legend strip below gantt ── */
+.gantt-legend {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--color-border-2);
+  border-bottom: 1px solid var(--color-border-2);
+}
+
+.gantt-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-muted);
+  letter-spacing: 0.3px;
+}
+
+.gantt-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}

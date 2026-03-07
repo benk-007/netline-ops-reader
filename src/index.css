@@ -1,0 +1,245 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   ROYAL AIR MAROC – GANTT OPS  |  Design System
+   ═══════════════════════════════════════════════════════════════════════
+   ╔═══════════════════════════════════════════╗
+   ║  ADMIN COLOR VARIABLES — Easy to modify  ║
+   ╚═══════════════════════════════════════════╝
+   To re-brand the app, change only the values inside this :root block.
+   All components automatically inherit them.
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Bebas+Neue&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  /* ── Brand / RAM Theme ───────────────────────────── */
+  --ram-red: #c8102e;
+  /* RAM primary crimson */
+  --ram-red-dark: #9b0821;
+  /* Darker crimson */
+  --ram-red-light: #ef4444;
+  /* Bright alert red */
+  --ram-gold: #f59e0b;
+  /* Accent gold */
+  --ram-gold-light: #fcd34d;
+
+  /* ── Surface / Background ────────────────────────── */
+  --bg-app: #070d1a;
+  /* Deepest background */
+  --bg-surface: #0d1526;
+  /* Card / panel background */
+  --bg-surface-2: #111e35;
+  /* Elevated surfaces */
+  --bg-surface-3: #1a2a45;
+  /* Hover states */
+  --bg-overlay: rgba(7, 13, 26, 0.85);
+
+  /* ── Filter / Input ──────────────────────────────── */
+  --filter-bg: #0a1120;
+  --filter-border: #1e3356;
+  --filter-border-focus: #2563eb;
+
+  /* ── Text ────────────────────────────────────────── */
+  --color-text: #e2e8f0;
+  --color-text-2: #94a3b8;
+  --color-muted: #64748b;
+  --color-dim: #475569;
+
+  /* ── Borders ─────────────────────────────────────── */
+  --color-border: #1e3356;
+  --color-border-2: #0f2040;
+
+  /* ── Gantt Timeline ──────────────────────────────── */
+  --gantt-bg: #0d1526;
+  --gantt-row-odd: #0f1a2e;
+  --gantt-row-even: #0d1526;
+  --gantt-header-bg: #070d1a;
+  --gantt-axis-color: #1e3356;
+  --gantt-label-bg: #0d1526;
+  --gantt-label-text: #94a3b8;
+  --gantt-now-color: #ef4444;
+
+  /* ── Service Colors (admin-modifiable) ───────────── */
+  --svc-pax-bar: #c8102e;
+  --svc-pax-bg: rgba(200, 16, 46, 0.15);
+  --svc-pax-text: #fca5a5;
+
+  --svc-charter-bar: #7c3aed;
+  --svc-charter-bg: rgba(124, 58, 237, 0.15);
+  --svc-charter-text: #c4b5fd;
+
+  --svc-cargo-bar: #0284c7;
+  --svc-cargo-bg: rgba(2, 132, 199, 0.15);
+  --svc-cargo-text: #7dd3fc;
+
+  --svc-ferry-bar: #059669;
+  --svc-ferry-bg: rgba(5, 150, 105, 0.15);
+  --svc-ferry-text: #6ee7b7;
+
+  --svc-maint-bar: #d97706;
+  --svc-maint-bg: rgba(217, 119, 6, 0.15);
+  --svc-maint-text: #fcd34d;
+
+  /* ── State Colors (admin-modifiable) ─────────────── */
+  --state-arrived: #22c55e;
+  --state-airborne: #3b82f6;
+  --state-boarding: #f59e0b;
+  --state-delayed: #ef4444;
+  --state-scheduled: #64748b;
+  --state-cancelled: #6b7280;
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  --sidebar-bg: #060c18;
+  --sidebar-width: 64px;
+  --sidebar-expanded: 200px;
+  --topbar-h: 58px;
+
+  /* ── Animations ──────────────────────────────────── */
+  --transition-fast: 0.15s ease;
+  --transition-mid: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Radius ──────────────────────────────────────── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 9999px;
+
+  /* Typography */
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: dark;
+  color: var(--color-text);
+  background-color: var(--bg-app);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── LIGHT THEME OVERRIDES ── */
+[data-theme='light'] {
+  color-scheme: light;
+  --bg-app: #f1f5f9;
+  --bg-surface: #ffffff;
+  --bg-surface-2: #f8fafc;
+  --bg-surface-3: #e2e8f0;
+
+  --color-text: #0f172a;
+  --color-text-2: #334155;
+  --color-muted: #64748b;
+  --color-dim: #94a3b8;
+
+  --color-border: #cbd5e1;
+  --color-border-2: #e2e8f0;
+
+  --filter-bg: #ffffff;
+  --filter-border: #cbd5e1;
+  --filter-border-focus: var(--ram-red);
+
+  --gantt-bg: #ffffff;
+  --gantt-row-odd: #f8fafc;
+  --gantt-row-even: #ffffff;
+  --gantt-header-bg: #f8fafc;
+  --gantt-axis-color: #cbd5e1;
+  --gantt-label-bg: #f1f5f9;
+  --gantt-label-text: #1e293b;
+  --sidebar-bg: #ffffff;
+}
+
+.topbar,
+.app-main,
+.page-content,
+.gantt-area,
+.timeline-container,
+.filter-bar,
+.vis-timeline,
+.vis-panel,
+.vis-time-axis,
+.vis-group,
+.vis-label,
+.vis-inner,
+body {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg-app);
+  color: var(--color-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+a {
+  color: var(--ram-red);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
+}
+
+/* Shared animations */
+@keyframes slideUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(200, 16, 46, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 6px rgba(200, 16, 46, 0);
+  }
+}

@@ -1,0 +1,254 @@
+/* ─── FILTER BAR ─────────────────────────────────────────── */
+
+.filter-bar {
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--color-border);
+  padding: 8px 20px;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  position: relative;
+}
+
+/* Hide scrollbar but keep scroll functionality */
+.filter-bar::-webkit-scrollbar {
+  height: 3px;
+}
+
+.filter-bar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.filter-bar::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.filter-label {
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-dim);
+}
+
+.filter-divider {
+  width: 1px;
+  height: 36px;
+  background: var(--color-border-2);
+  margin: 0 2px;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+/* Flight number search */
+.filter-search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--filter-bg);
+  border: 1px solid var(--filter-border);
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  min-width: 120px;
+  transition: border-color var(--transition-fast);
+}
+
+.filter-search-wrap:focus-within {
+  border-color: var(--filter-border-focus);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.filter-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+  width: 80px;
+}
+
+.filter-input::placeholder {
+  color: var(--color-dim);
+}
+
+.filter-clear-btn {
+  background: none;
+  border: none;
+  color: var(--color-dim);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  transition: color var(--transition-fast);
+}
+
+.filter-clear-btn:hover {
+  color: #ef4444;
+}
+
+/* Active filter badge */
+.filter-active-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(200, 16, 46, 0.1);
+  border: 1px solid rgba(200, 16, 46, 0.3);
+  border-radius: var(--radius-pill);
+  color: var(--svc-pax-text);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-end;
+}
+
+.filter-active-badge:hover {
+  background: rgba(200, 16, 46, 0.2);
+  border-color: rgba(200, 16, 46, 0.5);
+  color: #fff;
+}
+
+.filter-clear-all {
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* ── Right section ── */
+.filter-right {
+  margin-left: auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Zoom control */
+.zoom-control {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.zoom-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.zoom-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--filter-border);
+  background: var(--filter-bg);
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  transition: all var(--transition-fast);
+}
+
+.zoom-btn:hover {
+  background: rgba(200, 16, 46, 0.12);
+  border-color: rgba(200, 16, 46, 0.3);
+  color: var(--ram-red);
+}
+
+.zoom-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text);
+  min-width: 36px;
+  text-align: center;
+}
+
+.zoom-reset-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--filter-border);
+  background: var(--filter-bg);
+  color: var(--color-dim);
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.zoom-reset-btn:hover {
+  color: var(--color-text);
+}
+
+/* ── Profiles button ── */
+.profiles-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, rgba(200, 16, 46, 0.18) 0%, rgba(200, 16, 46, 0.08) 100%);
+  border: 1px solid rgba(200, 16, 46, 0.35);
+  border-radius: var(--radius-md);
+  color: var(--svc-pax-text);
+  padding: 7px 14px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.profiles-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), transparent);
+  pointer-events: none;
+}
+
+.profiles-btn:hover {
+  background: linear-gradient(135deg, rgba(200, 16, 46, 0.32), rgba(200, 16, 46, 0.16));
+  border-color: rgba(200, 16, 46, 0.6);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(200, 16, 46, 0.25);
+  transform: translateY(-1px);
+}
+
+.profiles-btn-badge {
+  background: var(--ram-red);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 2px 5px;
+  border-radius: 3px;
+  line-height: 1.4;
+}

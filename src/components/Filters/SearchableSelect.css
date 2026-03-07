@@ -1,0 +1,169 @@
+/* ─── SearchableSelect Dropdown ──────────────────────────── */
+
+.ss-root {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    position: relative;
+}
+
+.ss-label {
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--color-dim);
+}
+
+/* Trigger button */
+.ss-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    background: var(--filter-bg);
+    border: 1px solid var(--filter-border);
+    border-radius: var(--radius-md);
+    padding: 6px 10px;
+    color: var(--color-text-2);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    min-width: 110px;
+    transition: border-color var(--transition-fast), color var(--transition-fast);
+    text-align: left;
+}
+
+.ss-trigger:hover {
+    border-color: var(--color-muted);
+    color: var(--color-text);
+}
+
+.ss-trigger.open {
+    border-color: var(--filter-border-focus);
+    color: var(--color-text);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+}
+
+.ss-value {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ss-caret {
+    flex-shrink: 0;
+    color: var(--color-dim);
+    transition: transform var(--transition-fast);
+}
+
+.ss-trigger.open .ss-caret {
+    transform: rotate(180deg);
+}
+
+/* Dropdown panel — must be above vis-timeline */
+.ss-dropdown {
+    position: fixed;
+    /* fixed so it escapes any overflow:hidden parent */
+    min-width: 180px;
+    width: max-content;
+    max-width: 260px;
+    background: var(--bg-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    /* above everything including vis-timeline */
+    animation: slideDown 0.12s ease;
+    overflow: hidden;
+}
+
+/* Search row */
+.ss-search-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--color-border-2);
+    color: var(--color-dim);
+}
+
+.ss-search {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--color-text);
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+}
+
+.ss-search::placeholder {
+    color: var(--color-dim);
+}
+
+.ss-clear-btn {
+    background: none;
+    border: none;
+    color: var(--color-dim);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    transition: color var(--transition-fast);
+}
+
+.ss-clear-btn:hover {
+    color: #ef4444;
+}
+
+/* Options list */
+.ss-list {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px;
+}
+
+.ss-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    padding: 7px 10px;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-2);
+    font-size: 11px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    text-align: left;
+    transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.ss-option:hover {
+    background: var(--bg-surface-3);
+    color: var(--color-text);
+}
+
+.ss-option.selected {
+    color: var(--color-text);
+    background: rgba(200, 16, 46, 0.1);
+}
+
+.ss-option.selected svg {
+    color: var(--ram-red);
+}
+
+.ss-no-results {
+    padding: 12px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--color-dim);
+}

@@ -1,0 +1,237 @@
+/* ═══════════════════════════════════════════════════════════════
+   SIDE MENU – Modern collapsible hamburger nav
+   ═══════════════════════════════════════════════════════════════ */
+
+.sidemenu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--color-border-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 900;
+    transition: width var(--transition-mid);
+    overflow: hidden;
+}
+
+.sidemenu.expanded {
+    width: var(--sidebar-expanded);
+    align-items: flex-start;
+}
+
+/* Hamburger toggle button */
+.sidemenu-toggle {
+    width: var(--sidebar-width);
+    height: var(--topbar-h);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: var(--color-muted);
+    transition: color var(--transition-fast);
+    position: relative;
+}
+
+.sidemenu-toggle:hover {
+    color: var(--color-text);
+}
+
+.sidemenu-toggle:hover .hamburger-line {
+    background: var(--color-text);
+}
+
+/* Animated hamburger icon */
+.hamburger-icon {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    width: 20px;
+}
+
+.hamburger-line {
+    height: 2px;
+    background: var(--color-muted);
+    border-radius: 1px;
+    transition: all var(--transition-mid);
+}
+
+.sidemenu.expanded .hamburger-line:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+    background: var(--color-text);
+}
+
+.sidemenu.expanded .hamburger-line:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.sidemenu.expanded .hamburger-line:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+    background: var(--color-text);
+}
+
+/* Divider under hamburger */
+.sidemenu-top-divider {
+    width: calc(100% - 16px);
+    height: 1px;
+    background: var(--color-border-2);
+    margin: 0 8px;
+    flex-shrink: 0;
+}
+
+/* Nav list */
+.sidemenu-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    padding: 12px 8px;
+    flex: 1;
+}
+
+/* Nav item */
+.sidemenu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 44px;
+    padding: 0 12px;
+    border: none;
+    background: transparent;
+    color: var(--color-muted);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: left;
+    transition: all var(--transition-fast);
+    position: relative;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 100%;
+}
+
+.sidemenu-item:hover {
+    color: var(--color-text);
+    background: var(--bg-surface-3);
+}
+
+.sidemenu-item.active {
+    color: #fff;
+    background: linear-gradient(135deg, rgba(200, 16, 46, 0.25), rgba(200, 16, 46, 0.1));
+    border: 1px solid rgba(200, 16, 46, 0.3);
+}
+
+.sidemenu-item.active .sidemenu-icon {
+    color: var(--ram-red);
+}
+
+/* Active indicator bar on left */
+.sidemenu-item.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 8px;
+    width: 3px;
+    background: var(--ram-red);
+    border-radius: 0 2px 2px 0;
+}
+
+/* Icon wrapper — always visible */
+.sidemenu-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sidemenu-label {
+    opacity: 0;
+    transform: translateX(-8px);
+    transition: opacity var(--transition-mid), transform var(--transition-mid);
+    pointer-events: none;
+}
+
+.sidemenu.expanded .sidemenu-label {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Bottom section — user / settings placeholder */
+.sidemenu-bottom {
+    width: 100%;
+    padding: 8px;
+    border-top: 1px solid var(--color-border-2);
+}
+
+.sidemenu-avatar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 44px;
+    padding: 0 12px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.sidemenu-avatar:hover {
+    background: var(--bg-surface-3);
+}
+
+.sidemenu-avatar-circle {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--ram-red), var(--ram-red-dark));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+
+.sidemenu-avatar-info {
+    opacity: 0;
+    transition: opacity var(--transition-mid);
+}
+
+.sidemenu.expanded .sidemenu-avatar-info {
+    opacity: 1;
+}
+
+.sidemenu-avatar-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.sidemenu-avatar-role {
+    font-size: 9px;
+    color: var(--color-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Tooltip for collapsed state */
+.sidemenu-item[title]:not(.sidemenu.expanded *) {
+    position: relative;
+}
