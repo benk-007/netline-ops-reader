@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { DEFAULT_PROFILE } from "../../constants/ganttConstants";
 import "./ProfileManager.css";
-
+import { SERVICE_COLORS, SUBTYPE_OPTIONS } from "../../constants/ganttConstants";
+import { legs, dates } from "../../data/flightsData";
 const STORAGE_KEY = "ram_gantt_profiles";
-
+const allDeps = ["Tous", ...[...new Set(legs.map(l => l.dep))].sort()];
+const allArrs = ["Tous", ...[...new Set(legs.map(l => l.arr))].sort()];
+const allServices = ["Tous", ...Object.keys(SERVICE_COLORS)];
+const allDates = ["Toutes dates", ...dates];
+const allSubtypes = SUBTYPE_OPTIONS;
 function loadProfiles() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -171,30 +176,77 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                             {/* Manual filter selection */}
                             <div className="pm-section-label" style={{ marginTop: 20 }}>Détails du profil</div>
                             <div className="pm-filter-editor">
+
                                 <div className="pm-editor-row">
                                     <label>Date</label>
-                                    <input type="text" value={profileFilters.fDate} onChange={e => setProfileFilters({ ...profileFilters, fDate: e.target.value })} placeholder="Toutes dates" />
+                                    <select
+                                        value={profileFilters.fDate}
+                                        onChange={e => setProfileFilters({ ...profileFilters, fDate: e.target.value })}
+                                    >
+                                        {allDates.map(d => (
+                                            <option key={d} value={d}>{d}</option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div className="pm-editor-row">
                                     <label>DEP</label>
-                                    <input type="text" value={profileFilters.fDep} onChange={e => setProfileFilters({ ...profileFilters, fDep: e.target.value })} placeholder="Tous" />
+                                    <select
+                                        value={profileFilters.fDep}
+                                        onChange={e => setProfileFilters({ ...profileFilters, fDep: e.target.value })}
+                                    >
+                                        {allDeps.map(dep => (
+                                            <option key={dep} value={dep}>{dep}</option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div className="pm-editor-row">
                                     <label>ARR</label>
-                                    <input type="text" value={profileFilters.fArr} onChange={e => setProfileFilters({ ...profileFilters, fArr: e.target.value })} placeholder="Tous" />
+                                    <select
+                                        value={profileFilters.fArr}
+                                        onChange={e => setProfileFilters({ ...profileFilters, fArr: e.target.value })}
+                                    >
+                                        {allArrs.map(arr => (
+                                            <option key={arr} value={arr}>{arr}</option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div className="pm-editor-row">
                                     <label>Service</label>
-                                    <input type="text" value={profileFilters.fService} onChange={e => setProfileFilters({ ...profileFilters, fService: e.target.value })} placeholder="Tous" />
+                                    <select
+                                        value={profileFilters.fService}
+                                        onChange={e => setProfileFilters({ ...profileFilters, fService: e.target.value })}
+                                    >
+                                        {allServices.map(s => (
+                                            <option key={s} value={s}>{s}</option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div className="pm-editor-row">
                                     <label>Type Avion</label>
-                                    <input type="text" value={profileFilters.fSubtype} onChange={e => setProfileFilters({ ...profileFilters, fSubtype: e.target.value })} placeholder="Tous types" />
+                                    <select
+                                        value={profileFilters.fSubtype}
+                                        onChange={e => setProfileFilters({ ...profileFilters, fSubtype: e.target.value })}
+                                    >
+                                        {allSubtypes.map(type => (
+                                            <option key={type} value={type}>{type}</option>
+                                        ))}
+                                    </select>
                                 </div>
+
                                 <div className="pm-editor-row">
                                     <label>Vol N°</label>
-                                    <input type="text" value={profileFilters.fFlight} onChange={e => setProfileFilters({ ...profileFilters, fFlight: e.target.value })} placeholder="..." />
+                                    <input
+                                        type="text"
+                                        value={profileFilters.fFlight}
+                                        placeholder="AT101..."
+                                        onChange={e => setProfileFilters({ ...profileFilters, fFlight: e.target.value })}
+                                    />
                                 </div>
+
                             </div>
                         </div>
                     </div>

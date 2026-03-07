@@ -347,3 +347,19 @@
         opacity: 1;
     }
 }
+
+.pm-editor-row select {
+    flex: 1;
+    background: var(--filter-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    padding: 6px 10px;
+    font-size: 12px;
+    color: var(--color-text);
+    outline: none;
+    cursor: pointer;
+}
+
+.pm-editor-row select:focus {
+    border-color: rgba(200, 16, 46, 0.4);
+}
