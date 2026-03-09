@@ -1,9 +1,14 @@
+import { useState, useEffect } from "react";
 import "./GanttTopbar.css";
 
 export default function GanttTopbar({ isDark, utcMode, sidebarOpen, onToggleDark, onToggleUtc }) {
     const now = new Date();
     const dateStr = now.toLocaleDateString("fr-FR", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
-
+    const [time, setTime] = useState(new Date());
+    useEffect(() => {
+        const tick = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(tick);
+    }, []);
     return (
         <header className={`topbar ${sidebarOpen ? "sidebar-open" : ""}`}>
 
@@ -17,6 +22,10 @@ export default function GanttTopbar({ isDark, utcMode, sidebarOpen, onToggleDark
                 <div>
                     <div className="topbar-title">ROYAL AIR MAROC</div>
                     <div className="topbar-subtitle">GANTT · ROTATIONS AVIONS</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 19, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, color: "#fff", lineHeight: 1 }}>{time.toTimeString().slice(0, 8)}</div>
+                    <div style={{ fontSize: 9, color: "rgba(255,255,255,0.55)", letterSpacing: 1.5, marginTop: 2 }}>CMN · UTC+1</div>
                 </div>
             </div>
 

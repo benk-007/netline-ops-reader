@@ -124,10 +124,10 @@ function App() {
           )}
 
           {/* ── SCHEDULE PAGE ── */}
-          {currentPage === "schedule" && <SchedulePage />}
+          {currentPage === "schedule" && <SchedulePage isDark={isDark} />}
 
           {/* ── REPORTS PAGE ── */}
-          {currentPage === "reports" && <ReportsPage />}
+          {currentPage === "reports" && <ReportsPage isDark={isDark} />}
 
         </div>
       </div>

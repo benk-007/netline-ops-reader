@@ -83,19 +83,19 @@ export const legs = [
   ),
 
   new Leg(
-    "L14", "AT550", "CN-RGC", "B737-800", "PAX",
+    "L14", "AT550", "CN-RGCAF", "B737-800", "PAX",
     "CMN", "LIS", "07:00", "09:30", "08:00", "10:30",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
 
   new Leg(
-    "L15", "AT551", "CN-RGC", "B737-800", "PAX",
+    "L15", "AT551", "CN-RGCBBB", "B737-800", "PAX",
     "LIS", "CMN", "11:30", "19:00", "11:30", "14:00",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   )
   ,
   new Leg(
-    "L16", "AT551", "CN-RGCBB", "B737-800", "PAX",
+    "L16", "AT551", "CN-RGCBB", "B737-800", "Cargo",
     "LIS", "CMN", "08:30", "09:10", "11:30", "14:00",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
@@ -110,12 +110,12 @@ export const legs = [
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
   new Leg(
-    "L19", "AT551", "CN-RGC", "B737-800", "PAX",
-    "LIS", "CMN", "11:30", "14:00", "10:30", "13:30",
+    "L19", "AT551", "CN-RGC", "B737-800", "Cargo",
+    "LIS", "CMN", "07:30", "09:00", "10:30", "13:30",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
   new Leg(
-    "L20", "AT551", "CN-RGBC", "B737-800", "PAX",
+    "L20", "AT551", "CN-RGBC", "B737-800", "Ferry",
     "LIS", "CMN", "11:30", "12:30", "11:30", "14:00",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
@@ -126,7 +126,7 @@ export const legs = [
   ),
   new Leg(
     "L22", "AT551", "CN-RGCT", "B737-800", "CARGO",
-    "LIS", "CMN", "09:30", "13:00", "13:30", "18:00",
+    "LIS", "CMN", "09:30", "10:20", "13:30", "18:00",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
   new Leg(
@@ -176,7 +176,7 @@ export const legs = [
   ),
   new Leg(
     "L32", "AT551", "CN-RGC", "B737-800", "PAX",
-    "LIS", "CMN", "12:30", "14:00", "11:30", "14:00",
+    "LIS", "CMN", "12:30", "16:00", "11:30", "14:00",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
 ];

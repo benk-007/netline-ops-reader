@@ -32,17 +32,14 @@ function applyFilters(allLegs, filters) {
     filtered.map((leg, idx) => {
       // NetLine inspired content: compact but data-rich
       const content = `
-        <div class="leg-content">
-          <div class="leg-top-row">
-            <span class="leg-fn">${leg.fn}</span>
-            <span class="leg-route">${leg.dep}→${leg.arr}</span>
-          </div>
-          <div class="leg-bottom-row">
-            <span class="leg-times">${leg.depUtc.slice(0, 5)} - ${leg.arrUtc.slice(0, 5)}</span>
-            <span class="leg-subtype">${leg.subtype}</span>
-          </div>
-        </div>
-      `;
+<div class="leg-content">
+  <span class="leg-dep">${leg.dep} ${leg.depUtc.slice(0, 5)}</span>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <span class="leg-flight">${leg.fn}</span>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+  <span class="leg-arr">${leg.arrUtc.slice(0, 5)} ${leg.arr}</span>
+</div>
+`;
 
       return {
         id: `f-${idx}-${leg.id}`,
@@ -98,13 +95,16 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg }) {
       min: "2026-03-04T00:00:00",
       max: "2026-03-07T00:00:00",
       timeAxis: { scale: "hour", step: 1 },
-      margin: { item: { horizontal: 4, vertical: 6 }, axis: 4 },
+      margin: { item: { horizontal: -10, vertical: 6 }, axis: 4 },
       showCurrentTime: true,
     };
 
     const timeline = new Timeline(container.current, items, groups, options);
     timelineRef.current = timeline;
-
+    timeline.on("rangechanged", (props) => {
+      const level = computeZoomLevel(props);
+      setZoomLevel(level);
+    });
     timeline.on("itemover", (props) => {
       const item = items.get(props.item);
       if (!item) return;

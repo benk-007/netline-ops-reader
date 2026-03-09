@@ -1,140 +1,494 @@
+import { useState, useEffect } from "react";
 import { legs } from "../../data/flightsData";
-import { SERVICE_COLORS, STATE_COLORS } from "../../constants/ganttConstants";
-import "./DashboardPage.css";
 
-function StatCard({ label, value, sub, color, icon }) {
-    return (
-        <div className="stat-card" style={{ "--accent": color }}>
-            <div className="stat-icon">{icon}</div>
-            <div className="stat-body">
-                <div className="stat-value">{value}</div>
-                <div className="stat-label">{label}</div>
-                {sub && <div className="stat-sub">{sub}</div>}
-            </div>
-        </div>
-    );
+/*
+===========================================================
+MAP LEG MODEL → UI FLIGHT STRUCTURE
+===========================================================
+Your Gantt timeline uses the Leg class.
+
+We convert it into the structure used by the dashboard UI.
+*/
+function mapLegToFlight(l) {
+    return {
+        id: l.id,
+
+        // Flight number
+        fn_carrier: l.fn.slice(0, 2),
+        fn_number: l.fn.slice(2),
+
+        flight_type: l.service,
+
+        destination: l.arr,
+        provenance: l.dep,
+
+        // Detect direction relative to CMN hub
+        direction: l.dep === "CMN" ? "DEP" : "ARR",
+
+        operational_day: l.date,
+
+        aircraft_registration: l.reg,
+        aircraft_subtype: l.subtype,
+
+        scheduled_departure: l.depLocal,
+        scheduled_arrival: l.arrLocal,
+
+        block_time: "--",
+
+        // OOOI data (not available in mock Leg yet)
+        off_block: null,
+        airborne: null,
+        landing: null,
+        on_block: null,
+
+        delay_code_01: null,
+        delay_time_01: l.delay,
+        delay_code_02: null,
+        delay_code_03: null,
+
+        leg_state: l.state,
+        leg_type: l.service,
+
+        boarding_time: null,
+        closing_time: null,
+
+        fuel_status: l.fuel,
+        catering_status: l.catering,
+        cleaning_status: l.cleaning,
+        loadsheet_status: l.loadsheet
+    };
 }
 
-function ServiceRow({ service, count, color }) {
-    const total = legs.length;
-    const pct = Math.round((count / total) * 100);
+/*
+===========================================================
+CREATE FLIGHT DATASET FROM LEG OBJECTS
+===========================================================
+*/
+const flights = legs.map(mapLegToFlight);
+
+
+/*
+===========================================================
+DELAY CODES
+===========================================================
+*/
+const delayCodes = {
+    "15": "Embarquement tardif passagers",
+    "71": "Technique avion — Maintenance",
+    "89": "Météo — Conditions défavorables",
+    "93": "Restrictions ATC",
+};
+
+/*
+===========================================================
+STATE CONFIGURATION
+===========================================================
+*/
+const stateConfig = {
+    Arrived: { color: "#22c55e", bg: "rgba(34,197,94,0.12)", label: "Arrivé" },
+    Airborne: { color: "#3b82f6", bg: "rgba(59,130,246,0.12)", label: "En vol" },
+    Boarding: { color: "#f59e0b", bg: "rgba(245,158,11,0.12)", label: "Embarquement" },
+    Delayed: { color: "#ef4444", bg: "rgba(239,68,68,0.12)", label: "Retardé" },
+    Scheduled: { color: "#94a3b8", bg: "rgba(148,163,184,0.1)", label: "Planifié" },
+    Cancelled: { color: "#6b7280", bg: "rgba(107,114,128,0.12)", label: "Annulé" },
+};
+
+/*
+===========================================================
+SERVICE STATUS DOT COLOR
+===========================================================
+*/
+const statusDot = (val) => {
+    if (!val || val === "N/A" || val === "NS") return "#6b7280";
+    if (val === "Plan") return "#f59e0b";
+    return "#22c55e";
+};
+
+
+/*
+===========================================================
+MAIN APP
+===========================================================
+*/
+export default function App() {
+
+    const [selected, setSelected] = useState(null);
+    const [filter, setFilter] = useState("Tous");
+    const [time, setTime] = useState(new Date());
+
+    /*
+    ===============================================
+    LIVE CLOCK
+    ===============================================
+    */
+    useEffect(() => {
+        const tick = setInterval(() => setTime(new Date()), 1000);
+        return () => clearInterval(tick);
+    }, []);
+
+    /*
+    ===============================================
+    FILTER STATES
+    ===============================================
+    */
+    const states = [
+        "Tous",
+        "Scheduled",
+        "Boarding",
+        "Airborne",
+        "Arrived",
+        "Delayed",
+        "Cancelled"
+    ];
+
+    const filtered =
+        filter === "Tous"
+            ? flights
+            : flights.filter(f => f.leg_state === filter);
+
+
+    /*
+    ===============================================
+    TABLE GRID LAYOUT
+    ===============================================
+    */
+    const COLS = "90px 70px 150px 120px 140px 120px 80px 100px 100px";
+
+
     return (
-        <div className="svc-row">
-            <div className="svc-dot" style={{ background: color }} />
-            <span className="svc-name">{service}</span>
-            <div className="svc-bar-wrap">
-                <div className="svc-bar-fill" style={{ width: `${pct}%`, background: color }} />
-            </div>
-            <span className="svc-count">{count}</span>
-        </div>
-    );
-}
 
-export default function DashboardPage() {
-    const total = legs.length;
-    const delayed = legs.filter(l => l.delay > 0).length;
-    const onTime = total - delayed;
-    const services = Object.entries(
-        legs.reduce((acc, l) => { acc[l.service] = (acc[l.service] || 0) + 1; return acc; }, {})
-    );
+        <div style={{
+            minHeight: "100vh",
+            background: "#080508",
+            color: "#f1f5f9",
+            fontFamily: "'DM Sans', system-ui, sans-serif"
+        }}>
 
-    return (
-        <div className="dashboard-page page-fade">
-            <div className="dashboard-header">
-                <div>
-                    <h1 className="dash-title">Dashboard Opérationnel</h1>
-                    <p className="dash-sub">Royal Air Maroc · Vue d'ensemble des rotations</p>
+            {/* TOPBAR */}
+
+            <div style={{
+                background: "linear-gradient(90deg,#c8102e,#9b0c22)",
+                padding: "0 36px",
+                height: 54,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between"
+            }}>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+                    <span style={{
+                        fontSize: 25,
+                        letterSpacing: 4,
+                        color: "#fff"
+                    }}>
+                        ROYAL AIR MAROC
+                    </span>
+
+                    <div style={{ width: 1, height: 22, background: "rgba(255,255,255,0.2)" }} />
+
+                    <span style={{
+                        fontSize: 10,
+                        letterSpacing: 2.5,
+                        color: "rgba(255,255,255,0.65)"
+                    }}>
+                        Chef d'Escale
+                    </span>
                 </div>
-                <div className="dash-date-badge">
-                    <span>2026-03-05</span>
-                    <span className="live-dot" />
-                    <span>LIVE</span>
-                </div>
-            </div>
 
-            {/* KPI Cards */}
-            <div className="kpi-grid">
-                <StatCard
-                    label="Vols Totaux"
-                    value={total}
-                    sub="Aujourd'hui"
-                    color="var(--ram-red)"
-                    icon={<PlaneIcon />}
-                />
-                <StatCard
-                    label="À l'heure"
-                    value={onTime}
-                    sub={`${Math.round((onTime / total) * 100)}% ponctualité`}
-                    color="var(--state-arrived)"
-                    icon={<CheckIcon />}
-                />
-                <StatCard
-                    label="Retardés"
-                    value={delayed}
-                    sub={delayed > 0 ? "Attention requise" : "Aucun retard"}
-                    color={delayed > 0 ? "var(--state-delayed)" : "var(--state-arrived)"}
-                    icon={<AlertIcon />}
-                />
-                <StatCard
-                    label="Appareils"
-                    value={[...new Set(legs.map(l => l.reg))].length}
-                    sub="Enregistrements actifs"
-                    color="var(--svc-cargo-bar)"
-                    icon={<AircraftIcon />}
-                />
-            </div>
-
-            {/* Service breakdown */}
-            <div className="dash-section">
-                <div className="dash-section-title">Répartition par service</div>
-                <div className="svc-list">
-                    {services.map(([svc, count]) => (
-                        <ServiceRow
-                            key={svc}
-                            service={svc}
-                            count={count}
-                            color={SERVICE_COLORS[svc]?.bar || "#64748b"}
-                        />
-                    ))}
-                </div>
-            </div>
-
-            {/* Fleet table */}
-            <div className="dash-section">
-                <div className="dash-section-title">Flotte active</div>
-                <div className="fleet-table">
-                    <div className="fleet-header">
-                        <span>Immat.</span><span>Type</span><span>Vols</span><span>Statut</span>
+                <div style={{ textAlign: "right" }}>
+                    <div style={{
+                        fontSize: 19,
+                        fontWeight: 700
+                    }}>
+                        {time.toTimeString().slice(0, 8)}
                     </div>
-                    {[...new Set(legs.map(l => l.reg))].map(reg => {
-                        const regLegs = legs.filter(l => l.reg === reg);
-                        return (
-                            <div key={reg} className="fleet-row">
-                                <span className="fleet-reg">{reg}</span>
-                                <span>{regLegs[0].subtype}</span>
-                                <span>{regLegs.length}</span>
-                                <span className="fleet-state" style={{ color: STATE_COLORS[regLegs[0].state] }}>
-                                    {regLegs[0].state}
-                                </span>
-                            </div>
-                        );
-                    })}
+
+                    <div style={{
+                        fontSize: 9,
+                        color: "rgba(255,255,255,0.55)"
+                    }}>
+                        CMN · UTC+1
+                    </div>
                 </div>
+
             </div>
+
+
+            <div style={{
+                maxWidth: 1380,
+                margin: "0 auto",
+                padding: "28px 36px"
+            }}>
+
+
+                {/* FILTER BUTTONS */}
+
+                <div style={{
+                    display: "flex",
+                    gap: 7,
+                    marginBottom: 16,
+                    flexWrap: "wrap"
+                }}>
+
+                    {states.map(s => {
+
+                        const active = filter === s;
+
+                        return (
+
+                            <button
+                                key={s}
+                                onClick={() => setFilter(s)}
+                                style={{
+                                    background: active ? "rgba(200,16,46,0.14)" : "transparent",
+                                    border: `1px solid ${active ? "rgba(200,16,46,0.42)" : "rgba(255,255,255,0.08)"}`,
+                                    borderRadius: 7,
+                                    padding: "6px 14px",
+                                    color: active ? "#e05f72" : "#64748b",
+                                    fontSize: 10,
+                                    fontWeight: 600,
+                                    letterSpacing: 1,
+                                    cursor: "pointer"
+                                }}
+                            >
+                                {s === "Tous" ? `Tous (${flights.length})` : s}
+                            </button>
+
+                        );
+
+                    })}
+
+                </div>
+
+
+
+                {/* TABLE HEADER */}
+
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: COLS,
+                    padding: "6px 18px",
+                    color: "#334155",
+                    fontSize: 9,
+                    letterSpacing: 1.5,
+                    textTransform: "uppercase",
+                    fontWeight: 700
+                }}>
+                    {[
+                        "Vol",
+                        "Dir.",
+                        "Route",
+                        "Avion",
+                        "Planifié",
+                        "Réel OOOI",
+                        "Retard",
+                        "Statut",
+                        "Services"
+                    ].map(h => <span key={h}>{h}</span>)}
+                </div>
+
+
+
+                {/* FLIGHT ROWS */}
+
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 5
+                }}>
+
+                    {filtered.map(f => {
+
+                        const state = stateConfig[f.leg_state] || stateConfig.Scheduled;
+
+                        return (
+
+                            <div
+                                key={f.id}
+                                onClick={() => setSelected(f)}
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: COLS,
+                                    padding: "14px 18px",
+                                    background: "rgba(255,255,255,0.025)",
+                                    border: "1px solid rgba(255,255,255,0.055)",
+                                    borderRadius: 9,
+                                    alignItems: "center",
+                                    cursor: "pointer"
+                                }}
+                            >
+
+                                {/* Flight number */}
+
+                                <div style={{
+                                    fontWeight: 700,
+                                    fontSize: 14
+                                }}>
+                                    {f.fn_carrier}{f.fn_number}
+                                </div>
+
+
+                                {/* Direction */}
+
+                                <div style={{
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    letterSpacing: 1.5,
+                                    color: f.direction === "DEP" ? "#c8102e" : "#3b82f6"
+                                }}>
+                                    {f.direction}
+                                </div>
+
+
+                                {/* Route */}
+
+                                <div>
+                                    <div style={{
+                                        fontSize: 13,
+                                        fontWeight: 600
+                                    }}>
+                                        {f.direction === "DEP" ? f.destination : f.provenance}
+                                    </div>
+
+                                    <div style={{
+                                        color: "#64748b",
+                                        fontSize: 10
+                                    }}>
+                                        {f.flight_type}
+                                    </div>
+                                </div>
+
+
+                                {/* Aircraft */}
+
+                                <div>
+
+                                    <div style={{
+                                        fontSize: 11
+                                    }}>
+                                        {f.aircraft_registration}
+                                    </div>
+
+                                    <div style={{
+                                        fontSize: 10,
+                                        color: "#64748b"
+                                    }}>
+                                        {f.aircraft_subtype}
+                                    </div>
+
+                                </div>
+
+
+                                {/* Schedule */}
+
+                                <div>
+                                    <div style={{
+                                        fontSize: 12,
+                                        fontFamily: "monospace"
+                                    }}>
+                                        {f.scheduled_departure} → {f.scheduled_arrival}
+                                    </div>
+
+                                    <div style={{
+                                        fontSize: 10,
+                                        color: "#64748b"
+                                    }}>
+                                        Block {f.block_time}
+                                    </div>
+                                </div>
+
+
+                                {/* OOOI */}
+
+                                <div style={{
+                                    fontSize: 11,
+                                    fontFamily: "monospace"
+                                }}>
+                                    {f.off_block || "--:--"} / {f.on_block || "--:--"}
+                                </div>
+
+
+                                {/* Delay */}
+
+                                <div style={{
+                                    color: f.delay_time_01 > 0 ? "#ef4444" : "#22c55e",
+                                    fontSize: 13,
+                                    fontWeight: 700,
+                                    fontFamily: "monospace"
+                                }}>
+                                    {f.delay_time_01 > 0 ? `+${f.delay_time_01}m` : "—"}
+                                </div>
+
+
+                                {/* Status */}
+
+                                <div>
+
+                                    <span style={{
+                                        background: state.bg,
+                                        color: state.color,
+                                        border: `1px solid ${state.color}30`,
+                                        borderRadius: 5,
+                                        padding: "3px 9px",
+                                        fontSize: 9,
+                                        fontWeight: 700
+                                    }}>
+                                        {state.label}
+                                    </span>
+
+                                </div>
+
+
+                                {/* Services */}
+
+                                <div style={{
+                                    display: "flex",
+                                    gap: 10
+                                }}>
+
+                                    {[
+                                        ["F", f.fuel_status],
+                                        ["C", f.catering_status],
+                                        ["N", f.cleaning_status],
+                                        ["L", f.loadsheet_status]
+                                    ].map(([abbr, s]) => (
+
+                                        <div key={abbr} style={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            alignItems: "center"
+                                        }}>
+
+                                            <div style={{
+                                                width: 7,
+                                                height: 7,
+                                                borderRadius: "50%",
+                                                background: statusDot(s)
+                                            }} />
+
+                                            <span style={{
+                                                fontSize: 8,
+                                                color: "#475569"
+                                            }}>
+                                                {abbr}
+                                            </span>
+
+                                        </div>
+
+                                    ))}
+
+                                </div>
+
+                            </div>
+
+                        );
+
+                    })}
+
+                </div>
+
+            </div>
+
         </div>
     );
-}
-
-/* ── Inline SVG icons ── */
-function PlaneIcon() {
-    return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2c-.5.1-.9.5-.7 1.1l2 4.5c.2.4.6.6 1 .6H8l-1 2.5c-.1.3 0 .7.3.9l2 1.4c.3.2.7.2 1-.1l1.5-1.5 4.5 2c.6.2 1-.2 1.1-.7z" /></svg>;
-}
-function CheckIcon() {
-    return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>;
-}
-function AlertIcon() {
-    return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="10.29 3.86 1.82 18 22.18 18" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>;
-}
-function AircraftIcon() {
-    return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" /></svg>;
 }

@@ -1,0 +1,249 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.app-root {
+    min-height: 100vh;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    transition: background 0.3s, color 0.3s;
+}
+
+/* TOPBAR */
+
+.topbar {
+    background: linear-gradient(90deg, #c8102e, #9b0c22);
+    padding: 0 36px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 40px rgba(200, 16, 46, 0.35);
+}
+
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.brand {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 25px;
+    letter-spacing: 4px;
+    color: #fff;
+}
+
+.divider {
+    width: 1px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.role {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: rgba(255, 255, 255, 0.65);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+}
+
+.clock {
+    text-align: right;
+}
+
+.time {
+    font-size: 19px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    color: #fff;
+}
+
+.timezone {
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.55);
+    letter-spacing: 1.5px;
+    margin-top: 2px;
+}
+
+/* BUTTON */
+
+.theme-btn {
+    background: rgba(255, 255, 255, 0.13);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #fff;
+}
+
+/* CONTAINER */
+
+.container {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 28px 36px;
+}
+
+/* FILTERS */
+
+.filters {
+    display: flex;
+    gap: 7px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.filter {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 7px;
+    padding: 6px 14px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.filter.active {
+    background: rgba(200, 16, 46, 0.14);
+    border-color: rgba(200, 16, 46, 0.42);
+    color: #e05f72;
+}
+
+/* TABLE */
+
+.table-header {
+    display: grid;
+    padding: 6px 18px;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #a1a1aa;
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.row {
+    display: grid;
+    padding: 14px 18px;
+    border-radius: 9px;
+    align-items: center;
+    cursor: pointer;
+    transition: all .16s ease;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.row:hover {
+    background: rgba(200, 16, 46, 0.07);
+    border-color: rgba(200, 16, 46, 0.25);
+}
+
+/* TEXT */
+
+.flight-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-size: 14px;
+}
+
+.direction {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #c8102e;
+}
+
+.route {
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.type {
+    font-size: 10px;
+    color: #94a3b8;
+}
+
+.reg {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.subtype {
+    font-size: 10px;
+    color: #64748b;
+}
+
+.planned {
+    font-size: 12px;
+    font-family: monospace;
+}
+
+.actual {
+    font-size: 11px;
+    font-family: monospace;
+    color: #94a3b8;
+}
+
+.delay {
+    font-size: 13px;
+    font-weight: 700;
+    font-family: monospace;
+}
+
+/* STATUS */
+
+.state {
+    border-radius: 5px;
+    padding: 3px 9px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* SERVICES */
+
+.services {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.service {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 8px;
+    color: #a1a1aa;
+}
+
+.dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
