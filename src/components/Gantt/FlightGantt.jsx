@@ -7,7 +7,29 @@ import { SERVICE_COLORS } from "../../constants/ganttConstants";
 import "./gantt.css";
 import "./gantt-legend.css";
 import FlightCard from "../FlightCard/FlightCard";
+function buildLegTemplate(leg) {
 
+  const container = document.createElement("div")
+  container.className = "leg-content"
+
+  const left = document.createElement("span")
+  left.className = "leg-dep"
+  left.textContent = `${leg.dep} ${leg.depUtc.slice(0, 5)}`
+
+  const center = document.createElement("span")
+  center.className = "leg-flight"
+  center.textContent = leg.fn
+
+  const right = document.createElement("span")
+  right.className = "leg-arr"
+  right.textContent = `${leg.arrUtc.slice(0, 5)} ${leg.arr}`
+
+  container.appendChild(left)
+  container.appendChild(center)
+  container.appendChild(right)
+
+  return container
+}
 /** Apply active filters to legs and return filtered groups + items DataSets */
 function applyFilters(allLegs, filters) {
   const { fDate, fService, fDep, fArr, fFlight, fSubtype } = filters || {};
@@ -31,20 +53,12 @@ function applyFilters(allLegs, filters) {
   const items = new DataSet(
     filtered.map((leg, idx) => {
       // NetLine inspired content: compact but data-rich
-      const content = `
-<div class="leg-content">
-  <span class="leg-dep">${leg.dep} ${leg.depUtc.slice(0, 5)}</span>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <span class="leg-flight">${leg.fn}</span>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <span class="leg-arr">${leg.arrUtc.slice(0, 5)} ${leg.arr}</span>
-</div>
-`;
+
 
       return {
         id: `f-${idx}-${leg.id}`,
         group: leg.reg,
-        content: content,
+        content: buildLegTemplate(leg),
         start: `${leg.date}T${leg.depUtc}:00`,
         end: `${leg.date}T${leg.arrUtc}:00`,
         className: `svc-${leg.service}`,
