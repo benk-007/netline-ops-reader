@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react'
 import { Timeline } from 'vis-timeline/standalone'
 import { DataSet } from 'vis-data'
 import { generateMockData, SERVICE_COLOR, SERVICE_LABEL, ALL_AIRPORTS } from '../data/FlightData'
+import { useAppConfig } from '../contexts/AppConfigContext'
 import GanttFilterBar from './GanttFilterBar'
 import FlightDetailOverlay from './FlightDetailOverlay'
 import './GanttTimeline.scss'
@@ -15,26 +16,8 @@ function fmt(date) {
   })
 }
 
-// ── Colour scheme ─────────────────────────────────────────────────────────
-// Scheduled bar (top in dual / only bar when on-time)
-const DARK_BLUE = '#1D4ED8'
-
-// Bottom (actual) bar colour per service type for delayed flights
-const ACTUAL_COLOR = {
-  J: '#A0AEC0',  // grey clair
-  F: '#FCA5A5',  // red clair
-  P: '#166534',  // green foncé
-  O: '#4ADE80',  // green clair
-}
-
-// Service types that are always a single bar (no sched/actual distinction)
-const SINGLE_COLOR = {
-  S: '#38BDF8',  // bleu ciel (shuttle)
-  Z: '#FEF08A',  // yellow clair (maintenance / VJ)
-}
-
-// Light backgrounds need dark text
-const LIGHT_BG = new Set(['#A0AEC0', '#FCA5A5', '#4ADE80', '#38BDF8', '#FEF08A'])
+// Colours that are light enough to need dark text (kept as defaults for reference)
+const LIGHT_BG_DEFAULTS = new Set(['#A0AEC0', '#FCA5A5', '#4ADE80', '#38BDF8', '#FEF08A'])
 
 // ── 3-column bar label: {origin depTime} | {flightNo} | {arrTime dest} ──
 function makeBarLabel(origin, depTime, flightNo, arrTime, dest, dark = false) {
@@ -53,10 +36,23 @@ function makeBarLabel(origin, depTime, flightNo, arrTime, dest, dark = false) {
   return w
 }
 
+// ── Luminance check: should text be dark? ────────────────────────────────
+function isLight(hex) {
+  const c = hex.replace('#', '')
+  const r = parseInt(c.slice(0, 2), 16)
+  const g = parseInt(c.slice(2, 4), 16)
+  const b = parseInt(c.slice(4, 6), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 160
+}
+
 // ── Build flight pill DOM element ─────────────────────────────────────────
-// vis-timeline 7.x sanitises HTML strings (strips class + style), so we
-// always return an HTMLElement — elements bypass the sanitiser.
-function buildItemTemplate(f) {
+// vis-timeline 7.x sanitises HTML strings, so we always return HTMLElement.
+// colors = { scheduled, J, F, P, O, S, Z } from AppConfigContext
+function buildItemTemplate(f, colors) {
+  const DARK_BLUE   = colors.scheduled
+  const ACTUAL_COLOR = { J: colors.J, F: colors.F, P: colors.P, O: colors.O }
+  const SINGLE_COLOR = { S: colors.S, Z: colors.Z }
+
   const outer = document.createElement('div')
   outer.className = 'fp-outer'
   const pill = document.createElement('div')
@@ -67,7 +63,7 @@ function buildItemTemplate(f) {
     const bar = document.createElement('div')
     bar.className = 'fp-single'
     bar.style.background = bg
-    bar.appendChild(makeBarLabel(f.origin, fmt(f.estStart), label, fmt(f.estEnd), f.destination, LIGHT_BG.has(bg)))
+    bar.appendChild(makeBarLabel(f.origin, fmt(f.estStart), label, fmt(f.estEnd), f.destination, isLight(bg)))
     pill.appendChild(bar)
   }
 
@@ -83,15 +79,13 @@ function buildItemTemplate(f) {
   const actEndMs   = new Date(f.actEnd).getTime()
   const sameTime   = estStartMs === actStartMs && estEndMs === actEndMs
 
-  // ── On-time: single dark-blue bar (top position) ─────────────────────
+  // ── On-time: single scheduled-colour bar (top position) ──────────────
   if (sameTime) {
     mkSingle(DARK_BLUE, f.flightNumber)
     return outer
   }
 
   // ── Delayed: dual bar ────────────────────────────────────────────────
-  // Top bar  = scheduled (dark blue)
-  // Bottom bar = actual   (service-type colour)
   const actBg = ACTUAL_COLOR[f.serviceType] ?? SERVICE_COLOR[f.serviceType] ?? SERVICE_COLOR.default
   pill.classList.add('fp-dual')
 
@@ -103,13 +97,13 @@ function buildItemTemplate(f) {
   barEst.className = 'bar-est'
   barEst.style.cssText =
     `background:${DARK_BLUE};left:${pct(estStartMs)}%;width:${pct(estEndMs) - pct(estStartMs)}%`
-  barEst.appendChild(makeBarLabel(f.origin, fmt(f.estStart), f.flightNumber, fmt(f.estEnd), f.destination, false))
+  barEst.appendChild(makeBarLabel(f.origin, fmt(f.estStart), f.flightNumber, fmt(f.estEnd), f.destination, isLight(DARK_BLUE)))
 
   const barAct = document.createElement('div')
   barAct.className = 'bar-act'
   barAct.style.cssText =
     `background:${actBg};left:${pct(actStartMs)}%;width:${pct(actEndMs) - pct(actStartMs)}%`
-  barAct.appendChild(makeBarLabel(f.origin, fmt(f.actStart), f.flightNumber, fmt(f.actEnd), f.destination, LIGHT_BG.has(actBg)))
+  barAct.appendChild(makeBarLabel(f.origin, fmt(f.actStart), f.flightNumber, fmt(f.actEnd), f.destination, isLight(actBg)))
 
   pill.appendChild(barEst)
   pill.appendChild(barAct)
@@ -181,6 +175,7 @@ function applyFilters(flights, filters) {
 
 // ── GanttTimeline ─────────────────────────────────────────
 export default function GanttTimeline() {
+  const { colors } = useAppConfig()
   const containerRef = useRef(null)
   const timelineRef  = useRef(null)
   const itemsDS      = useRef(null)
@@ -209,13 +204,13 @@ export default function GanttTimeline() {
       start:   f.start,
       end:     f.end,
       type:    'range',
-      content: buildItemTemplate(f),
+      content: buildItemTemplate(f, colors),
       title:   buildTooltip(f),
       _flight: f,
     }))
     itemsDS.current.clear()
     itemsDS.current.add(items)
-  }, [])
+  }, [colors])
 
   // ── Init timeline (once) ──────────────────────────────
   useEffect(() => {
@@ -331,16 +326,16 @@ export default function GanttTimeline() {
       <div className="gantt-legend">
         <div className="legend-items">
           <span className="leg-item">
-            <span className="leg-swatch" style={{ background: '#1D4ED8' }} />Scheduled / On-time
+            <span className="leg-swatch" style={{ background: colors.scheduled }} />Scheduled / On-time
           </span>
           <span className="leg-sep" />
-          <span className="leg-item"><span className="leg-swatch" style={{ background: '#A0AEC0' }} />J actual</span>
-          <span className="leg-item"><span className="leg-swatch" style={{ background: '#FCA5A5' }} />F actual</span>
-          <span className="leg-item"><span className="leg-swatch" style={{ background: '#166534' }} />P actual</span>
-          <span className="leg-item"><span className="leg-swatch" style={{ background: '#4ADE80' }} />O actual</span>
+          <span className="leg-item"><span className="leg-swatch" style={{ background: colors.J }} />J actual</span>
+          <span className="leg-item"><span className="leg-swatch" style={{ background: colors.F }} />F actual</span>
+          <span className="leg-item"><span className="leg-swatch" style={{ background: colors.P }} />P actual</span>
+          <span className="leg-item"><span className="leg-swatch" style={{ background: colors.O }} />O actual</span>
           <span className="leg-sep" />
-          <span className="leg-item"><span className="leg-swatch" style={{ background: '#38BDF8' }} />S</span>
-          <span className="leg-item"><span className="leg-swatch" style={{ background: '#FEF08A', border: '1px solid #e5d000' }} />VJ</span>
+          <span className="leg-item"><span className="leg-swatch" style={{ background: colors.S }} />S</span>
+          <span className="leg-item"><span className="leg-swatch" style={{ background: colors.Z }} />VJ</span>
         </div>
       </div>
 

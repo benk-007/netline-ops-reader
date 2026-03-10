@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, RequireAuth, RequireRole, useAuth } from './auth/AuthContext'
+import { AppConfigProvider } from './contexts/AppConfigContext'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -20,9 +21,11 @@ function RoleRedirect() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <AppConfigProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </AppConfigProvider>
     </BrowserRouter>
   )
 }

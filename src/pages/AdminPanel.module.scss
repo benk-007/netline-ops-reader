@@ -35,6 +35,14 @@ $white:   #fff;
   color: $red;
 }
 
+.headerLogo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0.9;
+}
+
 .pageTitle {
   font-size: 18px;
   font-weight: 800;
@@ -275,7 +283,7 @@ $white:   #fff;
 .colorList {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 8px;
 }
 
 .colorRow {
@@ -289,6 +297,38 @@ $white:   #fff;
   height: 14px;
   border-radius: 3px;
   flex-shrink: 0;
+}
+
+// ── Color picker input ─────────────────────────────────────
+.colorPicker {
+  width: 32px;
+  height: 28px;
+  border: 1px solid $border;
+  border-radius: 5px;
+  padding: 2px;
+  cursor: pointer;
+  background: none;
+  flex-shrink: 0;
+
+  &::-webkit-color-swatch-wrapper { padding: 0; }
+  &::-webkit-color-swatch { border: none; border-radius: 3px; }
+}
+
+// ── Reset button ───────────────────────────────────────────
+.resetBtn {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $muted;
+  background: none;
+  border: 1px solid $border;
+  border-radius: 6px;
+  padding: 4px 10px;
+  cursor: pointer;
+  align-self: flex-start;
+  transition: color 0.12s, border-color 0.12s;
+
+  &:hover { color: $red; border-color: #fca5a5; }
 }
 
 .colorCode {

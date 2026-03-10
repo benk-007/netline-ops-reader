@@ -4,6 +4,7 @@ import {
   LogOut, MapPin, ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
+import { useAppConfig } from '../contexts/AppConfigContext'
 import ramLogo from '../assets/ram_logo.jpg'
 import styles from './Sidebar.module.scss'
 
@@ -27,6 +28,7 @@ const NAV_BY_ROLE = {
 
 export default function Sidebar() {
   const { user, logout } = useAuth()
+  const { colors } = useAppConfig()
   const navigate = useNavigate()
 
   const nav = NAV_BY_ROLE[user?.role] ?? NAV_BY_ROLE.CCO
@@ -37,7 +39,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={styles.sidebar} style={{ background: colors.sidebarBg }}>
       {/* Logo */}
       <div className={styles.logo}>
         <img src={ramLogo} alt="Royal Air Maroc" className={styles.logoIcon} />

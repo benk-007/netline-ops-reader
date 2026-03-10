@@ -5,6 +5,8 @@ import {
   Mail, Phone, Calendar, Clock,
 } from 'lucide-react'
 import { ALL_AIRPORTS, SERVICE_COLOR, SERVICE_LABEL } from '../data/FlightData'
+import { useAppConfig } from '../contexts/AppConfigContext'
+import ramLogo from '../assets/ram_logo.jpg'
 import styles from './AdminPanel.module.scss'
 
 // ── Mock users ────────────────────────────────────────────
@@ -152,6 +154,8 @@ function UserDetail({ user, onClose, onToggleActive }) {
 
 // ── AdminPanel ────────────────────────────────────────────
 export default function AdminPanel() {
+  const { colors, updateColor, resetColors } = useAppConfig()
+
   const [tab,         setTab]         = useState('users')
   const [users,       setUsers]       = useState(INITIAL_USERS)
   const [showModal,   setShowModal]   = useState(false)
@@ -186,6 +190,7 @@ export default function AdminPanel() {
             <p className={styles.pageSub}>User management and global configuration</p>
           </div>
         </div>
+        <img src={ramLogo} alt="Royal Air Maroc" className={styles.headerLogo} />
       </div>
 
       {/* Tabs */}
@@ -308,23 +313,77 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Service type colors */}
+            {/* Gantt bar colors */}
             <div className={styles.configCard}>
-              <h3 className={styles.configTitle}>Service Type Colors</h3>
+              <h3 className={styles.configTitle}>Gantt Bar Colors</h3>
               <p className={styles.configDesc}>
-                Current color mapping for Gantt bar visualization.
+                Live color mapping for each service type. Changes apply instantly to the Gantt.
               </p>
               <div className={styles.colorList}>
-                {Object.entries(SERVICE_LABEL).map(([code, label]) => (
-                  <div key={code} className={styles.colorRow}>
-                    <span
-                      className={styles.colorSwatch}
-                      style={{ background: SERVICE_COLOR[code] ?? SERVICE_COLOR.default }}
+                {/* Scheduled / on-time bar */}
+                <div className={styles.colorRow}>
+                  <input
+                    type="color"
+                    className={styles.colorPicker}
+                    value={colors.scheduled}
+                    onChange={e => updateColor('scheduled', e.target.value)}
+                  />
+                  <span className={styles.colorCode}>SCH</span>
+                  <span className={styles.colorLabel}>Scheduled / On-time</span>
+                </div>
+                {/* Per service-type actual bar colors */}
+                {[
+                  { key: 'J', label: SERVICE_LABEL.J ?? 'Business' },
+                  { key: 'F', label: SERVICE_LABEL.F ?? 'First' },
+                  { key: 'P', label: SERVICE_LABEL.P ?? 'Premium Economy' },
+                  { key: 'O', label: SERVICE_LABEL.O ?? 'Economy' },
+                  { key: 'S', label: SERVICE_LABEL.S ?? 'Shuttle' },
+                  { key: 'Z', label: SERVICE_LABEL.Z ?? 'Maintenance (VJ)' },
+                ].map(({ key, label }) => (
+                  <div key={key} className={styles.colorRow}>
+                    <input
+                      type="color"
+                      className={styles.colorPicker}
+                      value={colors[key]}
+                      onChange={e => updateColor(key, e.target.value)}
                     />
-                    <span className={styles.colorCode}>{code}</span>
+                    <span className={styles.colorCode}>{key}</span>
                     <span className={styles.colorLabel}>{label}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+
+            {/* UI Theme colors */}
+            <div className={styles.configCard}>
+              <h3 className={styles.configTitle}>UI Theme</h3>
+              <p className={styles.configDesc}>
+                Customize the sidebar and top bar background colors.
+              </p>
+              <div className={styles.colorList}>
+                <div className={styles.colorRow}>
+                  <input
+                    type="color"
+                    className={styles.colorPicker}
+                    value={colors.sidebarBg}
+                    onChange={e => updateColor('sidebarBg', e.target.value)}
+                  />
+                  <span className={styles.colorCode} style={{ width: 'auto' }}>Sidebar</span>
+                  <span className={styles.colorLabel}>Side navigation background</span>
+                </div>
+                <div className={styles.colorRow}>
+                  <input
+                    type="color"
+                    className={styles.colorPicker}
+                    value={colors.topbarBg}
+                    onChange={e => updateColor('topbarBg', e.target.value)}
+                  />
+                  <span className={styles.colorCode} style={{ width: 'auto' }}>Top bar</span>
+                  <span className={styles.colorLabel}>Top bar background</span>
+                </div>
+                <button className={styles.resetBtn} onClick={resetColors}>
+                  Reset to defaults
+                </button>
               </div>
             </div>
 
