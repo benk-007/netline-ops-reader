@@ -100,8 +100,9 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg }) {
       stack: true,
       editable: false,
       zoomable: true,
-      horizontalScroll: true,
-      verticalScroll: true,
+      visibleFrameTemplate: null,   // ← disable sticky frame
+      horizontalScroll: false,
+      verticalScroll: false,
       moveable: true,
       orientation: "top",
       start: "2026-03-05T05:30:00",

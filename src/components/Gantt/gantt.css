@@ -91,7 +91,7 @@
   font-size: 11px !important;
   font-weight: 700 !important;
   letter-spacing: 0.5px !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
   cursor: pointer !important;
   will-change: transform;
@@ -108,6 +108,7 @@
   height: 100% !important;
   width: 100% !important;
   padding: 0 !important;
+  transform: none !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }

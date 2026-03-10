@@ -57,9 +57,157 @@ class Items {
 }
 
 export const legs = [
+  new Leg(
+    "L33", "AT301", "CN-RHB", "B737-800", "PAX",
+    "CMN", "BCN", "06:00", "07:40", "07:00", "08:40",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
 
   new Leg(
-    "L10", "AT333", "CN-RGX", "B737-800", "PAX",
+    "L34", "AT302", "CN-RHB", "B737-800", "PAX",
+    "BCN", "CMN", "09:00", "10:40", "10:00", "11:40",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L35", "AT411", "CN-RHC", "B737-800", "PAX",
+    "CMN", "MAD", "07:10", "08:50", "08:10", "09:50",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L36", "AT412", "CN-RHC", "B737-800", "PAX",
+    "MAD", "CMN", "10:00", "11:40", "11:00", "12:40",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L37", "AT221", "CN-RHD", "B737-800", "Cargo",
+    "CMN", "DSS", "05:50", "09:20", "06:50", "10:20",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L38", "AT222", "CN-RHD", "B737-800", "Cargo",
+    "DSS", "CMN", "11:00", "14:30", "12:00", "15:30",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L39", "AT510", "CN-RHE", "B737-800", "Charter",
+    "CMN", "IST", "08:30", "13:00", "09:30", "14:00",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L40", "AT511", "CN-RHE", "B737-800", "Charter",
+    "IST", "CMN", "15:30", "20:00", "16:30", "21:00",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L41", "AT620", "CN-RHF", "B737-800", "PAX",
+    "CMN", "BRU", "07:00", "10:20", "08:00", "11:20",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L42", "AT621", "CN-RHF", "B737-800", "PAX",
+    "BRU", "CMN", "12:00", "15:20", "13:00", "16:20",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L43", "AT440", "CN-RHG", "B737-800", "Cargo",
+    "CMN", "ALG", "06:40", "08:00", "07:40", "09:00",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L44", "AT441", "CN-RHG", "B737-800", "Cargo",
+    "ALG", "CMN", "09:40", "11:00", "10:40", "12:00",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L45", "AT701", "CN-RHH", "B737-800", "PAX",
+    "CMN", "FCO", "06:30", "09:50", "07:30", "10:50",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L46", "AT702", "CN-RHH", "B737-800", "PAX",
+    "FCO", "CMN", "11:20", "14:40", "12:20", "15:40",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L47", "AT330", "CN-RHI", "B737-800", "PAX",
+    "CMN", "LHR", "09:00", "12:20", "10:00", "13:20",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L48", "AT331", "CN-RHI", "B737-800", "PAX",
+    "LHR", "CMN", "14:00", "17:20", "15:00", "18:20",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L49", "AT560", "CN-RHJ", "B737-800", "Ferry",
+    "CMN", "RBA", "18:30", "19:20", "19:30", "20:20",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L50", "AT561", "CN-RHJ", "B737-800", "PAX",
+    "RBA", "CMN", "21:00", "21:50", "22:00", "22:50",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L51", "AT880", "CN-RHK", "B737-800", "Cargo",
+    "CMN", "CAI", "04:50", "10:10", "05:50", "11:10",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L52", "AT881", "CN-RHK", "B737-800", "Cargo",
+    "CAI", "CMN", "12:20", "17:40", "13:20", "18:40",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L53", "AT410", "CN-RHL", "B737-800", "PAX",
+    "CMN", "BCN", "12:00", "13:40", "13:00", "14:40",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L54", "AT411", "CN-RHL", "B737-800", "PAX",
+    "BCN", "CMN", "15:10", "16:50", "16:10", "17:50",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L55", "AT650", "CN-RHM", "B737-800", "Charter",
+    "CMN", "ATH", "07:50", "12:20", "08:50", "13:20",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L56", "AT651", "CN-RHM", "B737-800", "Charter",
+    "ATH", "CMN", "14:30", "19:00", "15:30", "20:00",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+
+  new Leg(
+    "L57", "AT720", "CN-RHN", "B737-800", "PAX",
+    "CMN", "FRA", "10:10", "13:40", "11:10", "14:40",
+    "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
+  ),
+  new Leg(
+    "L58", "AT333", "CN-RGX", "B737-800", "PAX",
     "MAD", "CMN", "14:15", "16:00", "15:15", "17:00",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
