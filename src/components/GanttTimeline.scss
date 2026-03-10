@@ -153,9 +153,24 @@ $white:   #fff;
 // Setting it to display:block + width:100% makes it fill the .vis-item width
 // (which vis-timeline sets from the time span), while keeping it in normal flow
 // so vis-timeline can still measure item height for row stacking.
+//
+// When an item is partially off-screen to the LEFT (user scrolls right),
+// vis-timeline sets `content.style.transform = translateX(+Xpx)` to slide the
+// label into the visible area. This shifts our bars rightward, making them appear
+// "erased" or "moved". We override it to keep bars anchored to their time position.
+// Left-side clipping is then handled naturally by the panel's own overflow:hidden.
 .vis-item-content {
   padding: 0 !important;
   display: block !important;
+  width: 100% !important;
+  transform: none !important;
+}
+
+// vis-timeline also sets inline left+width on .vis-item-overflow to match the
+// visible portion — override so it always spans the full item span, keeping
+// percentage-based dual-bar positions correct.
+.vis-item.vis-range .vis-item-overflow {
+  left: 0 !important;
   width: 100% !important;
 }
 

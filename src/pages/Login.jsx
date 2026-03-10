@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, roleHome } from '../auth/AuthContext'
-import { LogIn, Eye, EyeOff, Plane } from 'lucide-react'
+import { LogIn, Eye, EyeOff } from 'lucide-react'
 import { ALL_AIRPORTS } from '../data/FlightData'
+import ramLogo from '../assets/ram_logo.jpg'
 import styles from './Login.module.scss'
 
 const ROLES = [
@@ -58,7 +59,7 @@ export default function Login() {
       <div className={styles.heroPanel}>
         <div className={styles.heroContent}>
           <div className={styles.heroLogo}>
-            <Plane size={32} />
+            <img src={ramLogo} alt="Royal Air Maroc" className={styles.heroLogoImg} />
           </div>
           <h1 className={styles.heroTitle}>NetLine Ops Reader</h1>
           <p className={styles.heroSub}>
@@ -78,7 +79,7 @@ export default function Login() {
       <div className={styles.formPanel}>
         <form className={styles.card} onSubmit={handleSubmit}>
           <div className={styles.cardHeader}>
-            <div className={styles.cardLogo}><span>RAM</span></div>
+            <div className={styles.cardLogo}><img src={ramLogo} alt="RAM" className={styles.cardLogoImg} /></div>
             <h2 className={styles.cardTitle}>Welcome back</h2>
             <p className={styles.cardSub}>Sign in to your OCC account</p>
           </div>

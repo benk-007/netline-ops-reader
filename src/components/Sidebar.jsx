@@ -4,7 +4,7 @@ import {
   LogOut, MapPin, ShieldCheck,
 } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
-import ramLogo from '../assets/ram-logo.svg'
+import ramLogo from '../assets/ram_logo.jpg'
 import styles from './Sidebar.module.scss'
 
 const NAV_BY_ROLE = {
