@@ -1,3 +1,61 @@
+/* ─── Dark mode ─────────────────────────────────────────────────────────
+   Applied via data-dark="1" on <html> by Settings.jsx.
+   Overrides key background / text colours for a functional dark theme.
+────────────────────────────────────────────────────────────────────── */
+:root[data-dark="1"] {
+  color-scheme: dark;
+}
+
+[data-dark="1"] body {
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
+/* Main shell */
+[data-dark="1"] .main-col     { background: #0f172a; }
+[data-dark="1"] .content-area { background: #0f172a; }
+
+/* Generic white surfaces → dark card colour */
+[data-dark="1"] .gantt-wrapper  { background: #1e293b; }
+[data-dark="1"] .vis-panel.vis-background { background: #1e293b !important; }
+[data-dark="1"] .vis-labelset .vis-label  { background: #1e293b !important; color: #f1f5f9 !important; border-bottom-color: #334155 !important; }
+[data-dark="1"] .vis-panel.vis-center,
+[data-dark="1"] .vis-panel.vis-left,
+[data-dark="1"] .vis-panel.vis-top,
+[data-dark="1"] .vis-panel.vis-bottom { border-color: #334155 !important; }
+[data-dark="1"] .vis-time-axis .vis-text        { color: #94a3b8 !important; }
+[data-dark="1"] .vis-time-axis .vis-text.vis-major { color: #e2e8f0 !important; }
+
+/* Pages with white backgrounds */
+[data-dark="1"] [class*="page"]    { background: #0f172a !important; }
+[data-dark="1"] [class*="pageHeader"]  { background: #1e293b !important; border-bottom-color: #334155 !important; }
+[data-dark="1"] [class*="pageTitle"]   { color: #f1f5f9 !important; }
+[data-dark="1"] [class*="pageSub"]     { color: #64748b !important; }
+
+/* Cards / search panels */
+[data-dark="1"] [class*="searchCard"],
+[data-dark="1"] [class*="card"],
+[data-dark="1"] [class*="section"],
+[data-dark="1"] [class*="container"] { background: #1e293b !important; border-color: #334155 !important; }
+
+/* Inputs / selects */
+[data-dark="1"] input,
+[data-dark="1"] select,
+[data-dark="1"] [class*="formInput"]  { background: #0f172a !important; color: #f1f5f9 !important; border-color: #334155 !important; }
+
+/* Table */
+[data-dark="1"] [class*="tableWrap"] { background: #1e293b !important; border-color: #334155 !important; }
+[data-dark="1"] [class*="table"] th  { background: #0f172a !important; color: #64748b !important; border-color: #334155 !important; }
+[data-dark="1"] [class*="table"] td  { color: #e2e8f0 !important; border-color: #1e293b !important; }
+
+/* Settings rows */
+[data-dark="1"] [class*="rowLabel"] { color: #f1f5f9 !important; }
+[data-dark="1"] [class*="rowDesc"]  { color: #64748b !important; }
+[data-dark="1"] [class*="container"] [class*="header"] h1 { color: #f1f5f9 !important; }
+
+/* Legend */
+[data-dark="1"] .gantt-legend { background: #1e293b !important; border-bottom-color: #334155 !important; }
+
 /* App Shell layout */
 .app-shell {
   display: flex;

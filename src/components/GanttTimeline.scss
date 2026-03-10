@@ -1,0 +1,426 @@
+// ════════════════════════════════════════════════════════
+//  GanttTimeline.scss  –  vis-timeline overrides + flight pills
+// ════════════════════════════════════════════════════════
+
+@import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
+
+// ── Variables ─────────────────────────────────────────────
+$red:     #D71920;
+$navy:    #1e293b;
+$slate:   #64748b;
+$muted:   #94a3b8;
+$border:  #e2e8f0;
+$surface: #f8fafc;
+$white:   #fff;
+
+// ── Gantt wrapper layout ──────────────────────────────────
+.gantt-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: #F0F2F5;
+  position: relative;
+}
+
+.gantt-canvas {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+// ── Legend bar ────────────────────────────────────────────
+.gantt-legend {
+  background: $white;
+  border-bottom: 1px solid $border;
+  padding: 5px 16px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.legend-items {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.leg-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: $slate;
+  font-weight: 500;
+}
+
+.leg-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.leg-swatch {
+  width: 16px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.leg-sep {
+  width: 1px;
+  height: 12px;
+  background: $border;
+}
+
+// ── Footer navigation ─────────────────────────────────────
+.gantt-footer {
+  background: $navy;
+  padding: 7px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.gantt-window-label {
+  font-size: 11px;
+  color: $muted;
+  font-weight: 500;
+}
+
+.nav-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.nav-btn {
+  background: #334155;
+  color: #cbd5e1;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: #475569;
+    color: $white;
+  }
+}
+
+.nav-now {
+  background: $red;
+  color: $white;
+
+  &:hover {
+    background: #b91419;
+  }
+}
+
+.zoom-btn {
+  padding: 5px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  min-width: 30px;
+}
+
+// ════════════════════════════════════════════════════════
+//  VIS-TIMELINE OVERRIDES
+// ════════════════════════════════════════════════════════
+
+// Reset vis item defaults — our pill controls everything
+.vis-item {
+  border: none !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+
+  &.vis-selected {
+    outline: 2px solid $red !important;
+    outline-offset: 1px !important;
+    z-index: 100 !important;
+  }
+}
+
+// vis-item-content is display:inline-block by default — its width collapses to 0
+// because the only child (.flight-pill) is position:absolute (out of normal flow).
+// Setting it to display:block + width:100% makes it fill the .vis-item width
+// (which vis-timeline sets from the time span), while keeping it in normal flow
+// so vis-timeline can still measure item height for row stacking.
+.vis-item-content {
+  padding: 0 !important;
+  display: block !important;
+  width: 100% !important;
+}
+
+.vis-timeline {
+  border: none !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+
+.vis-panel.vis-background {
+  background: #FAFAFA;
+}
+
+.vis-panel.vis-center,
+.vis-panel.vis-left,
+.vis-panel.vis-top,
+.vis-panel.vis-bottom {
+  border-color: $border !important;
+}
+
+// Time axis labels
+.vis-time-axis .vis-text {
+  font-size: 11px;
+  font-weight: 600;
+  color: $slate;
+
+  &.vis-major {
+    color: $navy;
+    font-weight: 700;
+  }
+}
+
+// Group labels (aircraft rows)
+.vis-labelset .vis-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: $navy;
+  border-bottom: 1px solid #f1f5f9 !important;
+  background: $white !important;
+  padding: 0 12px !important;
+  display: flex !important;
+  align-items: center !important;
+
+  .vis-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
+
+.group-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: $navy;
+  display: block;
+}
+
+.group-type {
+  font-size: 9px;
+  font-weight: 500;
+  color: $muted;
+  display: block;
+}
+
+// Current time marker
+.vis-current-time {
+  background: $red !important;
+  width: 2px !important;
+}
+
+// ════════════════════════════════════════════════════════
+//  FLIGHT PILL — Single / Dual / Maintenance
+// ════════════════════════════════════════════════════════
+
+// ── Normal-flow height anchor ─────────────────────────────
+// vis-timeline measures item height from .vis-item-content in normal flow.
+// .fp-outer provides that measurement; .flight-pill then fills it absolutely.
+.fp-outer {
+  position: relative;
+  height: 22px;
+  width: 100%;
+}
+
+// ── Flight pill — absolutely fills .fp-outer ─────────────
+.flight-pill {
+  position: absolute;
+  top: 0; bottom: 0; left: 0; right: 0;
+  border-radius: 4px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: filter 0.15s;
+
+  &:hover { filter: brightness(0.88); }
+}
+
+// ── Single bar: top half only — same height as one dual bar ──────────────
+// Sits at the top of the pill so it visually aligns with the scheduled bar.
+.fp-single {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+// ── Dual bar container ────────────────────────────────────
+// Each child bar is absolutely positioned so it spans its own timespan.
+// 0.5 px gap between top (scheduled/blue) and bottom (actual/service colour).
+.fp-dual {
+  position: absolute;
+  top: 0; bottom: 0; left: 0; right: 0;
+}
+
+.bar-est,
+.bar-act {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 3px;
+}
+
+.bar-est {
+  top: 0;
+  height: calc(50% - 0.25px);
+  border-radius: 3px 3px 0 0;
+}
+
+.bar-act {
+  bottom: 0;
+  height: calc(50% - 0.25px);
+  border-radius: 0 0 3px 3px;
+}
+
+// ── 3-column bar label: {origin time} | {flightNo} | {time dest} ──
+.bar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.bar-l,
+.bar-c,
+.bar-r {
+  font-size: 10px;
+  font-weight: 700;
+  color: $white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1;
+}
+
+.bar-l { flex-shrink: 0; }
+.bar-c { flex: 1; text-align: center; }
+.bar-r { flex-shrink: 0; }
+
+// Dark text override for yellow maintenance bar
+.bar-dark .bar-l,
+.bar-dark .bar-c,
+.bar-dark .bar-r {
+  color: rgba(0, 0, 0, 0.75);
+}
+
+// ════════════════════════════════════════════════════════
+//  TOOLTIP CARD
+// ════════════════════════════════════════════════════════
+
+.vis-tooltip {
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.tt-card {
+  background: $white;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
+  min-width: 240px;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.tt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px 10px 10px;
+  background: $surface;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tt-fno {
+  font-size: 15px;
+  font-weight: 800;
+  color: $navy;
+}
+
+.tt-badge {
+  font-size: 9px;
+  font-weight: 700;
+  color: $white;
+  padding: 2px 7px;
+  border-radius: 100px;
+  max-width: 120px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-body {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.tt-lbl {
+  font-size: 10px;
+  color: $muted;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.tt-val {
+  font-size: 11px;
+  font-weight: 700;
+  color: $navy;
+  text-align: right;
+}
+
+.tt-status {
+  margin-top: 4px;
+  border-top: 1px solid #f1f5f9;
+  padding-top: 6px;
+}
+
+.tt-delay {
+  font-size: 11px;
+  font-weight: 700;
+  color: $red;
+}
+
+.tt-ok {
+  font-size: 11px;
+  font-weight: 700;
+  color: #27AE60;
+}

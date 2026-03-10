@@ -1,17 +1,35 @@
 import { NavLink, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Activity, Settings, Plane, LogOut } from 'lucide-react'
+import {
+  LayoutDashboard, Activity, Settings,
+  LogOut, MapPin, ShieldCheck,
+} from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
-import styles from './Sidebar.module.css'
+import ramLogo from '../assets/ram-logo.svg'
+import styles from './Sidebar.module.scss'
 
-const NAV = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/status', icon: Activity, label: 'Flight Status' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
-]
+const NAV_BY_ROLE = {
+  CCO: [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Gantt Dashboard' },
+    { to: '/status',    icon: Activity,         label: 'Flight Status'   },
+    { to: '/settings',  icon: Settings,         label: 'Settings'        },
+  ],
+  Station: [
+    { to: '/station',  icon: MapPin,    label: 'Station View' },
+    { to: '/settings', icon: Settings,  label: 'Settings'     },
+  ],
+  Admin: [
+    { to: '/dashboard', icon: LayoutDashboard, label: 'Gantt Dashboard' },
+    { to: '/status',    icon: Activity,         label: 'Flight Status'   },
+    { to: '/admin',     icon: ShieldCheck,      label: 'Admin Panel'     },
+    { to: '/settings',  icon: Settings,         label: 'Settings'        },
+  ],
+}
 
 export default function Sidebar() {
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
+
+  const nav = NAV_BY_ROLE[user?.role] ?? NAV_BY_ROLE.CCO
 
   function handleLogout() {
     logout()
@@ -22,14 +40,19 @@ export default function Sidebar() {
     <aside className={styles.sidebar}>
       {/* Logo */}
       <div className={styles.logo}>
-        <div className={styles.logoIcon}>
-          <Plane size={20} />
-        </div>
+        <img src={ramLogo} alt="Royal Air Maroc" className={styles.logoIcon} />
+      </div>
+
+      {/* Role badge */}
+      <div className={styles.roleBadge} title={user?.role}>
+        {user?.role === 'Admin'   && <span>ADM</span>}
+        {user?.role === 'CCO'     && <span>CCO</span>}
+        {user?.role === 'Station' && <span>{user.airport || 'STN'}</span>}
       </div>
 
       {/* Nav */}
       <nav className={styles.nav}>
-        {NAV.map(({ to, icon: Icon, label }) => (
+        {nav.map(({ to, icon: Icon, label }) => (
           <NavLink
             key={to}
             to={to}
@@ -48,9 +71,8 @@ export default function Sidebar() {
         <button className={styles.logoutBtn} title="Log Out" onClick={handleLogout}>
           <LogOut size={16} />
         </button>
-        <div className={styles.ram}>RAM</div>
+        <img src={ramLogo} alt="RAM" className={styles.ramLogo} />
       </div>
     </aside>
   )
 }
-

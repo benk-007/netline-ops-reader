@@ -1,0 +1,264 @@
+$red:     #D71920;
+$navy:    #1e293b;
+$slate:   #64748b;
+$muted:   #94a3b8;
+$border:  #e2e8f0;
+$surface: #f8fafc;
+$white:   #fff;
+
+.overlay {
+  position: fixed;
+  bottom: 0;
+  left: 64px; // sidebar width
+  right: 0;
+  background: $white;
+  border-top: 2px solid $red;
+  box-shadow: 0 -6px 30px rgba(0, 0, 0, 0.14);
+  z-index: 900;
+  overflow-y: auto;
+  animation: slideUp 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.inner {
+  padding: 12px 24px 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// ── Header ────────────────────────────────────────────────
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.planeIcon {
+  flex-shrink: 0;
+}
+
+.flightNo {
+  font-size: 17px;
+  font-weight: 800;
+  color: $navy;
+  line-height: 1.1;
+}
+
+.route {
+  font-size: 11px;
+  color: $slate;
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sep {
+  color: $muted;
+}
+
+.badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 100px;
+}
+
+.green  { background: #dcfce7; color: #166534; }
+.orange { background: #ffedd5; color: #9a3412; }
+.red    { background: #fee2e2; color: #991b1b; }
+
+.closeBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+  background: $surface;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $muted;
+  flex-shrink: 0;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #fee2e2;
+    color: $red;
+  }
+}
+
+// ── Progress Section ──────────────────────────────────────
+.progressSection {
+  background: $surface;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+
+.progressHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.progressStage {
+  font-size: 12px;
+  font-weight: 700;
+  color: $navy;
+}
+
+.progressPct {
+  font-size: 11px;
+  font-weight: 600;
+  color: $muted;
+}
+
+// Stage dots row
+.stageTrack {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.stageDot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+
+  &::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $border;
+    border: 2px solid $border;
+    transition: background 0.2s, border-color 0.2s;
+  }
+
+  &.stageDotActive::before {
+    background: currentColor;
+    border-color: currentColor;
+  }
+}
+
+.stageDotLabel {
+  font-size: 8px;
+  color: $muted;
+  white-space: nowrap;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+// Progress bar
+.barTrack {
+  position: relative;
+  height: 8px;
+  background: $border;
+  border-radius: 100px;
+  overflow: visible;
+  margin-bottom: 4px;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.4s ease;
+}
+
+.planeMarker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -55%);
+  transition: left 0.4s ease;
+  line-height: 0;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.25));
+}
+
+.barLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: $muted;
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+// ── OOOI Grid ─────────────────────────────────────────────
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.card {
+  background: $surface;
+  border-radius: 8px;
+  padding: 9px 11px;
+}
+
+.cardTitle {
+  font-size: 9px;
+  font-weight: 700;
+  color: $muted;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.dotEst {
+  width: 7px;
+  height: 7px;
+  border: 2px solid #27AE60;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dotAct {
+  width: 7px;
+  height: 7px;
+  background: #27AE60;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  td {
+    font-size: 11px;
+    padding: 2px 0;
+
+    &:first-child {
+      color: $muted;
+      font-weight: 600;
+      width: 48%;
+    }
+
+    &:last-child {
+      color: $navy;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+    }
+  }
+}

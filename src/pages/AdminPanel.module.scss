@@ -1,0 +1,621 @@
+$red:     #D71920;
+$navy:    #1e293b;
+$slate:   #64748b;
+$muted:   #94a3b8;
+$border:  #e2e8f0;
+$surface: #f8fafc;
+$white:   #fff;
+
+.page {
+  flex: 1;
+  overflow-y: auto;
+  background: #f0f2f5;
+  display: flex;
+  flex-direction: column;
+}
+
+// ── Page header ───────────────────────────────────────────
+.pageHeader {
+  background: $white;
+  border-bottom: 1px solid $border;
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerIcon {
+  color: $red;
+}
+
+.pageTitle {
+  font-size: 18px;
+  font-weight: 800;
+  color: $navy;
+  line-height: 1.1;
+}
+
+.pageSub {
+  font-size: 12px;
+  color: $muted;
+  margin-top: 2px;
+}
+
+// ── Tabs ──────────────────────────────────────────────────
+.tabs {
+  background: $white;
+  border-bottom: 1px solid $border;
+  padding: 0 24px;
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  color: $muted;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: $navy;
+  }
+
+  &.tabActive {
+    color: $red;
+    border-bottom-color: $red;
+  }
+}
+
+// ── Body ──────────────────────────────────────────────────
+.body {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+// ── Table actions ─────────────────────────────────────────
+.tableActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.tableCount {
+  font-size: 13px;
+  color: $slate;
+}
+
+.addBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  background: $red;
+  color: $white;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s;
+
+  &:hover { background: #b91419; }
+}
+
+// ── Table ─────────────────────────────────────────────────
+.tableWrap {
+  background: $white;
+  border-radius: 10px;
+  border: 1px solid $border;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $muted;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid $border;
+    background: $surface;
+  }
+
+  td {
+    font-size: 13px;
+    color: $navy;
+    padding: 12px 14px;
+    border-bottom: 1px solid #f8fafc;
+
+    code {
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  }
+
+  tr:last-child td { border-bottom: none; }
+}
+
+.rowInactive {
+  opacity: 0.5;
+}
+
+// ── Role pill ─────────────────────────────────────────────
+.rolePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+
+.roleCCO     { background: #dbeafe; color: #1d4ed8; }
+.roleStation { background: #dcfce7; color: #166534; }
+.roleAdmin   { background: #fee2e2; color: #991b1b; }
+
+// ── Status pill ───────────────────────────────────────────
+.statusPill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 100px;
+}
+
+.statusActive   { background: #dcfce7; color: #166534; }
+.statusInactive { background: #f1f5f9; color: $muted; }
+
+// ── Action button ─────────────────────────────────────────
+.actionBtn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid $border;
+  background: none;
+  transition: all 0.15s;
+}
+
+.actionDeactivate {
+  color: $red;
+  border-color: #fca5a5;
+  &:hover { background: #fee2e2; }
+}
+
+.actionActivate {
+  color: #16a34a;
+  border-color: #86efac;
+  &:hover { background: #dcfce7; }
+}
+
+// ── Config grid ───────────────────────────────────────────
+.configGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+.configCard {
+  background: $white;
+  border-radius: 10px;
+  border: 1px solid $border;
+  padding: 18px 20px;
+}
+
+.configTitle {
+  font-size: 14px;
+  font-weight: 800;
+  color: $navy;
+  margin-bottom: 4px;
+}
+
+.configDesc {
+  font-size: 12px;
+  color: $muted;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.configFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.configLabel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: $navy;
+}
+
+.configInput {
+  width: 80px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid $border;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: $navy;
+  text-align: center;
+  outline: none;
+
+  &:focus { border-color: $red; }
+}
+
+// ── Color list ────────────────────────────────────────────
+.colorList {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.colorRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colorSwatch {
+  width: 18px;
+  height: 14px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.colorCode {
+  font-size: 12px;
+  font-weight: 800;
+  color: $navy;
+  font-family: 'Courier New', monospace;
+  width: 20px;
+}
+
+.colorLabel {
+  font-size: 12px;
+  color: $slate;
+}
+
+// ── Users layout (table + detail side-by-side) ───────────
+.usersLayout {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.tableSection {
+  flex: 1;
+  min-width: 0;
+}
+
+// Clickable row
+.rowClickable {
+  cursor: pointer;
+  transition: background 0.1s;
+  &:hover td { background: #f8fafc; }
+}
+
+.rowSelected td {
+  background: #eff6ff !important;
+}
+
+// ── User detail panel ─────────────────────────────────────
+.detailPanel {
+  width: 280px;
+  flex-shrink: 0;
+  background: $white;
+  border-radius: 12px;
+  border: 1px solid $border;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  animation: slideIn 0.18s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid $border;
+  background: $surface;
+}
+
+.detailTitle {
+  font-size: 13px;
+  font-weight: 800;
+  color: $navy;
+}
+
+.detailClose {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $muted;
+  transition: background 0.12s, color 0.12s;
+  &:hover { background: #fee2e2; color: $red; }
+}
+
+.detailAvatar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: $red;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+}
+
+.avatarInactive {
+  background: $muted;
+}
+
+.detailName      { font-size: 14px; font-weight: 800; color: $navy; }
+.detailMatricule { font-size: 11px; color: $muted; margin-top: 2px; font-family: 'Courier New', monospace; }
+
+.detailBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.airportPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: #f1f5f9;
+  color: $slate;
+}
+
+.detailInfo {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.infoRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.infoIcon { color: $muted; flex-shrink: 0; margin-top: 1px; }
+
+.infoLabel {
+  display: block;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: $muted;
+}
+
+.infoVal {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: $navy;
+  word-break: break-all;
+}
+
+.detailAction {
+  display: block;
+  width: 100%;
+  padding: 11px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  border: none;
+  background: none;
+  text-align: center;
+  transition: background 0.12s;
+}
+
+.detailDeactivate {
+  color: $red;
+  &:hover { background: #fee2e2; }
+}
+
+.detailActivate {
+  color: #16a34a;
+  &:hover { background: #dcfce7; }
+}
+
+// ── Config actions ────────────────────────────────────────
+.configActions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveBtn {
+  height: 36px;
+  padding: 0 20px;
+  background: $red;
+  color: $white;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.15s;
+
+  &:hover { background: #b91419; }
+  &.saveBtnOk { background: #16a34a; }
+}
+
+// ── Modal ─────────────────────────────────────────────────
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  background: $white;
+  border-radius: 14px;
+  width: 380px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
+  animation: slideUp 0.18s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid $border;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 800;
+    color: $navy;
+  }
+}
+
+.modalClose {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: $surface;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $muted;
+  transition: all 0.15s;
+
+  &:hover { background: #fee2e2; color: $red; }
+}
+
+.modalForm {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 700;
+    color: $slate;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  input, select {
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid $border;
+    border-radius: 7px;
+    font-size: 13px;
+    color: $navy;
+    background: $surface;
+    outline: none;
+
+    &:focus { border-color: $red; background: $white; }
+  }
+}
+
+.modalErr {
+  font-size: 12px;
+  background: #fee2e2;
+  color: #991b1b;
+  padding: 8px 12px;
+  border-radius: 7px;
+}
+
+.modalSubmit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  background: $red;
+  color: $white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  margin-top: 4px;
+  transition: background 0.15s;
+
+  &:hover { background: #b91419; }
+}

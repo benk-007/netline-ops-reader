@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Moon, Bell, Clock, Save, CheckCircle } from 'lucide-react'
-import styles from './Settings.module.css'
+import styles from './Settings.module.scss'
 
 const DEFAULTS = { darkMode: false, notifications: true, timezone: 'UTC' }
 
@@ -11,9 +11,19 @@ function loadSettings() {
   } catch { return { ...DEFAULTS } }
 }
 
+function applyDark(enabled) {
+  document.documentElement.setAttribute('data-dark', enabled ? '1' : '0')
+}
+
+// Apply on page load from persisted setting
+applyDark(loadSettings().darkMode)
+
 export default function Settings() {
   const [s, setS] = useState(loadSettings)
   const [saved, setSaved] = useState(false)
+
+  // Keep dark mode in sync with toggle immediately (before save)
+  useEffect(() => { applyDark(s.darkMode) }, [s.darkMode])
 
   function toggle(key) {
     setS(p => ({ ...p, [key]: !p[key] }))

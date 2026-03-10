@@ -1,21 +1,28 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth, roleHome } from '../auth/AuthContext'
 import { LogIn, Eye, EyeOff, Plane } from 'lucide-react'
-import styles from './Login.module.css'
+import { ALL_AIRPORTS } from '../data/FlightData'
+import styles from './Login.module.scss'
 
 const ROLES = [
-  { value: 'CCO', label: 'CCO – Operations Control' },
+  { value: 'CCO',     label: 'CCO – Operations Control' },
   { value: 'Station', label: 'Station Manager' },
+  { value: 'Admin',   label: 'Admin' },
 ]
 
 export default function Login() {
   const { login } = useAuth()
-  const navigate = useNavigate()
+  const navigate  = useNavigate()
 
-  const [form, setForm] = useState({ matricule: '', password: '', role: 'CCO' })
+  const [form, setForm] = useState({
+    matricule: '',
+    password:  '',
+    role:      'CCO',
+    airport:   'CMN',
+  })
   const [showPwd, setShowPwd] = useState(false)
-  const [error, setError] = useState('')
+  const [error,   setError]   = useState('')
   const [loading, setLoading] = useState(false)
 
   function handle(field, val) {
@@ -29,11 +36,19 @@ export default function Login() {
       setError('Please fill in all fields.')
       return
     }
+    if (form.role === 'Station' && !form.airport) {
+      setError('Please select your station airport.')
+      return
+    }
     setLoading(true)
-    // Simulate auth delay
     await new Promise(r => setTimeout(r, 700))
-    login({ matricule: form.matricule, role: form.role, name: form.matricule })
-    navigate(form.role === 'CCO' ? '/dashboard' : '/status', { replace: true })
+    login({
+      matricule: form.matricule,
+      role:      form.role,
+      name:      form.matricule,
+      airport:   form.role === 'Station' ? form.airport : null,
+    })
+    navigate(roleHome(form.role), { replace: true })
     setLoading(false)
   }
 
@@ -63,9 +78,7 @@ export default function Login() {
       <div className={styles.formPanel}>
         <form className={styles.card} onSubmit={handleSubmit}>
           <div className={styles.cardHeader}>
-            <div className={styles.cardLogo}>
-              <span>RAM</span>
-            </div>
+            <div className={styles.cardLogo}><span>RAM</span></div>
             <h2 className={styles.cardTitle}>Welcome back</h2>
             <p className={styles.cardSub}>Sign in to your OCC account</p>
           </div>
@@ -119,18 +132,26 @@ export default function Login() {
             </select>
           </div>
 
-          <button
-            className={styles.loginBtn}
-            type="submit"
-            disabled={loading}
-          >
-            {loading ? (
-              <span className={styles.spinner} />
-            ) : (
-              <>
-                <LogIn size={16} /> Sign In
-              </>
-            )}
+          {form.role === 'Station' && (
+            <div className={styles.fieldGroup}>
+              <label className={styles.label}>Station Airport</label>
+              <select
+                className={`${styles.input} ${styles.roleSelect}`}
+                value={form.airport}
+                onChange={e => handle('airport', e.target.value)}
+              >
+                {ALL_AIRPORTS.map(a => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <button className={styles.loginBtn} type="submit" disabled={loading}>
+            {loading
+              ? <span className={styles.spinner} />
+              : <><LogIn size={16} /> Sign In</>
+            }
           </button>
 
           <p className={styles.hint}>

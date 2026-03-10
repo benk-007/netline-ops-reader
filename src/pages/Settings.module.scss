@@ -1,3 +1,10 @@
+$red:    #D71920;
+$navy:   #1e293b;
+$slate:  #64748b;
+$muted:  #94a3b8;
+$border: #e2e8f0;
+$white:  #fff;
+
 .page {
   flex: 1;
   overflow-y: auto;
@@ -20,19 +27,19 @@
 .title {
   font-size: 24px;
   font-weight: 800;
-  color: #1e293b;
+  color: $navy;
 }
 
 .subtitle {
   font-size: 13px;
-  color: #64748b;
+  color: $slate;
   margin-top: 4px;
 }
 
 .section {
-  background: #fff;
+  background: $white;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid $border;
   overflow: hidden;
 }
 
@@ -41,7 +48,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .07em;
-  color: #94a3b8;
+  color: $muted;
   padding: 14px 20px 10px;
   border-bottom: 1px solid #f1f5f9;
 }
@@ -52,10 +59,8 @@
   justify-content: space-between;
   padding: 18px 20px;
   gap: 16px;
-}
 
-.row+.row {
-  border-top: 1px solid #f8fafc;
+  & + & { border-top: 1px solid #f8fafc; }
 }
 
 .rowLeft {
@@ -71,37 +76,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: $white;
   flex-shrink: 0;
 }
 
 .rowLabel {
   font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
+  color: $navy;
 }
 
 .rowDesc {
   font-size: 12px;
-  color: #94a3b8;
+  color: $muted;
   margin-top: 2px;
 }
 
-/* Toggle switch */
+// Toggle switch
 .toggle {
   width: 44px;
   height: 24px;
   border-radius: 100px;
-  background: #e2e8f0;
+  background: $border;
   border: none;
   cursor: pointer;
   position: relative;
   transition: background .2s;
   flex-shrink: 0;
-}
 
-.toggle.toggleOn {
-  background: #27AE60;
+  &.toggleOn { background: #27AE60; }
 }
 
 .toggleKnob {
@@ -111,16 +114,14 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #fff;
+  background: $white;
   box-shadow: 0 1px 4px rgba(0, 0, 0, .2);
   transition: transform .2s;
+
+  .toggleOn & { transform: translateX(20px); }
 }
 
-.toggle.toggleOn .toggleKnob {
-  transform: translateX(20px);
-}
-
-/* Timezone segment control */
+// Timezone segment control
 .tzSegment {
   display: flex;
   background: #f1f5f9;
@@ -135,18 +136,18 @@
   border: none;
   font-size: 12px;
   font-weight: 700;
-  color: #64748b;
+  color: $slate;
   background: transparent;
   transition: all .15s;
+
+  &.tzActive {
+    background: $white;
+    color: $red;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
+  }
 }
 
-.tzBtn.tzActive {
-  background: #fff;
-  color: #D71920;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .1);
-}
-
-/* Save button */
+// Save button
 .actions {
   display: flex;
   justify-content: flex-end;
@@ -155,8 +156,8 @@
 .saveBtn {
   height: 40px;
   padding: 0 24px;
-  background: #D71920;
-  color: #fff;
+  background: $red;
+  color: $white;
   border: none;
   border-radius: 8px;
   font-size: 13px;
@@ -165,8 +166,6 @@
   align-items: center;
   gap: 8px;
   transition: background .15s;
-}
 
-.saveBtn:hover {
-  background: #b91419;
+  &:hover { background: #b91419; }
 }
