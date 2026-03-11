@@ -58,8 +58,8 @@ class Items {
 
 export const legs = [
   new Leg(
-    "L33", "AT301", "CN-RHB", "B737-800", "PAX",
-    "CMN", "BCN", "06:00", "07:40", "07:00", "08:40",
+    "L33", "AT302", "CN-RHB", "B737-800", "PAX",
+    "BCN", "CMN", "08:00", "10:40", "07:00", "08:40",
     "Scheduled", 0, "Plan", "Plan", "Plan", "NS", "2026-03-05"
   ),
 

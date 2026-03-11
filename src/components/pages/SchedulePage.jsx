@@ -96,54 +96,7 @@ const statusDot = (val) => {
     return "#22c55e";
 };
 
-const themes = {
-    dark: {
-        bg: "#060c18",
-        surface: "rgba(255,255,255,0.025)",
-        surfaceHover: "rgba(200,16,46,0.07)",
-        border: "rgba(255,255,255,0.055)",
-        borderHover: "rgba(200,16,46,0.25)",
-        text: "#f1f5f9",
-        textMuted: "#94a3b8",
-        textDim: "#475569",
-        textDimmer: "#334155",
-        kpiBg: "linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))",
-        otpTrack: "rgba(255,255,255,0.06)",
-        modalBg: "linear-gradient(145deg, #1a0a0a 0%, #150505 60%, #0f0a14 100%)",
-        modalBorder: "rgba(180,20,30,0.25)",
-        tabBorder: "rgba(255,255,255,0.06)",
-        tabInactive: "#64748b",
-        cardBg: "rgba(255,255,255,0.03)",
-        cardBorder: "rgba(255,255,255,0.07)",
-        filterBorder: "rgba(255,255,255,0.08)",
-        filterText: "#64748b",
-        delayBg: "rgba(239,68,68,0.08)",
-        delayCodeBg: "rgba(239,68,68,0.15)",
-    },
-    light: {
-        bg: "#f3f0f1",
-        surface: "rgba(255,255,255,0.9)",
-        surfaceHover: "rgba(200,16,46,0.035)",
-        border: "rgba(0,0,0,0.07)",
-        borderHover: "rgba(200,16,46,0.25)",
-        text: "#18080d",
-        textMuted: "#52525b",
-        textDim: "#71717a",
-        textDimmer: "#a1a1aa",
-        kpiBg: "linear-gradient(135deg, #ffffff, #fef5f6)",
-        otpTrack: "rgba(0,0,0,0.08)",
-        modalBg: "linear-gradient(145deg, #ffffff, #fdf2f4 60%, #faf5ff)",
-        modalBorder: "rgba(200,16,46,0.12)",
-        tabBorder: "rgba(0,0,0,0.07)",
-        tabInactive: "#a1a1aa",
-        cardBg: "#ffffff",
-        cardBorder: "rgba(0,0,0,0.07)",
-        filterBorder: "rgba(0,0,0,0.09)",
-        filterText: "#a1a1aa",
-        delayBg: "#fff5f5",
-        delayCodeBg: "#fee2e2",
-    },
-};
+    
 
 function Modal({ flight, onClose, t, isDark }) {
     const [tab, setTab] = useState("general");

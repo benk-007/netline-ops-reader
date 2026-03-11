@@ -23,20 +23,20 @@
   --ram-gold-light: #fcd34d;
 
   /* ── Surface / Background ────────────────────────── */
-  --bg-app: #070d1a;
+  --bg-app: #03080d;
   /* Deepest background */
-  --bg-surface: #0d1526;
+  --bg-surface: #0a1320;
   /* Card / panel background */
-  --bg-surface-2: #111e35;
+  --bg-surface-2: #111e32;
   /* Elevated surfaces */
   --bg-surface-3: #1a2a45;
   /* Hover states */
-  --bg-overlay: rgba(7, 13, 26, 0.85);
+  --bg-overlay: rgba(3, 8, 13, 0.85);
 
   /* ── Filter / Input ──────────────────────────────── */
-  --filter-bg: #0a1120;
-  --filter-border: #1e3356;
-  --filter-border-focus: #2563eb;
+  --filter-bg: #060c14;
+  --filter-border: #14243b;
+  --filter-border-focus: #3b82f6;
 
   /* ── Text ────────────────────────────────────────── */
   --color-text: #e2e8f0;
@@ -45,38 +45,44 @@
   --color-dim: #475569;
 
   /* ── Borders ─────────────────────────────────────── */
-  --color-border: #1e3356;
-  --color-border-2: #0f2040;
+  --color-border: #14243b;
+  --color-border-2: #0a1320;
 
   /* ── Gantt Timeline ──────────────────────────────── */
-  --gantt-bg: #0d1526;
-  --gantt-row-odd: #0f1a2e;
-  --gantt-row-even: #0d1526;
-  --gantt-header-bg: #070d1a;
-  --gantt-axis-color: #1e3356;
-  --gantt-label-bg: #0d1526;
+  --gantt-bg: #0a1320;
+  --gantt-row-odd: #0d1829;
+  --gantt-row-even: #0a1320;
+  --gantt-header-bg: #03080d;
+  --gantt-axis-color: #14243b;
+  --gantt-label-bg: #0a1320;
   --gantt-label-text: #94a3b8;
   --gantt-now-color: #ef4444;
 
   /* ── Service Colors (admin-modifiable) ───────────── */
-  --svc-pax-bar: #c8102e;
-  --svc-pax-bg: rgba(200, 16, 46, 0.15);
+  /* ── Service Colors — dark enough for white text ── */
+  --svc-pax-bar: #a50e25;
+  /* deeper crimson — was too bright */
+  --svc-pax-bg: rgba(165, 14, 37, 0.15);
   --svc-pax-text: #fca5a5;
 
-  --svc-charter-bar: #7c3aed;
-  --svc-charter-bg: rgba(124, 58, 237, 0.15);
+  --svc-charter-bar: #5b21b6;
+  /* deep violet */
+  --svc-charter-bg: rgba(91, 33, 182, 0.15);
   --svc-charter-text: #c4b5fd;
 
-  --svc-cargo-bar: #0284c7;
-  --svc-cargo-bg: rgba(2, 132, 199, 0.15);
+  --svc-cargo-bar: #0369a1;
+  /* deep blue */
+  --svc-cargo-bg: rgba(3, 105, 161, 0.15);
   --svc-cargo-text: #7dd3fc;
 
-  --svc-ferry-bar: #059669;
-  --svc-ferry-bg: rgba(5, 150, 105, 0.15);
+  --svc-ferry-bar: #047857;
+  /* deep emerald */
+  --svc-ferry-bg: rgba(4, 120, 87, 0.15);
   --svc-ferry-text: #6ee7b7;
 
-  --svc-maint-bar: #d97706;
-  --svc-maint-bg: rgba(217, 119, 6, 0.15);
+  --svc-maint-bar: #b45309;
+  /* deep amber */
+  --svc-maint-bg: rgba(180, 83, 9, 0.15);
   --svc-maint-text: #fcd34d;
 
   /* ── State Colors (admin-modifiable) ─────────────── */
@@ -88,7 +94,7 @@
   --state-cancelled: #6b7280;
 
   /* ── Sidebar ─────────────────────────────────────── */
-  --sidebar-bg: #060c18;
+  --sidebar-bg: #020509;
   --sidebar-width: 64px;
   --sidebar-expanded: 200px;
   --topbar-h: 58px;
@@ -236,7 +242,7 @@ button {
 
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(200, 16, 46, 0.4);
+    box-shadow: 0 0 0 0 rgba(235, 229, 230, 0.4);
   }
 
   50% {

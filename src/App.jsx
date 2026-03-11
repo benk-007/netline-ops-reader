@@ -13,6 +13,7 @@ import ProfileManager from "./components/Profiles/ProfileManager";
 import DashboardPage from "./components/pages/DashboardPage";
 import SchedulePage from "./components/pages/SchedulePage";
 import ReportsPage from "./components/pages/ReportsPage";
+import AdminPage from "./components/pages/AdminPage";
 
 /* Data */
 import { legs } from "./data/flightsData";
@@ -128,6 +129,9 @@ function App() {
 
           {/* ── REPORTS PAGE ── */}
           {currentPage === "reports" && <ReportsPage isDark={isDark} />}
+
+          {/* ── ADMIN PAGE ── */}
+          {currentPage === "admin" && <AdminPage isDark={isDark} />}
 
         </div>
       </div>

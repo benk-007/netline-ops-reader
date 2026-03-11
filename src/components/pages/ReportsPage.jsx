@@ -91,15 +91,15 @@ function FieldShell({ label, children, focused, onClick }) {
         <div
             onClick={onClick}
             style={{
-                flex: 1, border: `1px solid ${focused ? "#c8102e" : "#d8d8d8"}`,
-                borderRadius: 8, padding: "8px 14px", background: "#fff",
+                flex: 1, border: `1px solid ${focused ? "var(--filter-border-focus)" : "var(--filter-border)"}`,
+                borderRadius: 8, padding: "8px 14px", background: "var(--filter-bg)",
                 transition: "border-color 0.2s, box-shadow 0.2s",
-                boxShadow: focused ? "0 0 0 2px rgba(200,16,46,0.08)" : "none",
+                boxShadow: focused ? "0 0 0 2px rgba(59, 130, 246, 0.2)" : "none",
                 minHeight: 52, boxSizing: "border-box", cursor: "pointer",
                 position: "relative",
             }}
         >
-            <div style={{ fontSize: 10, color: "#9e9e9e", marginBottom: 3, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3 }}>{label}</div>
+            <div style={{ fontSize: 10, color: "var(--color-muted)", marginBottom: 3, fontFamily: "'DM Sans', sans-serif", letterSpacing: 0.3 }}>{label}</div>
             {children}
         </div>
     );
@@ -129,10 +129,10 @@ function Dropdown({ label, value, onChange, items, renderSelected, renderItem, p
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         {selected ? renderSelected(selected) : (
-                            <span style={{ fontSize: 13, color: "#c8102e", fontFamily: "'DM Sans', sans-serif" }}>{placeholder}</span>
+                            <span style={{ fontSize: 13, color: "var(--ram-red)", fontFamily: "'DM Sans', sans-serif" }}>{placeholder}</span>
                         )}
                     </div>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "#aaa", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0, marginLeft: 6 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ color: "var(--color-muted)", transform: open ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0, marginLeft: 6 }}>
                         <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                 </div>
@@ -141,33 +141,33 @@ function Dropdown({ label, value, onChange, items, renderSelected, renderItem, p
             {open && (
                 <div style={{
                     position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 300,
-                    background: "#fff", borderRadius: 10, border: "1px solid #e8e8e8",
-                    boxShadow: "0 8px 32px rgba(0,0,0,0.12)", overflow: "hidden",
+                    background: "var(--bg-surface)", borderRadius: 10, border: "1px solid var(--color-border)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.3)", overflow: "hidden",
                 }}>
-                    <div style={{ padding: "8px 10px", borderBottom: "1px solid #f0f0f0" }}>
+                    <div style={{ padding: "8px 10px", borderBottom: "1px solid var(--color-border-2)" }}>
                         <input
                             autoFocus value={query} onChange={e => setQuery(e.target.value)}
                             placeholder={searchPlaceholder}
                             style={{
-                                width: "100%", border: "1px solid #ebebeb", borderRadius: 6,
+                                width: "100%", border: "1px solid var(--color-border)", borderRadius: 6,
                                 padding: "6px 10px", fontSize: 12, fontFamily: "'DM Sans', sans-serif",
-                                outline: "none", background: "#fafafa", color: "#222", boxSizing: "border-box",
+                                outline: "none", background: "var(--filter-bg)", color: "var(--color-text)", boxSizing: "border-box",
                             }}
                         />
                     </div>
                     <div style={{ maxHeight: 220, overflowY: "auto" }}>
                         {filtered.length === 0
-                            ? <div style={{ padding: 16, textAlign: "center", color: "#bdbdbd", fontSize: 12 }}>Aucun résultat</div>
+                            ? <div style={{ padding: 16, textAlign: "center", color: "var(--color-muted)", fontSize: 12 }}>Aucun résultat</div>
                             : filtered.map(i => (
                                 <div
                                     key={i.code}
                                     onClick={() => { onChange(i.code); setOpen(false); }}
                                     style={{
                                         padding: "10px 14px", cursor: "pointer",
-                                        background: value === i.code ? "#fff5f7" : "transparent", transition: "background 0.15s",
+                                        background: value === i.code ? "var(--bg-surface-3)" : "transparent", transition: "background 0.15s", color: "var(--color-text)",
                                     }}
-                                    onMouseEnter={e => e.currentTarget.style.background = "#fafafa"}
-                                    onMouseLeave={e => e.currentTarget.style.background = value === i.code ? "#fff5f7" : "transparent"}
+                                    onMouseEnter={e => e.currentTarget.style.background = "var(--bg-surface-2)"}
+                                    onMouseLeave={e => e.currentTarget.style.background = value === i.code ? "var(--bg-surface-3)" : "transparent"}
                                 >
                                     {renderItem(i)}
                                 </div>
@@ -192,19 +192,19 @@ function AirportDropdown({ value, onChange, label }) {
             searchPlaceholder="Rechercher un aéroport..."
             renderSelected={(a) => (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                    <span style={{ fontSize: 13, color: "#1a1a1a", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <span style={{ fontSize: 13, color: "var(--color-text)", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {a.city}, {a.country}
                     </span>
-                    <span style={{ fontSize: 12, color: "#c8102e", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, flexShrink: 0 }}>{a.code}</span>
+                    <span style={{ fontSize: 12, color: "var(--ram-red)", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, flexShrink: 0 }}>{a.code}</span>
                 </div>
             )}
             renderItem={(a) => (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: "#222", fontFamily: "'DM Sans', sans-serif" }}>{a.city}</div>
-                        <div style={{ fontSize: 11, color: "#9e9e9e", fontFamily: "'DM Sans', sans-serif" }}>{a.name} · {a.country}</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: "var(--color-text)", fontFamily: "'DM Sans', sans-serif" }}>{a.city}</div>
+                        <div style={{ fontSize: 11, color: "var(--color-muted)", fontFamily: "'DM Sans', sans-serif" }}>{a.name} · {a.country}</div>
                     </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: "#c8102e", fontFamily: "'JetBrains Mono', monospace", marginLeft: 12 }}>{a.code}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ram-red)", fontFamily: "'JetBrains Mono', monospace", marginLeft: 12 }}>{a.code}</span>
                 </div>
             )}
         />
@@ -222,12 +222,12 @@ function AirlineDropdown({ value, onChange }) {
             placeholder="Compagnie aérienne"
             searchPlaceholder="Rechercher..."
             renderSelected={(a) => (
-                <span style={{ fontSize: 13, color: "#1a1a1a", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>{a.name}</span>
+                <span style={{ fontSize: 13, color: "var(--color-text)", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>{a.name}</span>
             )}
             renderItem={(a) => (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 13, color: "#222", fontFamily: "'DM Sans', sans-serif" }}>{a.name}</span>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#c8102e", fontFamily: "'JetBrains Mono', monospace" }}>{a.code}</span>
+                    <span style={{ fontSize: 13, color: "var(--color-text)", fontFamily: "'DM Sans', sans-serif" }}>{a.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "var(--ram-red)", fontFamily: "'JetBrains Mono', monospace" }}>{a.code}</span>
                 </div>
             )}
         />
@@ -249,10 +249,10 @@ function DateField({ value, onChange }) {
         <div style={{ position: "relative", flex: 1 }}>
             <FieldShell label="Dates" focused={focused} onClick={() => inputRef.current?.showPicker?.()}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 13, fontFamily: "'DM Sans', sans-serif", color: value ? "#1a1a1a" : "#9e9e9e", fontWeight: value ? 500 : 400 }}>
+                    <span style={{ fontSize: 13, fontFamily: "'DM Sans', sans-serif", color: value ? "var(--color-text)" : "var(--color-muted)", fontWeight: value ? 500 : 400 }}>
                         {value ? formatDisplay(value) : "jj/mm/aaaa"}
                     </span>
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ color: "#aaa", flexShrink: 0 }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ color: "var(--color-muted)", flexShrink: 0 }}>
                         <rect x="3" y="4" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.8" />
                         <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                     </svg>
@@ -280,8 +280,8 @@ function SearchButton({ onClick, loading, disabled }) {
             style={{
                 padding: "0 28px", borderRadius: 8, fontSize: 13, fontWeight: 700,
                 cursor: disabled ? "not-allowed" : "pointer", transition: "all 0.2s",
-                background: !disabled ? "linear-gradient(135deg, #c8102e 0%, #9b0821 100%)" : "#f0f0f0",
-                color: !disabled ? "#fff" : "#bbb", border: "none",
+                background: !disabled ? "linear-gradient(135deg, var(--ram-red) 0%, var(--ram-red-dark) 100%)" : "var(--bg-surface-3)",
+                color: !disabled ? "#fff" : "var(--color-muted)", border: "none",
                 fontFamily: "'DM Sans', sans-serif", alignSelf: "stretch",
                 boxShadow: !disabled ? "0 4px 12px rgba(200,16,46,0.22)" : "none",
                 minWidth: 110, minHeight: 52, flexShrink: 0,
@@ -307,19 +307,19 @@ function FlightCard({ flight }) {
     return (
         <div
             style={{
-                background: "#fff", border: "1px solid #eeeeee", borderRadius: 12,
+                background: "var(--bg-surface-2)", border: "1px solid var(--color-border)", borderRadius: 12,
                 padding: "20px 24px", marginBottom: 10, transition: "box-shadow 0.2s, transform 0.2s",
-                cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
+                cursor: "pointer", fontFamily: "'DM Sans', sans-serif", color: "var(--color-text)",
             }}
-            onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.08)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+            onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 20px rgba(0,0,0,0.3)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.transform = "none"; }}
         >
             <div style={{ display: "grid", gridTemplateColumns: "170px 1fr 130px", alignItems: "center", gap: 20 }}>
 
                 {/* LEFT */}
                 <div>
-                    <div style={{ fontSize: 11, color: "#9e9e9e", marginBottom: 3 }}>{flight.airline}</div>
-                    <div style={{ fontSize: 26, fontWeight: 700, color: "#1a1a1a", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, lineHeight: 1 }}>{flight.fn}</div>
+                    <div style={{ fontSize: 11, color: "var(--color-muted)", marginBottom: 3 }}>{flight.airline}</div>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: "var(--color-text)", fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5, lineHeight: 1 }}>{flight.fn}</div>
                     <div style={{ marginTop: 8 }}>
                         <span style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 600, background: status.bg, color: status.color, border: `1px solid ${status.color}33` }}>{label}</span>
                     </div>
@@ -329,45 +329,45 @@ function FlightCard({ flight }) {
                 <div>
                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                         <div>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: "#111", fontFamily: "'JetBrains Mono', monospace" }}>{flight.depTime}</div>
-                            <div style={{ fontSize: 11, color: "#9e9e9e", marginTop: 1 }}>{flight.depDate}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", fontFamily: "'JetBrains Mono', monospace" }}>{flight.depTime}</div>
+                            <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>{flight.depDate}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
-                            <div style={{ fontSize: 14, fontWeight: 700, color: "#111", fontFamily: "'JetBrains Mono', monospace" }}>{flight.arrTime}</div>
-                            <div style={{ fontSize: 11, color: "#9e9e9e", marginTop: 1 }}>{flight.arrDate}</div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: "var(--color-text)", fontFamily: "'JetBrains Mono', monospace" }}>{flight.arrTime}</div>
+                            <div style={{ fontSize: 11, color: "var(--color-muted)", marginTop: 1 }}>{flight.arrDate}</div>
                         </div>
                     </div>
 
                     {/* Progress track */}
                     <div style={{ position: "relative", height: 24, display: "flex", alignItems: "center" }}>
-                        <div style={{ position: "absolute", left: 0, right: 0, height: 1, background: "#e8e8e8" }} />
-                        {progress > 0 && <div style={{ position: "absolute", left: 0, width: `${progress}%`, height: 2, background: "#c8102e" }} />}
+                        <div style={{ position: "absolute", left: 0, right: 0, height: 1, background: "var(--color-border)" }} />
+                        {progress > 0 && <div style={{ position: "absolute", left: 0, width: `${progress}%`, height: 2, background: "var(--ram-red)" }} />}
                         <div style={{ position: "absolute", left: `${Math.max(0, Math.min(95, progress))}%`, transform: "translateX(-50%)", zIndex: 2 }}>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill={flight.statusType === "active" ? "#c8102e" : "#4caf50"} style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.2))" }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill={flight.statusType === "active" ? "var(--ram-red)" : "#4caf50"} style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))" }}>
                                 <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
                             </svg>
                         </div>
-                        <div style={{ position: "absolute", left: 0, width: 8, height: 8, borderRadius: "50%", background: "#fff", border: "2px solid #ddd" }} />
-                        <div style={{ position: "absolute", right: 0, width: 8, height: 8, borderRadius: "50%", background: "#fff", border: "2px solid #ddd" }} />
+                        <div style={{ position: "absolute", left: 0, width: 8, height: 8, borderRadius: "50%", background: "var(--bg-surface-2)", border: "2px solid var(--color-border-focus)" }} />
+                        <div style={{ position: "absolute", right: 0, width: 8, height: 8, borderRadius: "50%", background: "var(--bg-surface-2)", border: "2px solid var(--color-border-focus)" }} />
                     </div>
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4 }}>
                         <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{flight.depCity}</div>
-                            <div style={{ fontSize: 10, color: "#c8102e", marginTop: 1 }}>{flight.depAirport}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{flight.depCity}</div>
+                            <div style={{ fontSize: 10, color: "var(--ram-red)", marginTop: 1 }}>{flight.depAirport}</div>
                         </div>
-                        <div style={{ textAlign: "center", fontSize: 10, color: "#bdbdbd", alignSelf: "center" }}>{flight.duration}</div>
+                        <div style={{ textAlign: "center", fontSize: 10, color: "var(--color-muted)", alignSelf: "center" }}>{flight.duration}</div>
                         <div style={{ textAlign: "right" }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{flight.arrCity}</div>
-                            <div style={{ fontSize: 10, color: "#9e9e9e", marginTop: 1 }}>{flight.arrAirport}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{flight.arrCity}</div>
+                            <div style={{ fontSize: 10, color: "var(--color-muted)", marginTop: 1 }}>{flight.arrAirport}</div>
                         </div>
                     </div>
                 </div>
 
                 {/* RIGHT */}
                 <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 10, color: "#bdbdbd", marginBottom: 4 }}>Appareil</div>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#555", fontFamily: "'JetBrains Mono', monospace" }}>{flight.aircraft}</div>
+                    <div style={{ fontSize: 10, color: "var(--color-muted)", marginBottom: 4 }}>Appareil</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-2)", fontFamily: "'JetBrains Mono', monospace" }}>{flight.aircraft}</div>
                 </div>
             </div>
         </div>
@@ -425,7 +425,7 @@ export default function FlightSearch({ isDark }) {
     const handleTabChange = (t) => { setTab(t); setResults(null); setSearched(false); };
 
     return (
-        <div style={{ fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", background: "#f7f7f8", padding: "32px 16px" }}>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", minHeight: "100vh", background: "var(--bg-app)", padding: "32px 16px" }}>
             <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;600;700&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -437,9 +437,9 @@ export default function FlightSearch({ isDark }) {
 
                 {/* ── Search card ── */}
                 <div style={{
-                    background: "#fff", borderRadius: 16, padding: 24,
-                    boxShadow: "0 2px 16px rgba(0,0,0,0.06)", marginBottom: 20,
-                    position: "relative", overflow: "visible",
+                    background: "var(--bg-surface)", borderRadius: 16, padding: 24,
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.2)", marginBottom: 20,
+                    position: "relative", overflow: "visible", border: "1px solid var(--color-border)"
                 }}>
                     {/* Decorative dots */}
                     <div style={{
@@ -457,8 +457,8 @@ export default function FlightSearch({ isDark }) {
                                 style={{
                                     padding: "8px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
                                     cursor: "pointer", transition: "all 0.2s", fontFamily: "'DM Sans', sans-serif",
-                                    border: tab === t.key ? "1.5px solid #c8102e" : "1.5px solid #e0e0e0",
-                                    background: "#fff", color: tab === t.key ? "#c8102e" : "#888",
+                                    border: tab === t.key ? "1.5px solid var(--ram-red)" : "1.5px solid transparent",
+                                    background: tab === t.key ? "var(--bg-surface-3)" : "transparent", color: tab === t.key ? "var(--ram-red)" : "var(--color-muted)",
                                 }}
                             >{t.label}</button>
                         ))}
@@ -471,12 +471,12 @@ export default function FlightSearch({ isDark }) {
                             <button
                                 onClick={swap}
                                 style={{
-                                    width: 38, flexShrink: 0, background: "none", border: "1px solid #e0e0e0",
+                                    width: 38, flexShrink: 0, background: "var(--bg-surface-2)", border: "1px solid var(--color-border)",
                                     borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center",
-                                    justifyContent: "center", color: "#aaa", transition: "all 0.2s", alignSelf: "stretch",
+                                    justifyContent: "center", color: "var(--color-muted)", transition: "all 0.2s", alignSelf: "stretch",
                                 }}
-                                onMouseEnter={e => { e.currentTarget.style.borderColor = "#c8102e"; e.currentTarget.style.color = "#c8102e"; }}
-                                onMouseLeave={e => { e.currentTarget.style.borderColor = "#e0e0e0"; e.currentTarget.style.color = "#aaa"; }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--ram-red)"; e.currentTarget.style.color = "var(--ram-red)"; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--color-border)"; e.currentTarget.style.color = "var(--color-muted)"; }}
                             >
                                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
                                     <path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -503,7 +503,7 @@ export default function FlightSearch({ isDark }) {
                                         onKeyDown={e => e.key === "Enter" && handleSearch()}
                                         style={{
                                             border: "none", fontSize: 13, fontFamily: "'JetBrains Mono', monospace",
-                                            fontWeight: 600, color: "#1a1a1a", background: "transparent",
+                                            fontWeight: 600, color: "var(--color-text)", background: "transparent",
                                             width: "100%", padding: 0,
                                         }}
                                     />
@@ -528,33 +528,33 @@ export default function FlightSearch({ isDark }) {
                                     key={d.key}
                                     onClick={() => setSelectedDay(d.key)}
                                     style={{
-                                        background: "#fff",
-                                        border: selectedDay === d.key ? "2px solid #c8102e" : "1px solid #e8e8e8",
+                                        background: "var(--bg-surface-2)",
+                                        border: selectedDay === d.key ? "2px solid var(--ram-red)" : "1px solid var(--color-border-2)",
                                         borderRadius: 10, padding: "14px 16px", textAlign: "center",
                                         cursor: "pointer", transition: "all 0.18s",
-                                        boxShadow: selectedDay === d.key ? "0 2px 12px rgba(200,16,46,0.10)" : "none",
+                                        boxShadow: selectedDay === d.key ? "0 2px 12px rgba(200,16,46,0.2)" : "none",
                                     }}
                                 >
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: selectedDay === d.key ? "#c8102e" : "#9e9e9e", marginBottom: 2 }}>{d.label}</div>
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: selectedDay === d.key ? "#1a1a1a" : "#555" }}>{d.date}</div>
+                                    <div style={{ fontSize: 12, fontWeight: 600, color: selectedDay === d.key ? "var(--ram-red)" : "var(--color-muted)", marginBottom: 2 }}>{d.label}</div>
+                                    <div style={{ fontSize: 16, fontWeight: 700, color: selectedDay === d.key ? "var(--color-text)" : "var(--color-text-2)" }}>{d.date}</div>
                                 </div>
                             ))}
                         </div>
 
                         {/* Column headers */}
                         <div style={{ display: "grid", gridTemplateColumns: "170px 1fr 130px", padding: "6px 24px", gap: 20, marginBottom: 6 }}>
-                            <div style={{ fontSize: 11, color: "#c8102e", fontWeight: 600 }}>Numéro de vol/Statut</div>
-                            <div style={{ fontSize: 11, color: "#c8102e", fontWeight: 600 }}>Départ</div>
-                            <div style={{ fontSize: 11, color: "#9e9e9e", fontWeight: 600, textAlign: "right" }}>Arrivée</div>
+                            <div style={{ fontSize: 11, color: "var(--ram-red)", fontWeight: 600 }}>Numéro de vol/Statut</div>
+                            <div style={{ fontSize: 11, color: "var(--ram-red)", fontWeight: 600 }}>Départ</div>
+                            <div style={{ fontSize: 11, color: "var(--color-muted)", fontWeight: 600, textAlign: "right" }}>Arrivée</div>
                         </div>
 
                         {results.map(f => <FlightCard key={f.id} flight={f} />)}
 
                         {results.length === 0 && (
-                            <div style={{ background: "#fff", borderRadius: 12, padding: 48, textAlign: "center", border: "1px dashed #e8e8e8" }}>
+                            <div style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 48, textAlign: "center", border: "1px dashed var(--color-border)" }}>
                                 <div style={{ fontSize: 36, marginBottom: 12 }}>✈️</div>
-                                <div style={{ fontSize: 14, color: "#555", fontWeight: 500 }}>Aucun vol trouvé</div>
-                                <div style={{ fontSize: 12, color: "#bdbdbd", marginTop: 4 }}>Essayez une autre date ou destination</div>
+                                <div style={{ fontSize: 14, color: "var(--color-text)", fontWeight: 500 }}>Aucun vol trouvé</div>
+                                <div style={{ fontSize: 12, color: "var(--color-muted)", marginTop: 4 }}>Essayez une autre date ou destination</div>
                             </div>
                         )}
                     </>

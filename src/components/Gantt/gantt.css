@@ -43,7 +43,7 @@
 
 /* ── Grid lines ── */
 .vis-grid.vis-minor {
-  border-color: var(--gantt-axis-color) !important;
+  border-color: #ffffff !important;
   border-style: dashed !important;
   opacity: 0.4;
 }
@@ -56,7 +56,7 @@
 /* ── Row groups (aircraft rows) ── */
 .vis-group {
   background: var(--gantt-row-even) !important;
-  border-bottom: 1px var(--color-border-2) !important;
+  border-bottom: 1px #ffffff !important;
 }
 
 .vis-group:nth-child(odd) {
@@ -85,8 +85,8 @@
   height: 28px !important;
   padding: 0 !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  background: linear-gradient(135deg, var(--ram-red) 0%, var(--ram-red-dark) 100%) !important;
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: #ffffff !important;
+  /* ← force white text always */
   font-family: "JetBrains Mono", monospace !important;
   font-size: 11px !important;
   font-weight: 700 !important;
@@ -154,32 +154,32 @@
 
 /* ── Service-colored item classes ── */
 .vis-item.svc-PAX.vis-range {
-  background: linear-gradient(135deg, var(--svc-pax-bar), #9b0821) !important;
+  background: var(--svc-pax-bar) !important;
 }
 
 .vis-item.svc-Charter.vis-range {
-  background: linear-gradient(135deg, var(--svc-charter-bar), #5b21b6) !important;
+  background: var(--svc-charter-bar) !important;
 }
 
 .vis-item.svc-Cargo.vis-range {
-  background: linear-gradient(135deg, var(--svc-cargo-bar), #0369a1) !important;
+  background: var(--svc-cargo-bar) !important;
 }
 
 .vis-item.svc-Ferry.vis-range {
-  background: linear-gradient(135deg, var(--svc-ferry-bar), #027857) !important;
+  background: var(--svc-ferry-bar) !important;
 }
 
 .vis-item.svc-Maintenance.vis-range {
-  background: linear-gradient(135deg, var(--svc-maint-bar), #b45309) !important;
+  background: var(--svc-maint-bar) !important;
 }
 
 /* ── Hover per service type ── */
 .vis-item.svc-PAX.vis-range:hover {
-  background: linear-gradient(135deg, #e8122e, var(--svc-pax-bar)) !important;
+  background: var(--svc-pax-bar) !important;
 }
 
 .vis-item.svc-Charter.vis-range:hover {
-  background: linear-gradient(135deg, #8b5cf6, var(--svc-charter-bar)) !important;
+  background: var(--svc-charter-bar) !important;
 }
 
 .vis-item.svc-Cargo.vis-range:hover {
@@ -224,6 +224,27 @@
 .vis-panel.vis-center .vis-content {
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
+}
+
+/* ── Custom Bottom Scrollbar ── */
+.custom-gantt-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #555 transparent;
+}
+
+.custom-gantt-scrollbar::-webkit-scrollbar {
+  height: 14px;
+  background: var(--gantt-bg);
+}
+
+.custom-gantt-scrollbar::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 8px;
+  border: 3px solid var(--gantt-bg);
+}
+
+.custom-gantt-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #777;
 }
 
 /* ── Mount animation ── */

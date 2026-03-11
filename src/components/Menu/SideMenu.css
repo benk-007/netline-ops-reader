@@ -124,12 +124,14 @@
 .sidemenu-item:hover {
     color: var(--color-text);
     background: var(--bg-surface-3);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.05);
 }
 
 .sidemenu-item.active {
     color: #fff;
-    background: linear-gradient(135deg, rgba(200, 16, 46, 0.25), rgba(200, 16, 46, 0.1));
-    border: 1px solid rgba(200, 16, 46, 0.3);
+    background: linear-gradient(135deg, rgba(200, 16, 46, 0.3), rgba(200, 16, 46, 0.15));
+    border: 1px solid rgba(200, 16, 46, 0.4);
+    box-shadow: 0 0 15px rgba(200, 16, 46, 0.2);
 }
 
 .sidemenu-item.active .sidemenu-icon {
