@@ -8,19 +8,36 @@ import FlightGantt from "./components/Gantt/FlightGantt";
 import GanttFilterBar from "./components/Filters/GanttFilterBar";
 import SideMenu from "./components/Menu/SideMenu";
 import ProfileManager from "./components/Profiles/ProfileManager";
+import ExportModal from "./components/Export/ExportModal";
 
 /* Pages */
-import DashboardPage from "./components/pages/DashboardPage";
 import SchedulePage from "./components/pages/SchedulePage";
 import ReportsPage from "./components/pages/ReportsPage";
 import AdminPage from "./components/pages/AdminPage";
+import LoginPage from "./components/Auth/LoginPage";
 
 /* Data */
 import { legs } from "./data/flightsData";
 
+/* ── Role-based access control ──────────────────────────────── */
+const ROLE_PAGES = {
+  admin:       ["gantt", "schedule", "reports", "admin"],
+  staff_ops:   ["gantt", "schedule", "reports"],
+  chef_escale: ["schedule", "reports"],
+};
+
+const ROLE_DEFAULT_PAGE = {
+  admin:       "gantt",
+  staff_ops:   "gantt",
+  chef_escale: "schedule",
+};
+
 /* ─────────────────────────────────────────────────────────── */
 
 function App() {
+  /* Auth state */
+  const [currentUser, setCurrentUser] = useState(null);
+
   /* Layout state */
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState("gantt");
@@ -37,15 +54,16 @@ function App() {
 
   const [zoom, setZoom] = useState(1);
   const [showProfiles, setShowProfiles] = useState(false);
+  const [showExport, setShowExport] = useState(false);
 
-  /* Filter state */
+  /* Filter state — all dropdowns are string[], [] = show all */
   const [filters, setFilters] = useState({
-    fDate: "Toutes dates",
-    fService: "Tous",
-    fDep: "Tous",
-    fArr: "Tous",
-    fFlight: "",
-    fSubtype: "Tous types",
+    fDate:    [],
+    fService: [],
+    fDep:     [],
+    fArr:     [],
+    fFlight:  "",
+    fSubtype: [],
   });
 
   function changeFilter(update) {
@@ -60,10 +78,38 @@ function App() {
     if (typeof profile.zoom === "number") setZoom(profile.zoom);
   }
 
+  /* ── Auth handlers ──────────────────────────────────────── */
+  function handleLogin(user) {
+    setCurrentUser(user);
+    setCurrentPage(ROLE_DEFAULT_PAGE[user.role]);
+    setSelectedLeg(null);
+  }
+
+  function handleLogout() {
+    setCurrentUser(null);
+    setCurrentPage("gantt");
+    setSelectedLeg(null);
+    setSidebarOpen(false);
+  }
+
   /* Navigate between pages (close bottom panel on nav) */
   function handleNavigate(page) {
+    if (!currentUser) return;
+    const allowed = ROLE_PAGES[currentUser.role] ?? [];
+    if (!allowed.includes(page)) return;
     setCurrentPage(page);
     setSelectedLeg(null);
+  }
+
+  /* Guard: make sure currentPage is always allowed for this role */
+  const allowedPages = currentUser ? (ROLE_PAGES[currentUser.role] ?? []) : [];
+  const safePage = allowedPages.includes(currentPage)
+    ? currentPage
+    : (ROLE_DEFAULT_PAGE[currentUser?.role] ?? "gantt");
+
+  /* ── Show login screen when not authenticated ─────────── */
+  if (!currentUser) {
+    return <LoginPage onLogin={handleLogin} />;
   }
 
   return (
@@ -73,8 +119,12 @@ function App() {
       <SideMenu
         expanded={sidebarOpen}
         onToggle={() => setSidebarOpen(o => !o)}
-        currentPage={currentPage}
+        currentPage={safePage}
         onNavigate={handleNavigate}
+        userRole={currentUser.role}
+        userDisplayName={currentUser.displayName}
+        userInitials={currentUser.initials}
+        onLogout={handleLogout}
       />
 
       {/* ── Main Content ───────────────────────────── */}
@@ -93,7 +143,7 @@ function App() {
         <div className="page-content">
 
           {/* ── GANTT PAGE ── */}
-          {currentPage === "gantt" && (
+          {safePage === "gantt" && (
             <div className="gantt-area">
 
               {/* Filter bar */}
@@ -105,6 +155,7 @@ function App() {
                 onZoomOut={() => setZoom(z => Math.max(0.4, z - 0.2))}
                 onZoomReset={() => setZoom(1)}
                 onOpenProfiles={() => setShowProfiles(true)}
+                onOpenExport={() => setShowExport(true)}
               />
 
               {/* Timeline */}
@@ -113,6 +164,7 @@ function App() {
                   legs={legs}
                   filters={filters}
                   onSelectLeg={setSelectedLeg}
+                  zoom={zoom}
                 />
               </div>
 
@@ -120,18 +172,19 @@ function App() {
               <GanttBottomPanel
                 leg={selectedLeg}
                 onClose={() => setSelectedLeg(null)}
+                isDark={isDark}
               />
             </div>
           )}
 
           {/* ── SCHEDULE PAGE ── */}
-          {currentPage === "schedule" && <SchedulePage isDark={isDark} />}
+          {safePage === "schedule" && <SchedulePage isDark={isDark} legs={legs} />}
 
           {/* ── REPORTS PAGE ── */}
-          {currentPage === "reports" && <ReportsPage isDark={isDark} />}
+          {safePage === "reports" && <ReportsPage isDark={isDark} />}
 
           {/* ── ADMIN PAGE ── */}
-          {currentPage === "admin" && <AdminPage isDark={isDark} />}
+          {safePage === "admin" && <AdminPage isDark={isDark} />}
 
         </div>
       </div>
@@ -144,6 +197,14 @@ function App() {
         utcMode={utcMode}
         zoom={zoom}
         onLoadProfile={handleLoadProfile}
+      />
+
+      {/* ── Export Modal ───────────────────────────── */}
+      <ExportModal
+        isOpen={showExport}
+        onClose={() => setShowExport(false)}
+        legs={legs}
+        filters={filters}
       />
 
     </div>

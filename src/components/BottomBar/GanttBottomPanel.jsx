@@ -1,22 +1,174 @@
 import { useState } from "react";
 import { SERVICE_COLORS, STATE_COLORS } from "../../constants/ganttConstants";
 import "./GanttBottomPanel.css";
+
 const TABS = [
-    { key: "info", label: "Informations" },
-    { key: "services", label: "Services" },
-    { key: "timing", label: "Horaires" },
+    { key: "vol",          label: "Vol"         },
+    { key: "trajectoire",  label: "Trajectoire" },
 ];
 
-function StatusDot({ value }) {
-    const color =
-        !value || value === "N/A" || value === "NS" ? "#6b7280"
-            : value === "Plan" || value === "WIP" || value === "Pending" || value === "Done" ? "#f59e0b"
-                : "#22c55e";
-    return <span className="srv-dot" style={{ background: color }} />;
+/* ── Flight progress by state ─────────────────────────────── */
+const STATE_PROGRESS = {
+    Scheduled:  5,
+    Delayed:    5,
+    Boarding:   15,
+    Airborne:   55,
+    Arrived:    100,
+    Cancelled:  0,
+};
+
+function getProgress(state) {
+    return STATE_PROGRESS[state] ?? 5;
 }
 
-export default function GanttBottomPanel({ leg, onClose }) {
-    const [tab, setTab] = useState("info");
+function isLiveState(state) {
+    return state === "Airborne" || state === "Boarding";
+}
+
+/* ── Airplane SVG for the track ───────────────────────────── */
+function PlaneIcon({ color }) {
+    return (
+        <svg width="18" height="18" viewBox="0 0 32 32" fill={color} xmlns="http://www.w3.org/2000/svg" style={{ filter: `drop-shadow(0 0 4px ${color}88)` }}>
+            <path d="M16 1 L19.5 13 L31 16 L19.5 19 L17.5 29 L16 25 L14.5 29 L12.5 19 L1 16 L12.5 13 Z" />
+        </svg>
+    );
+}
+
+/* ── Phase label for delay ────────────────────────────────── */
+function delaySeverity(min) {
+    if (!min || min <= 0) return null;
+    if (min <= 15) return { color: "#f59e0b", label: `+${min} min` };
+    if (min <= 30) return { color: "#f97316", label: `+${min} min` };
+    return { color: "#ef4444", label: `+${min} min ⚠` };
+}
+
+/* ── OCC Trajectory component ─────────────────────────────── */
+function TrajectoryTab({ leg, sc }) {
+    const progress = getProgress(leg.state);
+    const live = isLiveState(leg.state);
+    const cancelled = leg.state === "Cancelled";
+    const delay = delaySeverity(leg.delay);
+
+    const trackColor = cancelled ? "var(--color-dim)" : sc.bar;
+    const barWidth = `${progress}%`;
+
+    // Phase labels
+    const phases = [
+        { label: "Pré-vol",   pct: 0,   active: progress < 15 },
+        { label: "En vol",    pct: 40,  active: progress >= 15 && progress < 95 },
+        { label: "Terminé",   pct: 85,  active: progress >= 95 },
+    ];
+
+    return (
+        <div className="bp-traj-root">
+            {/* Airport codes row */}
+            <div className="bp-traj-airports">
+                <div className="bp-traj-airport-block">
+                    <div className="bp-traj-iata">{leg.dep}</div>
+                    <div className="bp-traj-utc">{leg.depUtc}Z</div>
+                    <div className="bp-traj-local">{leg.OFF_BLOCK_TIME ? `OFB ${leg.OFF_BLOCK_TIME}` : "—"}</div>
+                </div>
+
+                {/* Track */}
+                <div className="bp-traj-track-wrap">
+                    {/* Dashed background track */}
+                    <div className="bp-traj-track-bg" />
+
+                    {/* Filled progress bar */}
+                    <div
+                        className="bp-traj-track-fill"
+                        style={{
+                            width: barWidth,
+                            background: cancelled
+                                ? "var(--color-dim)"
+                                : `linear-gradient(90deg, ${sc.bar}cc, ${sc.bar})`,
+                        }}
+                    />
+
+                    {/* Airplane icon */}
+                    {!cancelled && (
+                        <div
+                            className={`bp-traj-plane ${live ? "live" : ""}`}
+                            style={{ left: `calc(${barWidth} - 9px)` }}
+                        >
+                            <PlaneIcon color={trackColor} />
+                        </div>
+                    )}
+
+                    {/* Phase labels below track */}
+                    <div className="bp-traj-phases">
+                        {phases.map(ph => (
+                            <div
+                                key={ph.label}
+                                className="bp-traj-phase"
+                                style={{
+                                    left: `${ph.pct}%`,
+                                    color: ph.active ? sc.text : "var(--color-dim)",
+                                    fontWeight: ph.active ? 700 : 400,
+                                }}
+                            >
+                                {ph.active && <span className="bp-traj-phase-dot" style={{ background: ph.active ? sc.bar : "var(--color-dim)" }} />}
+                                {ph.label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="bp-traj-airport-block" style={{ textAlign: "right" }}>
+                    <div className="bp-traj-iata">{leg.arr}</div>
+                    <div className="bp-traj-utc">{leg.arrUtc}Z</div>
+                    <div className="bp-traj-local">{leg.ON_BLOCK_TIME ? `ONB ${leg.ON_BLOCK_TIME}` : "—"}</div>
+                </div>
+            </div>
+
+            {/* Status + delay row */}
+            <div className="bp-traj-status-row">
+                <div
+                    className={`bp-traj-state-chip ${live ? "pulse" : ""}`}
+                    style={{
+                        color: STATE_COLORS[leg.state] || "#808b99",
+                        background: `${STATE_COLORS[leg.state] || "#808b99"}18`,
+                        borderColor: `${STATE_COLORS[leg.state] || "#808b99"}40`,
+                    }}
+                >
+                    {live && <span className="bp-traj-pulse-dot" style={{ background: STATE_COLORS[leg.state] }} />}
+                    {leg.state}
+                </div>
+
+                {delay && (
+                    <div className="bp-traj-delay-chip" style={{ color: delay.color, borderColor: `${delay.color}40`, background: `${delay.color}12` }}>
+                        {delay.label}
+                    </div>
+                )}
+
+                <div className="bp-traj-progress-label" style={{ color: sc.text }}>
+                    {cancelled ? "Annulé" : `${progress}% parcouru`}
+                </div>
+            </div>
+
+            {/* Timing grid */}
+            <div className="bp-traj-timing">
+                {[
+                    ["Dép. prévu",  leg.DEP_TIME_SCHED || "—"],
+                    ["Off Block",   leg.OFF_BLOCK_TIME || "—"],
+                    ["Airborne",    leg.AIRBORNE_TIME  || "—"],
+                    ["Landing",     leg.LANDING_TIME   || "—"],
+                    ["On Block",    leg.ON_BLOCK_TIME  || "—"],
+                    ["Arr. prévu",  leg.ARR_TIME_SCHED || "—"],
+                ].map(([k, v]) => (
+                    <div key={k} className="bp-traj-time-cell">
+                        <div className="bp-traj-time-label">{k}</div>
+                        <div className="bp-traj-time-val">{v}</div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+/* ── Main component ───────────────────────────────────────── */
+export default function GanttBottomPanel({ leg, onClose, isDark }) {
+    const [tab, setTab] = useState("vol");
     if (!leg) return null;
 
     const sc = SERVICE_COLORS[leg.service] || SERVICE_COLORS.PAX;
@@ -24,7 +176,7 @@ export default function GanttBottomPanel({ leg, onClose }) {
 
     return (
         <div className="bottom-panel" style={{ borderTopColor: sc.bar }}>
-            {/* drag handle */}
+            {/* Drag handle */}
             <div className="bp-handle-row">
                 <div className="bp-handle" />
             </div>
@@ -46,15 +198,15 @@ export default function GanttBottomPanel({ leg, onClose }) {
                 <div className="bp-route">
                     <div className="bp-airport-block">
                         <div className="bp-airport-code">{leg.dep}</div>
-                        <div className="bp-airport-label">DÉPART</div>
+                        <div className="bp-airport-label">Départ</div>
                     </div>
                     <div className="bp-route-line">
-                        <div className="bp-route-bar" style={{ background: `linear-gradient(90deg,${sc.bar},${sc.bar}66)` }} />
+                        <div className="bp-route-bar" style={{ background: `linear-gradient(90deg,${sc.bar},${sc.bar}55)` }} />
                         <div className="bp-route-service" style={{ color: sc.text }}>{leg.service}</div>
                     </div>
                     <div className="bp-airport-block">
                         <div className="bp-airport-code">{leg.arr}</div>
-                        <div className="bp-airport-label">ARRIVÉE</div>
+                        <div className="bp-airport-label">Arrivée</div>
                     </div>
                 </div>
 
@@ -78,62 +230,39 @@ export default function GanttBottomPanel({ leg, onClose }) {
 
             {/* Tab content */}
             <div className="bp-body">
-                {tab === "info" && (
+
+                {/* ── VOL ── */}
+                {tab === "vol" && (
                     <div className="bp-grid-6">
                         {[
-                            ["Numéro de vol", leg.fn],
-                            ["Immatriculation", leg.reg],
-                            ["Sous-type", leg.subtype],
-                            ["Service", leg.service],
-                            ["Départ", leg.dep],
-                            ["Arrivée", leg.arr],
-                            ["Retard", leg.delay > 0 ? `+${leg.delay} min` : "—"],
-                            ["Statut", leg.state],
-                            ["Date", leg.date],
+                            ["Vol",        leg.fn],
+                            ["Immat.",     leg.reg],
+                            ["Type",       leg.subtype],
+                            ["Service",    leg.service],
+                            ["Départ",     leg.dep],
+                            ["Arrivée",    leg.arr],
+                            ["Retard",     leg.delay > 0 ? `+${leg.delay} min` : "—"],
+                            ["Statut",     leg.state],
+                            ["Date",       leg.date],
                         ].map(([k, v]) => (
                             <div key={k} className="bp-card">
                                 <div className="bp-card-label">{k}</div>
-                                <div className="bp-card-value" style={{ color: k === "Retard" && leg.delay > 0 ? "#ef4444" : undefined }}>{v}</div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {tab === "services" && (
-                    <div className="bp-grid-4">
-                        {[
-                            ["Carburant", leg.fuel],
-                            ["Catering", leg.catering],
-                            ["Nettoyage", leg.cleaning],
-                            ["Loadsheet", leg.loadsheet],
-                        ].map(([k, v]) => (
-                            <div key={k} className="bp-svc-card">
-                                <div className="bp-card-label">{k}</div>
-                                <div className="bp-svc-value">
-                                    <StatusDot value={v} />
-                                    <span>{v}</span>
+                                <div
+                                    className="bp-card-value"
+                                    style={{ color: k === "Retard" && leg.delay > 0 ? "#ef4444" : undefined }}
+                                >
+                                    {v}
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
 
-                {tab === "timing" && (
-                    <div className="bp-grid-4">
-                        {[
-                            ["Départ UTC", `${leg.depUtc}Z`],
-                            ["Arrivée UTC", `${leg.arrUtc}Z`],
-                            ["Départ Local", leg.depLocal],
-                            ["Arrivée Local", leg.arrLocal],
-                            ["Code Retard ", leg.delay > 0 ? `+${leg.delay} min` : "—"],
-                        ].map(([k, v]) => (
-                            <div key={k} className="bp-time-card">
-                                <div className="bp-card-label">{k}</div>
-                                <div className="bp-time-value">{v}</div>
-                            </div>
-                        ))}
-                    </div>
+                {/* ── TRAJECTOIRE ── */}
+                {tab === "trajectoire" && (
+                    <TrajectoryTab leg={leg} sc={sc} />
                 )}
+
             </div>
         </div>
     );

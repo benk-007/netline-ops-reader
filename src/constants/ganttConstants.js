@@ -6,11 +6,11 @@ export const HEADER_H = 48;
 export const LABEL_W = 180;
 
 export const SERVICE_COLORS = {
-  PAX: { bar: "#c8102e", bg: "rgba(200,16,46,0.15)", text: "#fca5a5" },
-  Charter: { bar: "#7c3aed", bg: "rgba(124,58,237,0.15)", text: "#c4b5fd" },
-  Cargo: { bar: "#0284c7", bg: "rgba(2,132,199,0.15)", text: "#7dd3fc" },
-  Ferry: { bar: "#059669", bg: "rgba(5,150,105,0.15)", text: "#6ee7b7" },
-  Maintenance: { bar: "#d97706", bg: "rgba(217,119,6,0.15)", text: "#fcd34d" },
+  PAX:         { bar: "#2563eb", bg: "rgba(37,99,235,0.15)",   text: "#93c5fd"  },
+  Charter:     { bar: "#7c3aed", bg: "rgba(124,58,237,0.15)",  text: "#c4b5fd"  },
+  Cargo:       { bar: "#0891b2", bg: "rgba(8,145,178,0.15)",   text: "#67e8f9"  },
+  Ferry:       { bar: "#059669", bg: "rgba(5,150,105,0.15)",   text: "#6ee7b7"  },
+  Maintenance: { bar: "#d97706", bg: "rgba(217,119,6,0.15)",   text: "#fcd34d"  },
 };
 
 export const STATE_COLORS = {
@@ -79,12 +79,12 @@ export const DEFAULT_PROFILE = {
   id: "default",
   name: "Défaut",
   filters: {
-    fDate: "Tous",
-    fService: "Tous",
-    fDep: "Tous",
-    fArr: "Tous",
-    fFlight: "",
-    fSubtype: "Tous types",
+    fDate:    [],   // [] = all dates
+    fService: [],   // [] = all services
+    fDep:     [],   // [] = all departures
+    fArr:     [],   // [] = all arrivals
+    fFlight:  "",
+    fSubtype: [],   // [] = all subtypes
   },
   utcMode: true,
   zoom: 1,

@@ -15,8 +15,9 @@ export default function GanttTopbar({ isDark, utcMode, sidebarOpen, onToggleDark
             {/* Brand */}
             <div className="topbar-brand">
                 <div className="topbar-logo">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21 4 19 2c-2-2-4-2-5.5-.5L10 5 1.8 6.2c-.5.1-.9.5-.7 1.1l2 4.5c.2.4.6.6 1 .6H8l-1 2.5c-.1.3 0 .7.3.9l2 1.4c.3.2.7.2 1-.1l1.5-1.5 4.5 2c.6.2 1-.2 1.1-.7z" />
+                    {/* Top-down airplane silhouette — clean symmetric avionics style */}
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="white" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 1 L19.5 13 L31 16 L19.5 19 L17.5 29 L16 25 L14.5 29 L12.5 19 L1 16 L12.5 13 Z" />
                     </svg>
                 </div>
                 <div>

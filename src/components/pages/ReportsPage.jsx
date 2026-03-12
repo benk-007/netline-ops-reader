@@ -1,7 +1,66 @@
 import { useState, useRef, useEffect } from "react";
+import { legs as ALL_LEGS } from "../../data/flightsData";
+
+/* ── Map Leg state → FlightCard statusType ──────────────── */
+const STATE_TO_STATUS = {
+    Airborne:  "active",
+    Arrived:   "landed",
+    Delayed:   "delayed",
+    Cancelled: "cancelled",
+    Scheduled: "scheduled",
+    Boarding:  "scheduled",
+};
+
+/* ── City lookup for display labels ──────────────────────── */
+const CITY_MAP = {
+    CMN: "Casablanca", CDG: "Paris", LHR: "Londres", MAD: "Madrid",
+    BCN: "Barcelone", DXB: "Dubaï", JFK: "New York", BRU: "Bruxelles",
+    IST: "Istanbul", ALG: "Alger", TUN: "Tunis", CAI: "Le Caire",
+    FRA: "Francfort", GVA: "Genève", FCO: "Rome", RAK: "Marrakech",
+    AGA: "Agadir", OUD: "Oujda", FES: "Fès", RBA: "Rabat",
+    TNG: "Tanger", DSS: "Dakar", DKR: "Dakar", LIS: "Lisbonne",
+};
+
+/* ── Compute block-time duration string ────────────────────*/
+function computeDuration(depUtc, arrUtc) {
+    if (!depUtc || !arrUtc) return "—";
+    const [dh, dm] = depUtc.split(":").map(Number);
+    const [ah, am] = arrUtc.split(":").map(Number);
+    let mins = (ah * 60 + am) - (dh * 60 + dm);
+    if (mins < 0) mins += 24 * 60;
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}h${m > 0 ? ` ${m}m` : ""}`;
+}
+
+/* ── Convert Leg → FlightCard format ───────────────────────*/
+function legToFlight(leg) {
+    return {
+        id:         leg.id,
+        fn:         leg.fn,
+        airline:    "Royal Air Maroc",
+        airlineCode:"AT",
+        statusType: STATE_TO_STATUS[leg.state] || "scheduled",
+        dep:        leg.dep,
+        arr:        leg.arr,
+        depCity:    CITY_MAP[leg.dep] || leg.dep,
+        arrCity:    CITY_MAP[leg.arr] || leg.arr,
+        depAirport: `${CITY_MAP[leg.dep] || leg.dep} (${leg.dep})`,
+        arrAirport: `${CITY_MAP[leg.arr] || leg.arr} (${leg.arr})`,
+        depTime:    leg.depUtc,
+        arrTime:    leg.arrUtc,
+        depDate:    leg.date,
+        arrDate:    leg.date,
+        aircraft:   leg.subtype,
+        duration:   computeDuration(leg.depUtc, leg.arrUtc),
+        service:    leg.service,
+        delay:      leg.delay,
+        reg:        leg.reg,
+    };
+}
 
 /* ─────────────────────────────────────────────
-   MOCK DATA  — replace with your real API calls
+   STATIC REFERENCE DATA
 ───────────────────────────────────────────────*/
 const AIRLINES = [
     { code: "AT", name: "Royal Air Maroc" },
@@ -37,36 +96,7 @@ const AIRPORTS = [
     { code: "ABJ", city: "Abidjan", name: "Félix Houphouët-Boigny", country: "Côte d'Ivoire" },
 ];
 
-const MOCK_FLIGHTS = [
-    {
-        id: "AT788", airline: "Royal Air Maroc", airlineCode: "AT", fn: "AT788", statusType: "scheduled",
-        dep: "CMN", depCity: "Casablanca", depAirport: "Mohammed V (CMN)",
-        arr: "CDG", arrCity: "Paris", arrAirport: "Charles de Gaulle (CDG)",
-        depTime: "12:20", arrTime: "16:25", depDate: "lun., mars 9", arrDate: "lun., mars 9",
-        aircraft: "Boeing 787", duration: "3h 05m",
-    },
-    {
-        id: "AT202", airline: "Royal Air Maroc", airlineCode: "AT", fn: "AT202", statusType: "active",
-        dep: "CDG", depCity: "Paris", depAirport: "Charles de Gaulle (CDG)",
-        arr: "CMN", arrCity: "Casablanca", arrAirport: "Mohammed V (CMN)",
-        depTime: "08:45", arrTime: "11:30", depDate: "lun., mars 9", arrDate: "lun., mars 9",
-        aircraft: "Boeing 737", duration: "2h 45m",
-    },
-    {
-        id: "AT551", airline: "Royal Air Maroc", airlineCode: "AT", fn: "AT551", statusType: "landed",
-        dep: "CMN", depCity: "Casablanca", depAirport: "Mohammed V (CMN)",
-        arr: "LBV", arrCity: "Libreville", arrAirport: "Léon-Mba (LBV)",
-        depTime: "10:30", arrTime: "14:00", depDate: "lun., mars 9", arrDate: "lun., mars 9",
-        aircraft: "Boeing 737 MAX", duration: "5h 30m",
-    },
-    {
-        id: "AT850", airline: "Royal Air Maroc", airlineCode: "AT", fn: "AT850", statusType: "delayed",
-        dep: "CMN", depCity: "Casablanca", depAirport: "Mohammed V (CMN)",
-        arr: "JFK", arrCity: "New York", arrAirport: "John F. Kennedy (JFK)",
-        depTime: "14:00", arrTime: "18:30", depDate: "lun., mars 9", arrDate: "lun., mars 9",
-        aircraft: "Boeing 787-9", duration: "8h 30m",
-    },
-];
+/* MOCK_FLIGHTS removed — using real legs from flightsData.js */
 
 const STATUS_STYLES = {
     scheduled: { bg: "#e8f5e9", color: "#2e7d32" },
@@ -404,22 +434,23 @@ export default function FlightSearch({ isDark }) {
         setLoading(true);
         setSearched(false);
         setTimeout(() => {
-            let res;
+            let matched;
             if (tab === "route") {
-                res = MOCK_FLIGHTS.filter(f => (f.dep === from && f.arr === to) || (f.dep === to && f.arr === from));
-                if (!res.length) res = MOCK_FLIGHTS.slice(0, 2);
+                matched = ALL_LEGS.filter(l =>
+                    (l.dep === from && l.arr === to) ||
+                    (l.dep === to   && l.arr === from)
+                );
             } else {
-                res = MOCK_FLIGHTS.filter(f => {
-                    const matchNum = f.fn.toLowerCase().includes(flightNum.toLowerCase());
-                    const matchAirline = !airline || f.airlineCode === airline;
-                    return matchNum && matchAirline;
-                });
-                if (!res.length) res = [MOCK_FLIGHTS[0]];
+                matched = ALL_LEGS.filter(l =>
+                    l.fn.toLowerCase().includes(flightNum.toLowerCase())
+                );
             }
-            setResults(res);
+            // Sort by departure time, map to FlightCard format
+            matched.sort((a, b) => a.depUtc.localeCompare(b.depUtc));
+            setResults(matched.map(legToFlight));
             setLoading(false);
             setSearched(true);
-        }, 750);
+        }, 500);
     };
 
     const handleTabChange = (t) => { setTab(t); setResults(null); setSearched(false); };

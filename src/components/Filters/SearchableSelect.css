@@ -1,5 +1,10 @@
 /* ─── SearchableSelect Dropdown ──────────────────────────── */
 
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 .ss-root {
     display: flex;
     flex-direction: column;
@@ -13,6 +18,13 @@
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--color-dim);
+}
+
+/* Active state (multi with selections) */
+.ss-trigger.active {
+    border-color: rgba(200, 16, 46, 0.5);
+    color: var(--color-text);
+    background: rgba(200, 16, 46, 0.07);
 }
 
 /* Trigger button */
@@ -166,4 +178,68 @@
     text-align: center;
     font-size: 11px;
     color: var(--color-dim);
+}
+
+/* ─── Multi-select additions ─────────────────────────────── */
+
+/* Square checkbox indicator */
+.ss-checkbox {
+    flex-shrink: 0;
+    width: 13px;
+    height: 13px;
+    border-radius: 3px;
+    border: 1.5px solid var(--color-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
+    background: transparent;
+}
+
+.ss-checkbox.checked {
+    background: var(--ram-red);
+    border-color: var(--ram-red);
+    color: #fff;
+    box-shadow: 0 0 6px rgba(200, 16, 46, 0.3);
+}
+
+.ss-option:hover .ss-checkbox:not(.checked) {
+    border-color: var(--color-muted);
+}
+
+/* Apply / close footer row */
+.ss-apply-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-top: 1px solid var(--color-border-2);
+    background: var(--bg-surface);
+}
+
+.ss-apply-count {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--color-muted);
+    letter-spacing: 0.5px;
+}
+
+.ss-apply-btn {
+    background: var(--ram-red);
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: all var(--transition-fast);
+}
+
+.ss-apply-btn:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 0 10px rgba(200, 16, 46, 0.3);
 }

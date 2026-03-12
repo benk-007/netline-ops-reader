@@ -363,3 +363,21 @@
 .pm-editor-row select:focus {
     border-color: rgba(200, 16, 46, 0.4);
 }
+
+/* SearchableSelect inside editor rows */
+.pm-editor-row-select {
+    align-items: flex-start;
+}
+
+.pm-editor-row-select label {
+    padding-top: 8px;
+}
+
+.pm-editor-row-select .ss-root {
+    flex: 1;
+}
+
+.pm-editor-row-select .ss-trigger {
+    width: 100%;
+    box-sizing: border-box;
+}

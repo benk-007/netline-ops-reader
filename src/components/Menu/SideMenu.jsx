@@ -1,5 +1,18 @@
 import "./SideMenu.css";
 
+/* ── Role-based page access ───────────────────────────────────── */
+const ROLE_PAGES = {
+  admin:       ["gantt", "schedule", "reports", "admin"],
+  staff_ops:   ["gantt", "schedule", "reports"],
+  chef_escale: ["schedule", "reports"],
+};
+
+const ROLE_LABELS = {
+  admin:       "Administrateur",
+  staff_ops:   "Staff Ops",
+  chef_escale: "Chef d'Escale",
+};
+
 /* ── Icons as inline SVGs to avoid icon library dependency ── */
 
 function GanttIcon() {
@@ -47,14 +60,40 @@ function AdminIcon() {
   );
 }
 
-const NAV_ITEMS = [
-  { key: "gantt", label: "Gantt", Icon: GanttIcon },
+function LogoutIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
+  );
+}
+
+const ALL_NAV_ITEMS = [
+  { key: "gantt",    label: "Gantt",    Icon: GanttIcon    },
   { key: "schedule", label: "Schedule", Icon: ScheduleIcon },
-  { key: "reports", label: "Reports", Icon: ReportsIcon },
-  { key: "admin", label: "Admin", Icon: AdminIcon },
+  { key: "reports",  label: "Reports",  Icon: ReportsIcon  },
+  { key: "admin",    label: "Admin",    Icon: AdminIcon    },
 ];
 
-export default function SideMenu({ expanded, onToggle, currentPage, onNavigate }) {
+export default function SideMenu({
+  expanded,
+  onToggle,
+  currentPage,
+  onNavigate,
+  userRole,
+  userDisplayName,
+  userInitials,
+  onLogout,
+}) {
+  const allowedKeys = ROLE_PAGES[userRole] ?? [];
+  const navItems = ALL_NAV_ITEMS.filter(item => allowedKeys.includes(item.key));
+  const roleLabel = ROLE_LABELS[userRole] ?? userRole;
+
+  /* Initials fallback */
+  const initials = userInitials ?? (userDisplayName?.slice(0, 2).toUpperCase() ?? "??");
+
   return (
     <nav className={`sidemenu ${expanded ? "expanded" : ""}`} role="navigation" aria-label="Main navigation">
 
@@ -74,9 +113,9 @@ export default function SideMenu({ expanded, onToggle, currentPage, onNavigate }
 
       <div className="sidemenu-top-divider" />
 
-      {/* Nav items */}
+      {/* Nav items — filtered by role */}
       <div className="sidemenu-nav">
-        {NAV_ITEMS.map(({ key, label, Icon }) => (
+        {navItems.map(({ key, label, Icon }) => (
           <button
             key={key}
             className={`sidemenu-item ${currentPage === key ? "active" : ""}`}
@@ -93,17 +132,30 @@ export default function SideMenu({ expanded, onToggle, currentPage, onNavigate }
         ))}
       </div>
 
-      {/* Bottom — user badge */}
+      {/* Bottom — user badge + logout */}
       <div className="sidemenu-bottom">
         <div className="sidemenu-avatar">
-          <div className="sidemenu-avatar-circle">OPS</div>
+          <div className="sidemenu-avatar-circle">{initials}</div>
           {expanded && (
             <div className="sidemenu-avatar-info">
-              <div className="sidemenu-avatar-name">Dispatcher</div>
-              <div className="sidemenu-avatar-role">RAM Ops Center</div>
+              <div className="sidemenu-avatar-name">{userDisplayName}</div>
+              <div className="sidemenu-avatar-role">{roleLabel}</div>
             </div>
           )}
         </div>
+
+        {/* Logout button */}
+        <button
+          className="sidemenu-logout"
+          onClick={onLogout}
+          title="Se déconnecter"
+          aria-label="Se déconnecter"
+        >
+          <span className="sidemenu-icon">
+            <LogoutIcon />
+          </span>
+          <span className="sidemenu-label">Déconnexion</span>
+        </button>
       </div>
 
     </nav>

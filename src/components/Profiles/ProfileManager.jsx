@@ -3,12 +3,13 @@ import { DEFAULT_PROFILE } from "../../constants/ganttConstants";
 import "./ProfileManager.css";
 import { SERVICE_COLORS, SUBTYPE_OPTIONS } from "../../constants/ganttConstants";
 import { legs, dates } from "../../data/flightsData";
+import SearchableSelect from "../Filters/SearchableSelect";
 const STORAGE_KEY = "ram_gantt_profiles";
-const allDeps = ["Tous", ...[...new Set(legs.map(l => l.dep))].sort()];
-const allArrs = ["Tous", ...[...new Set(legs.map(l => l.arr))].sort()];
+const allDeps     = ["Tous", ...[...new Set(legs.map(l => l.dep))].sort()];
+const allArrs     = ["Tous", ...[...new Set(legs.map(l => l.arr))].sort()];
 const allServices = ["Tous", ...Object.keys(SERVICE_COLORS)];
-const allDates = ["Toutes dates", ...dates];
-const allSubtypes = SUBTYPE_OPTIONS;
+const allDates    = ["Tous", ...dates];
+const allSubtypes = ["Tous", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types")];
 function loadProfiles() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -122,12 +123,18 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                             </div>
                                             <div className="pm-profile-tags">
                                                 {Object.entries(profile.filters)
-                                                    .filter(([, v]) => v && v !== "Tous" && v !== "Tous types" && v !== "")
+                                                    .flatMap(([k, v]) => {
+                                                        if (Array.isArray(v)) return v.map(item => ({ k, label: item }));
+                                                        if (!v || v === "Tous" || v === "Tous types" || v === "") return [];
+                                                        return [{ k, label: v }];
+                                                    })
                                                     .slice(0, 4)
-                                                    .map(([k, v]) => (
-                                                        <span key={k} className="pm-tag">{v}</span>
+                                                    .map(({ k, label }, i) => (
+                                                        <span key={`${k}-${i}`} className="pm-tag">{label}</span>
                                                     ))}
-                                                {Object.values(profile.filters).every(v => !v || v === "Tous" || v === "Tous types" || v === "") && (
+                                                {Object.entries(profile.filters).every(([, v]) =>
+                                                    Array.isArray(v) ? v.length === 0 : (!v || v === "Tous" || v === "Tous types" || v === "")
+                                                ) && (
                                                     <span className="pm-tag pm-tag-neutral">Tous filtres</span>
                                                 )}
                                             </div>
@@ -177,64 +184,59 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                             <div className="pm-section-label" style={{ marginTop: 20 }}>Détails du profil</div>
                             <div className="pm-filter-editor">
 
-                                <div className="pm-editor-row">
+                                <div className="pm-editor-row pm-editor-row-select">
                                     <label>Date</label>
-                                    <select
-                                        value={profileFilters.fDate}
-                                        onChange={e => setProfileFilters({ ...profileFilters, fDate: e.target.value })}
-                                    >
-                                        {allDates.map(d => (
-                                            <option key={d} value={d}>{d}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableSelect
+                                        options={allDates}
+                                        value={Array.isArray(profileFilters.fDate) ? profileFilters.fDate : []}
+                                        onChange={v => setProfileFilters({ ...profileFilters, fDate: v })}
+                                        placeholder="Rechercher date..."
+                                        multi
+                                    />
                                 </div>
 
-                                <div className="pm-editor-row">
+                                <div className="pm-editor-row pm-editor-row-select">
                                     <label>DEP</label>
-                                    <select
-                                        value={profileFilters.fDep}
-                                        onChange={e => setProfileFilters({ ...profileFilters, fDep: e.target.value })}
-                                    >
-                                        {allDeps.map(dep => (
-                                            <option key={dep} value={dep}>{dep}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableSelect
+                                        options={allDeps}
+                                        value={Array.isArray(profileFilters.fDep) ? profileFilters.fDep : []}
+                                        onChange={v => setProfileFilters({ ...profileFilters, fDep: v })}
+                                        placeholder="Rechercher aéroport..."
+                                        multi
+                                    />
                                 </div>
 
-                                <div className="pm-editor-row">
+                                <div className="pm-editor-row pm-editor-row-select">
                                     <label>ARR</label>
-                                    <select
-                                        value={profileFilters.fArr}
-                                        onChange={e => setProfileFilters({ ...profileFilters, fArr: e.target.value })}
-                                    >
-                                        {allArrs.map(arr => (
-                                            <option key={arr} value={arr}>{arr}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableSelect
+                                        options={allArrs}
+                                        value={Array.isArray(profileFilters.fArr) ? profileFilters.fArr : []}
+                                        onChange={v => setProfileFilters({ ...profileFilters, fArr: v })}
+                                        placeholder="Rechercher aéroport..."
+                                        multi
+                                    />
                                 </div>
 
-                                <div className="pm-editor-row">
+                                <div className="pm-editor-row pm-editor-row-select">
                                     <label>Service</label>
-                                    <select
-                                        value={profileFilters.fService}
-                                        onChange={e => setProfileFilters({ ...profileFilters, fService: e.target.value })}
-                                    >
-                                        {allServices.map(s => (
-                                            <option key={s} value={s}>{s}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableSelect
+                                        options={allServices}
+                                        value={Array.isArray(profileFilters.fService) ? profileFilters.fService : []}
+                                        onChange={v => setProfileFilters({ ...profileFilters, fService: v })}
+                                        placeholder="Rechercher service..."
+                                        multi
+                                    />
                                 </div>
 
-                                <div className="pm-editor-row">
+                                <div className="pm-editor-row pm-editor-row-select">
                                     <label>Type Avion</label>
-                                    <select
-                                        value={profileFilters.fSubtype}
-                                        onChange={e => setProfileFilters({ ...profileFilters, fSubtype: e.target.value })}
-                                    >
-                                        {allSubtypes.map(type => (
-                                            <option key={type} value={type}>{type}</option>
-                                        ))}
-                                    </select>
+                                    <SearchableSelect
+                                        options={allSubtypes}
+                                        value={Array.isArray(profileFilters.fSubtype) ? profileFilters.fSubtype : []}
+                                        onChange={v => setProfileFilters({ ...profileFilters, fSubtype: v })}
+                                        placeholder="Rechercher type..."
+                                        multi
+                                    />
                                 </div>
 
                                 <div className="pm-editor-row">

@@ -233,7 +233,83 @@
     letter-spacing: 0.5px;
 }
 
+/* Logout button */
+.sidemenu-logout {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 40px;
+    width: 100%;
+    padding: 0 12px;
+    border: none;
+    background: transparent;
+    color: var(--color-muted);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    text-align: left;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.sidemenu-logout:hover {
+    color: #fca5a5;
+    background: rgba(200, 16, 46, 0.1);
+}
+
+.sidemenu-logout .sidemenu-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 /* Tooltip for collapsed state */
 .sidemenu-item[title]:not(.sidemenu.expanded *) {
     position: relative;
+}
+
+/* ── Light mode overrides ──────────────────────────────────── */
+
+[data-theme='light'] .sidemenu {
+    border-right-color: var(--color-border);
+    box-shadow: 2px 0 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme='light'] .sidemenu-item.active {
+    color: var(--ram-red);
+    background: rgba(200, 16, 46, 0.08);
+    border-color: rgba(200, 16, 46, 0.2);
+    box-shadow: none;
+}
+
+[data-theme='light'] .sidemenu-item.active .sidemenu-icon {
+    color: var(--ram-red);
+}
+
+[data-theme='light'] .sidemenu-item:hover {
+    background: var(--bg-surface-3);
+    box-shadow: none;
+}
+
+[data-theme='light'] .sidemenu-logout:hover {
+    color: var(--ram-red);
+    background: rgba(200, 16, 46, 0.07);
+}
+
+[data-theme='light'] .sidemenu-avatar-circle {
+    box-shadow: 0 0 0 2px rgba(200, 16, 46, 0.15);
+}
+
+[data-theme='light'] .sidemenu-top-divider,
+[data-theme='light'] .sidemenu-bottom {
+    border-color: var(--color-border);
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { legs as ALL_LEGS } from "../../data/flightsData";
 
 const mockFlights = [
     {
@@ -96,7 +97,54 @@ const statusDot = (val) => {
     return "#22c55e";
 };
 
-    
+const themes = {
+    dark: {
+        bg: "#03080d",
+        surface: "#0a1320",
+        surfaceHover: "#111e32",
+        border: "#14243b",
+        borderHover: "rgba(200,16,46,0.3)",
+        text: "#e2e8f0",
+        textMuted: "#94a3b8",
+        textDim: "#64748b",
+        textDimmer: "#475569",
+        filterBorder: "#1e2d3d",
+        filterText: "#64748b",
+        kpiBg: "#0a1320",
+        modalBg: "#0d1829",
+        modalBorder: "#14243b",
+        tabBorder: "#14243b",
+        tabInactive: "#475569",
+        cardBg: "#111e32",
+        cardBorder: "#1a2a45",
+        delayBg: "rgba(239,68,68,0.08)",
+        delayCodeBg: "rgba(239,68,68,0.12)",
+        otpTrack: "#1a2a45",
+    },
+    light: {
+        bg: "#f8fafc",
+        surface: "#ffffff",
+        surfaceHover: "#f1f5f9",
+        border: "#e2e8f0",
+        borderHover: "rgba(200,16,46,0.25)",
+        text: "#0f172a",
+        textMuted: "#475569",
+        textDim: "#94a3b8",
+        textDimmer: "#cbd5e1",
+        filterBorder: "#e2e8f0",
+        filterText: "#94a3b8",
+        kpiBg: "#ffffff",
+        modalBg: "#ffffff",
+        modalBorder: "#e2e8f0",
+        tabBorder: "#e2e8f0",
+        tabInactive: "#94a3b8",
+        cardBg: "#f8fafc",
+        cardBorder: "#e2e8f0",
+        delayBg: "rgba(239,68,68,0.06)",
+        delayCodeBg: "rgba(239,68,68,0.08)",
+        otpTrack: "#e2e8f0",
+    },
+};
 
 function Modal({ flight, onClose, t, isDark }) {
     const [tab, setTab] = useState("general");
@@ -281,13 +329,42 @@ function Modal({ flight, onClose, t, isDark }) {
     );
 }
 
-export default function SchedulePage({ isDark
-}) {
+/* ── Mock "current time" matches legs date: 2026-03-05T10:00 ── */
+const NOW_H = 10;
+const NOW_M = 0;
+const WINDOW_H = 3;
+
+function timeToMins(hhmm) {
+    const [h, m] = (hhmm || "00:00").split(":").map(Number);
+    return h * 60 + m;
+}
+
+const nowMins = NOW_H * 60 + NOW_M;
+const windowEnd = nowMins + WINDOW_H * 60;
+
+const legsNext3h = ALL_LEGS.filter(l => {
+    const dep = timeToMins(l.depUtc);
+    return dep >= nowMins && dep <= windowEnd;
+});
+
+const next3hByState = legsNext3h.reduce((acc, l) => {
+    acc[l.state] = (acc[l.state] || 0) + 1;
+    return acc;
+}, {});
+
+const STATE_COLORS_SCH = {
+    Scheduled: { color: "#64748b", bg: "rgba(100,116,139,0.12)" },
+    Boarding:  { color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
+    Airborne:  { color: "#3b82f6", bg: "rgba(59,130,246,0.12)" },
+    Delayed:   { color: "#ef4444", bg: "rgba(239,68,68,0.12)" },
+    Arrived:   { color: "#22c55e", bg: "rgba(34,197,94,0.12)" },
+};
+
+export default function SchedulePage({ isDark }) {
     const [selected, setSelected] = useState(null);
     const [filter, setFilter] = useState("Tous");
 
     const t = themes[isDark ? "dark" : "light"];
-
 
     const states = ["Tous", "Scheduled", "Boarding", "Airborne", "Arrived", "Delayed", "Cancelled"];
     const filtered = filter === "Tous" ? mockFlights : mockFlights.filter(f => f.leg_state === filter);
@@ -309,6 +386,40 @@ export default function SchedulePage({ isDark
 
 
             <div style={{ maxWidth: 1380, margin: "0 auto", padding: "28px 36px" }}>
+
+                {/* ── Next 3h banner ── */}
+                <div style={{
+                    display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap",
+                    background: isDark ? "rgba(37,99,235,0.07)" : "#eff6ff",
+                    border: `1px solid ${isDark ? "rgba(37,99,235,0.2)" : "#bfdbfe"}`,
+                    borderRadius: 10, padding: "12px 20px", marginBottom: 18,
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", boxShadow: "0 0 8px #3b82f6", animation: "pulse 1.5s infinite" }} />
+                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", color: "#60a5fa" }}>
+                            Prochains vols · {String(NOW_H).padStart(2,"0")}:{String(NOW_M).padStart(2,"0")} – {String(NOW_H + WINDOW_H).padStart(2,"0")}:00 UTC
+                        </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 800, color: "#93c5fd" }}>
+                            {legsNext3h.length}
+                        </span>
+                        <span style={{ fontSize: 11, color: t.textMuted }}>legs planifiés</span>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                        {Object.entries(next3hByState).map(([state, count]) => {
+                            const sc = STATE_COLORS_SCH[state] || { color: "#64748b", bg: "rgba(100,116,139,0.1)" };
+                            return (
+                                <span key={state} style={{
+                                    padding: "2px 10px", borderRadius: 5, fontSize: 10, fontWeight: 700,
+                                    letterSpacing: 0.5, background: sc.bg, color: sc.color, border: `1px solid ${sc.color}30`,
+                                }}>
+                                    {count} {state}
+                                </span>
+                            );
+                        })}
+                    </div>
+                </div>
 
                 {/* KPIs */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 22 }}>

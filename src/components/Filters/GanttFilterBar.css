@@ -3,55 +3,84 @@
 .filter-bar {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--color-border);
-  padding: 8px 20px;
+  padding: 0 20px;
+  height: 56px;
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
   flex-shrink: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
   position: relative;
 }
 
-/* Hide scrollbar but keep scroll functionality */
-.filter-bar::-webkit-scrollbar {
-  height: 3px;
-}
+.filter-bar::-webkit-scrollbar { height: 2px; }
+.filter-bar::-webkit-scrollbar-track { background: transparent; }
+.filter-bar::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 1px; }
 
-.filter-bar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.filter-bar::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 3px;
-}
-
-.filter-group {
+/* ── Filter chip wrapper ── */
+.filter-chip {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 0;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.filter-chip-label {
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filter-chip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
   flex-shrink: 0;
 }
 
+/* Label color per filter type */
+.filter-chip[data-type="date"]    .filter-chip-label { color: #60a5fa; }
+.filter-chip[data-type="dep"]     .filter-chip-label { color: #34d399; }
+.filter-chip[data-type="arr"]     .filter-chip-label { color: #a78bfa; }
+.filter-chip[data-type="service"] .filter-chip-label { color: #fbbf24; }
+.filter-chip[data-type="type"]    .filter-chip-label { color: #67e8f9; }
+.filter-chip[data-type="flight"]  .filter-chip-label { color: #fca5a5; }
+
+.filter-chip[data-type="date"]    .filter-chip-dot { background: #60a5fa; }
+.filter-chip[data-type="dep"]     .filter-chip-dot { background: #34d399; }
+.filter-chip[data-type="arr"]     .filter-chip-dot { background: #a78bfa; }
+.filter-chip[data-type="service"] .filter-chip-dot { background: #fbbf24; }
+.filter-chip[data-type="type"]    .filter-chip-dot { background: #67e8f9; }
+.filter-chip[data-type="flight"]  .filter-chip-dot { background: #fca5a5; }
+
+/* Legacy label (used in flight search) */
 .filter-label {
-  font-size: 8px;
+  font-size: 8.5px;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
   color: var(--color-dim);
 }
 
-.filter-divider {
-  width: 1px;
-  height: 36px;
-  background: var(--color-border-2);
-  margin: 0 2px;
+/* ── Separator dot ── */
+.filter-sep {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-border);
   flex-shrink: 0;
-  align-self: flex-end;
+  align-self: center;
+  margin: 0 2px;
 }
 
-/* Flight number search */
+/* ── Flight number search ── */
 .filter-search-wrap {
   display: flex;
   align-items: center;
@@ -61,12 +90,13 @@
   border-radius: var(--radius-md);
   padding: 6px 10px;
   min-width: 120px;
-  transition: border-color var(--transition-fast);
+  height: 32px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .filter-search-wrap:focus-within {
-  border-color: var(--filter-border-focus);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+  border-color: #fca5a5;
+  box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.15);
 }
 
 .filter-input {
@@ -81,9 +111,7 @@
   width: 80px;
 }
 
-.filter-input::placeholder {
-  color: var(--color-dim);
-}
+.filter-input::placeholder { color: var(--color-dim); }
 
 .filter-clear-btn {
   background: none;
@@ -98,28 +126,26 @@
   transition: color var(--transition-fast);
 }
 
-.filter-clear-btn:hover {
-  color: #ef4444;
-}
+.filter-clear-btn:hover { color: #ef4444; }
 
-/* Active filter badge */
+/* ── Active filter badge ── */
 .filter-active-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: rgba(200, 16, 46, 0.1);
   border: 1px solid rgba(200, 16, 46, 0.3);
   border-radius: var(--radius-pill);
-  color: var(--svc-pax-text);
+  color: #fca5a5;
   font-size: 10px;
   font-weight: 700;
-  padding: 5px 10px;
+  padding: 4px 10px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: all var(--transition-fast);
   white-space: nowrap;
   flex-shrink: 0;
-  align-self: flex-end;
+  align-self: center;
 }
 
 .filter-active-badge:hover {
@@ -128,42 +154,43 @@
   color: #fff;
 }
 
-.filter-clear-all {
-  font-size: 14px;
-  opacity: 0.7;
-}
+.filter-clear-all { font-size: 13px; opacity: 0.7; }
 
 /* ── Right section ── */
 .filter-right {
   margin-left: auto;
   display: flex;
-  align-items: flex-end;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
   flex-shrink: 0;
 }
 
-/* Zoom control */
-.zoom-control {
+/* ── Zoom control — pill grouped ── */
+.zoom-group {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
+  align-items: center;
 }
 
 .zoom-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  background: var(--filter-bg);
+  border: 1px solid var(--filter-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
 }
 
 .zoom-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--filter-border);
-  background: var(--filter-bg);
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--color-muted);
   cursor: pointer;
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -174,7 +201,6 @@
 
 .zoom-btn:hover {
   background: rgba(200, 16, 46, 0.12);
-  border-color: rgba(200, 16, 46, 0.3);
   color: var(--ram-red);
 }
 
@@ -183,27 +209,39 @@
   font-size: 10px;
   font-weight: 700;
   color: var(--color-text);
-  min-width: 36px;
+  min-width: 38px;
   text-align: center;
+  border-left: 1px solid var(--filter-border);
+  border-right: 1px solid var(--filter-border);
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .zoom-reset-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--filter-border);
-  background: var(--filter-bg);
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   color: var(--color-dim);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all var(--transition-fast);
+  border-left: 1px solid var(--filter-border);
 }
 
-.zoom-reset-btn:hover {
-  color: var(--color-text);
+.zoom-reset-btn:hover { color: var(--color-text); background: var(--bg-surface-3); }
+
+/* ── Action buttons group ── */
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 /* ── Profiles button ── */
@@ -214,8 +252,8 @@
   background: linear-gradient(135deg, rgba(200, 16, 46, 0.18) 0%, rgba(200, 16, 46, 0.08) 100%);
   border: 1px solid rgba(200, 16, 46, 0.35);
   border-radius: var(--radius-md);
-  color: var(--svc-pax-text);
-  padding: 7px 14px;
+  color: #fca5a5;
+  padding: 6px 13px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   font-size: 11px;
@@ -224,6 +262,7 @@
   transition: all var(--transition-fast);
   position: relative;
   overflow: hidden;
+  height: 30px;
 }
 
 .profiles-btn::before {
@@ -242,13 +281,28 @@
   transform: translateY(-1px);
 }
 
-.profiles-btn-badge {
-  background: var(--ram-red);
-  color: #fff;
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  padding: 2px 5px;
-  border-radius: 3px;
-  line-height: 1.4;
+/* ── Export button ── */
+.export-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-2);
+  padding: 6px 13px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  transition: all var(--transition-fast);
+  height: 30px;
+}
+
+.export-btn:hover {
+  background: var(--bg-surface-3);
+  border-color: var(--color-muted);
+  color: var(--color-text);
+  transform: translateY(-1px);
 }
