@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { Plane, Clock, AlertTriangle, CheckCircle, MapPin } from 'lucide-react'
+import { Plane, Clock, AlertTriangle, CheckCircle, MapPin, Timer } from 'lucide-react'
 import { generateMockData, SERVICE_COLOR } from '../data/FlightData'
 import { useAuth } from '../auth/AuthContext'
 import styles from './StationView.module.scss'
@@ -78,15 +78,13 @@ export default function StationView() {
   const { user } = useAuth()
   const airport  = user?.airport ?? 'CMN'
 
-  const [tab,  setTab]  = useState('all')  // 'all' | 'dep' | 'arr'
+  const [tab,  setTab]  = useState('all')   // 'all' | 'dep' | 'arr' | 'next3h'
   const [date, setDate] = useState(todayStr)
 
   const results = useMemo(() => {
-    // Filter by airport (origin for departures, destination for arrivals)
     let dep = ALL_FLIGHTS.filter(f => f.origin === airport)
     let arr = ALL_FLIGHTS.filter(f => f.destination === airport)
 
-    // Filter by selected date
     if (date) {
       const d = new Date(date); d.setHours(0,  0,  0,   0)
       const e = new Date(date); e.setHours(23, 59, 59, 999)
@@ -95,7 +93,6 @@ export default function StationView() {
       arr = arr.filter(inDay)
     }
 
-    // Sort by departure time
     const sort = arr => [...arr].sort((a, b) => new Date(a.estStart) - new Date(b.estStart))
     dep = sort(dep)
     arr = sort(arr)
@@ -103,8 +100,25 @@ export default function StationView() {
     return { dep, arr }
   }, [airport, date])
 
-  const shown = tab === 'dep' ? results.dep
-              : tab === 'arr' ? results.arr
+  // ── Flights in the next 3 hours ───────────────────────────
+  const next3hFlights = useMemo(() => {
+    const now = new Date()
+    const cap = new Date(now.getTime() + 3 * 60 * 60 * 1000)
+    const allMovements = [
+      ...results.dep.map(f => ({ ...f, _dir: 'DEP' })),
+      ...results.arr.map(f => ({ ...f, _dir: 'ARR' })),
+    ]
+    return allMovements.filter(f => {
+      const t = new Date(f.estStart)
+      return t >= now && t <= cap
+    }).sort((a, b) => new Date(a.estStart) - new Date(b.estStart))
+  }, [results])
+
+  const next3hCount = next3hFlights.length
+
+  const shown = tab === 'dep'    ? results.dep
+              : tab === 'arr'    ? results.arr
+              : tab === 'next3h' ? next3hFlights
               : [...results.dep.map(f => ({ ...f, _dir: 'DEP' })),
                  ...results.arr.map(f => ({ ...f, _dir: 'ARR' }))]
                 .sort((a, b) => new Date(a.estStart) - new Date(b.estStart))
@@ -154,16 +168,31 @@ export default function StationView() {
           </span>
           <span className={styles.summaryLbl}>Delayed</span>
         </div>
+        <div className={styles.summarySep} />
+        {/* Next 3 hours stat */}
+        <div className={`${styles.summaryItem} ${styles.summaryNext3h}`}>
+          <div className={styles.next3hRow}>
+            <Timer size={14} className={styles.next3hIcon} />
+            <span className={styles.summaryNum}>{next3hCount}</span>
+          </div>
+          <span className={styles.summaryLbl}>Next 3h</span>
+        </div>
       </div>
 
       {/* Tabs */}
       <div className={styles.tabs}>
-        {[['all', 'All Movements'], ['dep', 'Departures'], ['arr', 'Arrivals']].map(([v, l]) => (
+        {[
+          ['all',    'All Movements'],
+          ['dep',    'Departures'],
+          ['arr',    'Arrivals'],
+          ['next3h', `Next 3h (${next3hCount})`],
+        ].map(([v, l]) => (
           <button
             key={v}
-            className={`${styles.tab} ${tab === v ? styles.tabActive : ''}`}
+            className={`${styles.tab} ${tab === v ? styles.tabActive : ''} ${v === 'next3h' ? styles.tabNext3h : ''}`}
             onClick={() => setTab(v)}
           >
+            {v === 'next3h' && <Timer size={12} />}
             {l}
           </button>
         ))}
@@ -174,11 +203,17 @@ export default function StationView() {
         {shown.length === 0 ? (
           <div className={styles.empty}>
             <Plane size={36} className={styles.emptyIcon} />
-            <p>No flights found for {airport} on this date.</p>
+            <p>
+              {tab === 'next3h'
+                ? `No flights arriving or departing ${airport} in the next 3 hours.`
+                : `No flights found for ${airport} on this date.`}
+            </p>
           </div>
         ) : (
           shown.map(f => {
-            const dir = tab === 'all' ? (f._dir ?? (f.origin === airport ? 'DEP' : 'ARR')) : tab.toUpperCase()
+            const dir = tab === 'all'    ? (f._dir ?? (f.origin === airport ? 'DEP' : 'ARR'))
+                      : tab === 'next3h' ? (f._dir ?? (f.origin === airport ? 'DEP' : 'ARR'))
+                      : tab.toUpperCase()
             return (
               <FlightRow
                 key={`${f.id}-${dir}`}

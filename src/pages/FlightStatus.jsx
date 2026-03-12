@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react'
-import { Search, Plane, AlertTriangle, CheckCircle, Activity, ChevronDown } from 'lucide-react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
+import { Search, Plane, AlertTriangle, CheckCircle, Activity, ChevronDown, Radio } from 'lucide-react'
 import { generateMockData, SERVICE_COLOR, SERVICE_LABEL, ALL_AIRPORTS } from '../data/FlightData'
 import styles from './FlightStatus.module.scss'
 
@@ -154,13 +154,17 @@ function FlightCard({ flight, expanded, onToggle }) {
       <div className={styles.cardAccent} style={{ background: color }} />
 
       <div className={styles.cardBody}>
-        {/* Top row: airline + flight no + status */}
+        {/* Top row: airline + flight no + status + delay code */}
         <div className={styles.cardTop}>
           <div className={styles.airlineBlock}>
             <span className={styles.airlineName}>Royal Air Maroc</span>
             <span className={styles.flightNo}>{flight.flightNumber}</span>
           </div>
           <div className={styles.topRight}>
+            {/* Delay code badge on collapsed card */}
+            {flight.delayCode && !expanded && (
+              <span className={styles.delayCodeBadge}>{flight.delayCode}</span>
+            )}
             <span className={`${styles.badge} ${styles[meta.cls]}`}>
               <Icon size={11} /> {meta.label}
             </span>
@@ -193,7 +197,7 @@ function FlightCard({ flight, expanded, onToggle }) {
                 <Plane size={14} />
               </div>
             </div>
-            {inFlight && <div className={styles.inFlightLabel}>En Route</div>}
+            {inFlight && <div className={styles.inFlightLabel}>In Flight</div>}
           </div>
 
           {/* Destination */}
@@ -230,6 +234,24 @@ export default function FlightStatus() {
   const [loading,     setLoading]     = useState(false)
   const [expandedId,  setExpandedId]  = useState(null)
 
+  // ── "In Flight" tab: live list of airborne flights ────────────────────────
+  const getInFlightFlights = useCallback(() => {
+    return ALL_FLIGHTS.filter(f => {
+      const p = getProgress(f.estStart, f.estEnd)
+      return p > 0 && p < 1
+    }).sort((a, b) => new Date(a.estStart) - new Date(b.estStart))
+  }, [])
+
+  const [inFlightList, setInFlightList] = useState(() => getInFlightFlights())
+
+  // Refresh in-flight list every 60 seconds
+  useEffect(() => {
+    if (tab !== 'inflight') return
+    setInFlightList(getInFlightFlights())
+    const id = setInterval(() => setInFlightList(getInFlightFlights()), 60_000)
+    return () => clearInterval(id)
+  }, [tab, getInFlightFlights])
+
   async function doSearch() {
     setLoading(true)
     setExpandedId(null)
@@ -260,17 +282,26 @@ export default function FlightStatus() {
   }
 
   const stats = useMemo(() => {
-    if (!results) return null
+    const src = tab === 'inflight' ? inFlightList : results
+    if (!src) return null
     return {
-      total:   results.length,
-      onTime:  results.filter(f => f.status === 'OnTime').length,
-      delayed: results.filter(f => f.status !== 'OnTime').length,
+      total:   src.length,
+      onTime:  src.filter(f => f.status === 'OnTime').length,
+      delayed: src.filter(f => f.status !== 'OnTime').length,
     }
-  }, [results])
+  }, [results, inFlightList, tab])
 
   function toggleExpand(id) {
     setExpandedId(prev => prev === id ? null : id)
   }
+
+  function switchTab(t) {
+    setTab(t)
+    setResults(null)
+    setExpandedId(null)
+  }
+
+  const displayList = tab === 'inflight' ? inFlightList : results
 
   return (
     <div className={styles.page}>
@@ -288,12 +319,18 @@ export default function FlightStatus() {
           <div className={styles.tabs}>
             <button
               className={`${styles.tab} ${tab === 'route' ? styles.tabActive : ''}`}
-              onClick={() => { setTab('route'); setResults(null) }}
+              onClick={() => switchTab('route')}
             >By Route</button>
             <button
               className={`${styles.tab} ${tab === 'flight' ? styles.tabActive : ''}`}
-              onClick={() => { setTab('flight'); setResults(null) }}
+              onClick={() => switchTab('flight')}
             >By Flight Number</button>
+            <button
+              className={`${styles.tab} ${styles.tabInFlight} ${tab === 'inflight' ? styles.tabActive : ''}`}
+              onClick={() => switchTab('inflight')}
+            >
+              <Radio size={12} /> In Flight
+            </button>
           </div>
 
           {tab === 'route' && (
@@ -339,6 +376,13 @@ export default function FlightStatus() {
               </button>
             </div>
           )}
+
+          {tab === 'inflight' && (
+            <div className={styles.inFlightBanner}>
+              <Radio size={14} className={styles.inFlightIcon} />
+              <span>Showing all flights currently airborne — auto-refreshes every 60 seconds</span>
+            </div>
+          )}
         </div>
 
         {/* Stats strip */}
@@ -353,15 +397,19 @@ export default function FlightStatus() {
         )}
 
         {/* Results */}
-        {results && (
+        {displayList !== null && (
           <div className={styles.resultList}>
-            {results.length === 0 ? (
+            {displayList.length === 0 ? (
               <div className={styles.empty}>
                 <Plane size={40} className={styles.emptyIcon} />
-                <p>No flights found matching your search criteria.</p>
+                <p>
+                  {tab === 'inflight'
+                    ? 'No flights currently airborne.'
+                    : 'No flights found matching your search criteria.'}
+                </p>
               </div>
             ) : (
-              results.map(f => (
+              displayList.map(f => (
                 <FlightCard
                   key={f.id}
                   flight={f}

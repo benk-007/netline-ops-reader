@@ -109,6 +109,12 @@ $white:   #fff;
   color: $slate;
 }
 
+.actionBtns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .addBtn {
   display: flex;
   align-items: center;
@@ -122,8 +128,96 @@ $white:   #fff;
   font-size: 13px;
   font-weight: 700;
   transition: background 0.15s;
+  cursor: pointer;
 
   &:hover { background: #b91419; }
+}
+
+.importBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: #dbeafe; }
+}
+
+.exportWrap {
+  position: relative;
+}
+
+.exportBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: #dcfce7; }
+}
+
+.exportDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  background: $white;
+  border: 1px solid $border;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+  z-index: 100;
+  overflow: hidden;
+  min-width: 180px;
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    color: $navy;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.1s;
+
+    &:hover { background: $surface; }
+  }
+}
+
+// Import hint
+.importHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: $muted;
+  margin-bottom: 8px;
+
+  code {
+    font-family: 'Courier New', monospace;
+    font-size: 10px;
+    background: #f1f5f9;
+    padding: 1px 4px;
+    border-radius: 3px;
+  }
 }
 
 // ── Table ─────────────────────────────────────────────────
@@ -603,6 +697,13 @@ $white:   #fff;
   &:hover { background: #fee2e2; color: $red; }
 }
 
+.modalHint {
+  font-size: 11px;
+  color: $muted;
+  flex: 1;
+  padding: 0 10px;
+}
+
 .modalForm {
   padding: 20px;
   display: flex;
@@ -632,6 +733,172 @@ $white:   #fff;
 
     &:focus { border-color: $red; background: $white; }
   }
+}
+
+// ── Multi-row add user form ────────────────────────────────
+.multiRowWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.userRow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.rowNum {
+  font-size: 11px;
+  font-weight: 700;
+  color: $muted;
+  width: 16px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.rowInput {
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid $border;
+  border-radius: 5px;
+  font-size: 12px;
+  color: $navy;
+  background: $white;
+  outline: none;
+  min-width: 0;
+  width: 90px;
+
+  &:focus { border-color: $red; }
+}
+
+.rowInputWide {
+  width: 130px;
+  flex: 1;
+}
+
+.rowSelect {
+  height: 30px;
+  padding: 0 6px;
+  border: 1px solid $border;
+  border-radius: 5px;
+  font-size: 12px;
+  color: $navy;
+  background: $white;
+  outline: none;
+  width: 80px;
+
+  &:focus { border-color: $red; }
+}
+
+.rowRemove {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: none;
+  border: none;
+  color: $muted;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+
+  &:hover { background: #fee2e2; color: $red; }
+}
+
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.addRowBtn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 12px;
+  background: $surface;
+  border: 1.5px dashed $border;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: $slate;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+
+  &:hover { border-color: $red; color: $red; }
+}
+
+.modalCancel {
+  height: 36px;
+  padding: 0 14px;
+  background: $surface;
+  border: 1px solid $border;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: $slate;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover { background: #f1f5f9; }
+}
+
+// ── Import preview ─────────────────────────────────────────
+.importPreview {
+  padding: 0 20px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.importTable {
+  border: 1px solid $border;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.importFooter {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid $border;
+}
+
+.importOk {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.importErr {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: $red;
+}
+
+.rowInvalid td {
+  background: #fff5f5;
+  color: #991b1b;
+  opacity: 0.8;
 }
 
 .modalErr {

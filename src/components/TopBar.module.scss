@@ -1,95 +1,244 @@
-$red:    #D71920;
-$navy:   #1e293b;
-$slate:  #64748b;
-$muted:  #94a3b8;
-$border: #e2e8f0;
-$white:  #fff;
+// ── TopBar — CCO Dashboard Theme ─────────────────────────
+// Dark navy background with RAM red accents
 
-// ── Top bar strip ─────────────────────────────────────────
+$red:     #C8102E;    // RAM red
+$navy:    #0f172a;    // Deep navy (topbar default bg)
+$navyMid: #1e293b;
+$slate:   #64748b;
+$muted:   #94a3b8;
+$border:  rgba(255,255,255,0.08);
+$white:   #fff;
+
+// ── Topbar shell ──────────────────────────────────────────
 .topbar {
-  height: 48px;
-  flex-shrink: 0;
+  height: 52px;
+  background: $navy;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  padding: 0 20px;
-  border-bottom: 1px solid $border;
-  background: var(--topbar-bg, $white);
+  padding: 0 16px;
+  gap: 0;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.35);
   position: relative;
-  z-index: 100;
+  z-index: 50;
 }
 
-.right {
+// ── Left section ──────────────────────────────────────────
+.leftSection {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.brandAccent {
+  width: 3px;
+  height: 28px;
+  background: $red;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.brandBlock {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  gap: 1px;
+}
+
+.brandName {
+  font-size: 14px;
+  font-weight: 800;
+  color: $white;
+  letter-spacing: 0.02em;
+}
+
+.brandSub {
+  font-size: 9px;
+  color: rgba(255,255,255,0.45);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255,255,255,0.12);
+  margin: 0 4px;
+}
+
+// ── Clock ─────────────────────────────────────────────────
+.clockBlock {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  gap: 1px;
+}
+
+.clockTime {
+  font-size: 16px;
+  font-weight: 700;
+  color: $white;
+  font-variant-numeric: tabular-nums;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  letter-spacing: 0.02em;
+}
+
+.clockSec {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+}
+
+.clockDate {
+  font-size: 9px;
+  color: rgba(255,255,255,0.40);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+// ── Center section ────────────────────────────────────────
+.centerSection {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.roleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+
+  &.cco {
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    color: #a5b4fc;
+  }
+  &.station {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #6ee7b7;
+  }
+  &.admin {
+    background: rgba(200, 16, 46, 0.15);
+    border: 1px solid rgba(200, 16, 46, 0.35);
+    color: #fca5a5;
+  }
+}
+
+.airportChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(255,255,255,0.08);
+  padding: 2px 6px;
+  border-radius: 100px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.65);
+  margin-left: 2px;
+}
+
+.livePill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 100px;
+  letter-spacing: 0.06em;
+}
+
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1;  transform: scale(1);   }
+  50%       { opacity: .5; transform: scale(1.35); }
+}
+
+// ── Right section ─────────────────────────────────────────
+.rightSection {
+  flex-shrink: 0;
   position: relative;
 }
 
-// ── User button ───────────────────────────────────────────
 .userBtn {
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
-  padding: 0 10px 0 6px;
-  border-radius: 20px;
-  border: 1px solid $border;
-  background: #f8fafc;
+  height: 36px;
+  padding: 0 10px 0 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 
   &:hover {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
+    background: rgba(255,255,255,0.10);
+    border-color: rgba(255,255,255,0.20);
   }
 }
 
-.avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+.userAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   background: $red;
   color: $white;
-  font-size: 10px;
-  font-weight: 800;
+  font-size: 11px;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  letter-spacing: 0.04em;
 }
 
-.userName {
-  font-size: 12px;
-  font-weight: 600;
-  color: $navy;
-  max-width: 140px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.chevron {
-  color: $muted;
+.userIcon {
+  color: rgba(255,255,255,0.60);
   flex-shrink: 0;
-  transition: transform 0.18s;
 }
 
-.chevronOpen {
+.userChevron {
+  color: rgba(255,255,255,0.40);
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.chevronUp {
   transform: rotate(180deg);
 }
 
 // ── Dropdown ──────────────────────────────────────────────
 .dropdown {
   position: absolute;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   right: 0;
   width: 220px;
-  background: $white;
-  border: 1px solid $border;
+  background: #1e2d3d;
+  border: 1px solid rgba(255,255,255,0.10);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 16px 48px rgba(0,0,0,0.40);
   overflow: hidden;
+  z-index: 500;
   animation: dropIn 0.15s ease;
-  z-index: 9999;
 }
 
 @keyframes dropIn {
@@ -102,17 +251,17 @@ $white:  #fff;
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  background: #f8fafc;
+  background: rgba(255,255,255,0.03);
 }
 
 .dropAvatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   background: $red;
   color: $white;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,91 +270,93 @@ $white:  #fff;
 
 .dropName {
   font-size: 13px;
-  font-weight: 700;
-  color: $navy;
+  font-weight: 600;
+  color: $white;
 }
 
 .dropRole {
-  font-size: 11px;
-  color: $muted;
-  margin-top: 1px;
+  font-size: 10px;
+  color: rgba(255,255,255,0.40);
+  font-weight: 500;
 }
 
 .dropDivider {
   height: 1px;
-  background: $border;
+  background: rgba(255,255,255,0.07);
   margin: 2px 0;
 }
 
 .dropItem {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 10px;
   width: 100%;
   padding: 9px 14px;
-  font-size: 13px;
-  font-weight: 500;
-  color: $navy;
   background: none;
   border: none;
-  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.1s, color 0.1s;
+  text-align: left;
 
   &:hover {
-    background: #f1f5f9;
+    background: rgba(255,255,255,0.06);
+    color: $white;
   }
 }
 
 .dropLogout {
-  color: $red;
-  &:hover { background: #fee2e2; }
+  color: #f87171;
+
+  &:hover {
+    background: rgba(200, 16, 46, 0.12);
+    color: #fca5a5;
+  }
 }
 
-// ── Profile modal ─────────────────────────────────────────
+// ── Profile Modal ─────────────────────────────────────────
 .profileBackdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 9999;
+  background: rgba(0,0,0,0.50);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.15s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  z-index: 1000;
+  backdrop-filter: blur(3px);
 }
 
 .profileModal {
-  background: $white;
+  background: #1e2d3d;
+  border: 1px solid rgba(255,255,255,0.10);
   border-radius: 16px;
   width: 340px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
+  max-width: 92vw;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.45);
   overflow: hidden;
-  animation: slideUp 0.18s ease;
+  animation: popIn 0.18s ease;
 }
 
-@keyframes slideUp {
-  from { transform: translateY(16px); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
+@keyframes popIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-.profileHead {
+.profileHeader {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 20px;
-  background: linear-gradient(135deg, $red, #8b0f13);
+  background: linear-gradient(135deg, #C8102E 0%, #991b1b 100%);
 }
 
 .profileAvatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.2);
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.20);
   color: $white;
   font-size: 16px;
   font-weight: 800;
@@ -213,39 +364,45 @@ $white:  #fff;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255,255,255,0.25);
 }
 
-.profileHeadInfo { flex: 1; }
+.profileInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 
 .profileName {
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 15px;
+  font-weight: 700;
   color: $white;
 }
 
-.profileSub {
+.profileMatricule {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
-  margin-top: 2px;
-  font-family: 'Courier New', monospace;
+  color: rgba(255,255,255,0.65);
+  font-weight: 500;
 }
 
 .profileClose {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255,255,255,0.15);
   border: none;
   color: $white;
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 12px;
   cursor: pointer;
-  transition: background 0.12s;
   flex-shrink: 0;
 
-  &:hover { background: rgba(255, 255, 255, 0.3); }
+  &:hover {
+    background: rgba(255,255,255,0.25);
+  }
 }
 
 .profileBody {
@@ -263,35 +420,58 @@ $white:  #fff;
 }
 
 .profileRowLabel {
-  font-size: 12px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.40);
   font-weight: 600;
-  color: $muted;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.profileCode {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
+.profileRowVal {
+  font-size: 13px;
+  color: $white;
   font-weight: 600;
-  color: $navy;
-  background: #f1f5f9;
-  padding: 3px 8px;
-  border-radius: 5px;
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-// ── Role pills ────────────────────────────────────────────
 .rolePill {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 100px;
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 100px;
+
+  &.cco     { background: rgba(99,102,241,0.2);   color: #a5b4fc; border: 1px solid rgba(99,102,241,0.3); }
+  &.station { background: rgba(16,185,129,0.2);   color: #6ee7b7; border: 1px solid rgba(16,185,129,0.3); }
+  &.admin   { background: rgba(200,16,46,0.2);    color: #fca5a5; border: 1px solid rgba(200,16,46,0.3);  }
 }
 
-.roleCCO     { background: #dbeafe; color: #1d4ed8; }
-.roleStation { background: #dcfce7; color: #166534; }
-.roleAdmin   { background: #fee2e2; color: #991b1b; }
+.profileFooter {
+  padding: 0 20px 16px;
+}
+
+.exportProfileBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  height: 36px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px;
+  color: rgba(255,255,255,0.70);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+
+  &:hover {
+    background: rgba(255,255,255,0.12);
+    color: $white;
+  }
+}

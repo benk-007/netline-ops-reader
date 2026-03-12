@@ -1,3 +1,20 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// REAL DATA INTEGRATION — When you receive real data (CSV / Excel / SQL view):
+//
+//   1. Parse the file with SheetJS:
+//        import * as XLSX from 'xlsx'
+//        const wb   = XLSX.read(buffer, { type: 'array' })
+//        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]])
+//
+//   2. Transform to the internal format:
+//        import { transformFlights } from './data/FlightLeg'
+//        const { flights, groups, aircraft } = transformFlights(rows)
+//
+//   3. Replace generateMockData() calls in GanttTimeline.jsx, FlightStatus.jsx,
+//      and StationView.jsx with the transformed data above.
+//      The RAW_FIELD_MAP in FlightLeg.js maps raw column names → internal fields.
+//      Adjust the map to match your actual column names.
+// ─────────────────────────────────────────────────────────────────────────────
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, RequireAuth, RequireRole, useAuth } from './auth/AuthContext'
 import { AppConfigProvider } from './contexts/AppConfigContext'

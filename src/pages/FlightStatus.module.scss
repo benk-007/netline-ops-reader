@@ -51,9 +51,29 @@ $white:   #fff;
   flex: 1; padding: 13px 20px; background: none; border: none;
   border-bottom: 3px solid transparent; font-size: 13px; font-weight: 600;
   color: $muted; transition: color 0.15s, border-color 0.15s; text-align: center;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
   &:hover { color: #475569; }
   &.tabActive { color: $red; border-bottom-color: $red; background: $white; }
 }
+// "In Flight" tab has a green accent
+.tabInFlight {
+  &.tabActive { color: #16a34a; border-bottom-color: #16a34a; }
+  &:hover { color: #15803d; }
+}
+
+// In-flight info banner
+.inFlightBanner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: #f0fdf4;
+  border-top: 1px solid #bbf7d0;
+  font-size: 12px;
+  color: #15803d;
+  font-weight: 500;
+}
+.inFlightIcon { color: #16a34a; flex-shrink: 0; }
 
 .searchForm {
   display: flex; align-items: flex-end; gap: 14px;
@@ -106,7 +126,21 @@ $white:   #fff;
 .airlineBlock { display: flex; align-items: center; gap: 10px; }
 .airlineName  { font-size: 11px; font-weight: 600; color: $muted; letter-spacing: 0.04em; }
 .flightNo     { font-size: 17px; font-weight: 800; color: $navy; letter-spacing: 0.06em; }
-.topRight     { display: flex; align-items: center; gap: 10px; }
+.topRight     { display: flex; align-items: center; gap: 8px; }
+
+// Delay code shown on collapsed card
+.delayCodeBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  color: #be123c;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 5px;
+  letter-spacing: 0.05em;
+}
 
 .badge {
   display: inline-flex; align-items: center; gap: 5px;

@@ -157,19 +157,17 @@ function buildTooltip(f) {
   return card
 }
 
-// ── Apply filters ─────────────────────────────────────────
+// ── Apply filters (multi-select) ──────────────────────────
 function applyFilters(flights, filters) {
   let out = flights
-  if (filters.airport)
-    out = out.filter(f => f.origin === filters.airport || f.destination === filters.airport)
-  if (filters.aircraft)
-    out = out.filter(f => f.aircraft === filters.aircraft)
-  if (filters.serviceType)
-    out = out.filter(f => f.serviceType === filters.serviceType)
-  if (filters.flight?.trim()) {
-    const q = filters.flight.trim().toLowerCase()
-    out = out.filter(f => f.flightNumber.toLowerCase().includes(q))
-  }
+  if (filters.airports?.length)
+    out = out.filter(f => filters.airports.some(a => f.origin === a || f.destination === a))
+  if (filters.aircraft?.length)
+    out = out.filter(f => filters.aircraft.includes(f.aircraft))
+  if (filters.serviceTypes?.length)
+    out = out.filter(f => filters.serviceTypes.includes(f.serviceType))
+  if (filters.flights?.length)
+    out = out.filter(f => filters.flights.some(q => f.flightNumber.toLowerCase().includes(q.toLowerCase())))
   return out
 }
 
@@ -183,14 +181,21 @@ export default function GanttTimeline() {
   const allAircraft  = useRef([])
   const filtersRef   = useRef({})
 
-  const [selected, setSelected] = useState(null)
-  const [winLabel, setWinLabel] = useState('')
-  const [filters, setFilters]   = useState({
-    airport:     '',
-    aircraft:    '',
-    serviceType: '',
-    flight:      '',
+  const [aircraftList, setAircraftList] = useState([])
+
+  const [selected, setSelected]         = useState(null)
+  const [winLabel, setWinLabel]         = useState('')
+  const [filters, setFilters]           = useState({
+    airports:     [],
+    aircraft:     [],
+    serviceTypes: [],
+    flights:      [],
   })
+  const [savedFilters, setSavedFilters] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('netline_saved_filters') || '[]') }
+    catch { return [] }
+  })
+  const [activeFilterId, setActiveFilterId] = useState(null)
 
   // keep a ref in sync so the refresh event handler can read current filters
   filtersRef.current = filters
@@ -217,6 +222,7 @@ export default function GanttTimeline() {
     const { groups, flights, aircraft } = generateMockData()
     allFlights.current  = flights
     allAircraft.current = aircraft
+    setAircraftList(aircraft)
 
     const now   = new Date()
     const start = new Date(now.getTime() - DAY_MS * 0.5)
@@ -271,6 +277,7 @@ export default function GanttTimeline() {
       const fresh = generateMockData()
       allFlights.current  = fresh.flights
       allAircraft.current = fresh.aircraft
+      setAircraftList(fresh.aircraft)
       pushItems(applyFilters(fresh.flights, filtersRef.current))
     }
     window.addEventListener('gantt-refresh', handleRefresh)
@@ -317,9 +324,13 @@ export default function GanttTimeline() {
       {/* Per-page header / filter bar */}
       <GanttFilterBar
         airports={ALL_AIRPORTS}
-        aircraft={allAircraft.current}
+        aircraft={aircraftList}
         filters={filters}
         onFilterChange={setFilters}
+        savedFilters={savedFilters}
+        onSavedFiltersChange={setSavedFilters}
+        activeFilterId={activeFilterId}
+        onActivateFilter={setActiveFilterId}
       />
 
       {/* Legend */}

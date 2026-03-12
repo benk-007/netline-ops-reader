@@ -140,11 +140,22 @@ $white:   #fff;
   border-radius: 0 !important;
   box-shadow: none !important;
   padding: 0 !important;
+}
 
-  &.vis-selected {
-    outline: 2px solid $red !important;
-    outline-offset: 1px !important;
-    z-index: 100 !important;
+// Selection highlight: target only the bar content (.fp-outer), NOT the item
+// container. The item container spans the full viewport width (due to our
+// width:100% overflow fix), so applying an outline there would border the
+// entire row. Instead we apply it to the actual bar element.
+.vis-item.vis-range.vis-selected {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+
+  .fp-outer {
+    outline: 2.5px solid $red;
+    outline-offset: 1px;
+    border-radius: 4px;
   }
 }
 

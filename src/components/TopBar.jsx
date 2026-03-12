@@ -1,150 +1,212 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { User, Settings, LogOut, ChevronDown, X, MapPin, ShieldCheck, LayoutDashboard } from 'lucide-react'
+import {
+  ChevronDown, LogOut, Settings, User,
+  LayoutDashboard, MapPin, ShieldCheck, Download,
+} from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { useAppConfig } from '../contexts/AppConfigContext'
+import { exportUsersCSV } from '../utils/exportData'
 import styles from './TopBar.module.scss'
 
-// ── Profile Modal ─────────────────────────────────────────
-function ProfileModal({ user, onClose }) {
-  const roleIcon = { CCO: LayoutDashboard, Station: MapPin, Admin: ShieldCheck }
-  const Icon = roleIcon[user?.role] ?? User
+// ── Live clock ────────────────────────────────────────────
+function LiveClock() {
+  const [time, setTime] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setTime(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const hh = time.getHours().toString().padStart(2, '0')
+  const mm = time.getMinutes().toString().padStart(2, '0')
+  const ss = time.getSeconds().toString().padStart(2, '0')
+  const dateStr = time.toLocaleDateString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+  })
+  return (
+    <div className={styles.clockBlock}>
+      <span className={styles.clockTime}>{hh}:{mm}<span className={styles.clockSec}>:{ss}</span></span>
+      <span className={styles.clockDate}>{dateStr}</span>
+    </div>
+  )
+}
 
-  const initials = user?.name
-    ? user.name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
-    : user?.matricule?.slice(0, 2).toUpperCase() ?? '??'
+// ── Role config ────────────────────────────────────────────
+const ROLE_META = {
+  CCO:     { label: 'CCO',             Icon: LayoutDashboard, cls: 'cco'     },
+  Station: { label: 'Station Manager', Icon: MapPin,          cls: 'station' },
+  Admin:   { label: 'Administrator',   Icon: ShieldCheck,     cls: 'admin'   },
+}
+
+// ── Profile modal ──────────────────────────────────────────
+function ProfileModal({ user, onClose, onExport }) {
+  const meta     = ROLE_META[user.role] ?? ROLE_META.CCO
+  const { Icon } = meta
+  const initials = user.name?.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'U'
 
   return (
     <div className={styles.profileBackdrop} onClick={onClose}>
       <div className={styles.profileModal} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className={styles.profileHead}>
+        <div className={styles.profileHeader}>
           <div className={styles.profileAvatar}>{initials}</div>
-          <div className={styles.profileHeadInfo}>
-            <div className={styles.profileName}>{user?.name || user?.matricule}</div>
-            <div className={styles.profileSub}>{user?.matricule}</div>
+          <div className={styles.profileInfo}>
+            <span className={styles.profileName}>{user.name}</span>
+            <span className={styles.profileMatricule}>{user.matricule}</span>
           </div>
-          <button className={styles.profileClose} onClick={onClose}><X size={16} /></button>
+          <button className={styles.profileClose} onClick={onClose}>✕</button>
         </div>
 
-        {/* Info rows */}
+        {/* Details */}
         <div className={styles.profileBody}>
           <div className={styles.profileRow}>
             <span className={styles.profileRowLabel}>Role</span>
-            <span className={`${styles.rolePill} ${styles['role' + user?.role]}`}>
-              <Icon size={11} /> {user?.role}
+            <span className={`${styles.rolePill} ${styles[meta.cls]}`}>
+              <Icon size={11} /> {meta.label}
             </span>
           </div>
           <div className={styles.profileRow}>
             <span className={styles.profileRowLabel}>Matricule</span>
-            <code className={styles.profileCode}>{user?.matricule}</code>
+            <span className={styles.profileRowVal}>{user.matricule}</span>
           </div>
-          {user?.airport && (
+          {user.airport && (
             <div className={styles.profileRow}>
               <span className={styles.profileRowLabel}>Station</span>
-              <span className={styles.profileCode}><MapPin size={11} /> {user.airport}</span>
+              <span className={styles.profileRowVal}><MapPin size={11} /> {user.airport}</span>
             </div>
           )}
+        </div>
+
+        {/* Export profile */}
+        <div className={styles.profileFooter}>
+          <button className={styles.exportProfileBtn} onClick={onExport}>
+            <Download size={13} /> Export Profile (CSV)
+          </button>
         </div>
       </div>
     </div>
   )
 }
 
-// ── TopBar ────────────────────────────────────────────────
+// ── TopBar ──────────────────────────────────────────────────
 export default function TopBar() {
-  const { user, logout } = useAuth()
-  const { colors } = useAppConfig()
-  const navigate = useNavigate()
+  const { user, logout }    = useAuth()
+  const { colors }          = useAppConfig()
+  const navigate            = useNavigate()
+  const dropRef             = useRef(null)
 
-  const [open,        setOpen]        = useState(false)
+  const [dropOpen,    setDropOpen]    = useState(false)
   const [showProfile, setShowProfile] = useState(false)
-  const menuRef = useRef(null)
 
-  // Close dropdown when clicking outside
+  // Close dropdown on outside click
   useEffect(() => {
-    function handleClick(e) {
-      if (menuRef.current && !menuRef.current.contains(e.target)) setOpen(false)
+    function onDown(e) {
+      if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false)
     }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
   }, [])
 
-  const initials = user?.name
-    ? user.name.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase()
-    : user?.matricule?.slice(0, 2).toUpperCase() ?? '??'
+  if (!user) return null
 
-  function handleLogout() {
-    setOpen(false)
-    logout()
-    navigate('/login', { replace: true })
+  const meta     = ROLE_META[user.role] ?? ROLE_META.CCO
+  const { Icon } = meta
+  const initials = user.name?.split(' ').map(p => p[0]).join('').slice(0, 2).toUpperCase() || 'U'
+
+  function exportProfile() {
+    exportUsersCSV([{
+      matricule:  user.matricule,
+      name:       user.name,
+      role:       user.role,
+      airport:    user.airport ?? '',
+      email:      user.email   ?? '',
+      phone:      user.phone   ?? '',
+      active:     true,
+      lastLogin:  new Date().toISOString().slice(0, 16).replace('T', ' '),
+      createdAt:  '',
+    }], `profile-${user.matricule}.csv`)
+    setShowProfile(false)
   }
 
-  function handleSettings() {
-    setOpen(false)
-    navigate('/settings')
-  }
-
-  function handleProfile() {
-    setOpen(false)
-    setShowProfile(true)
-  }
+  // Allow topbarBg override from config; default to dark navy
+  const bgColor = colors.topbarBg === '#ffffff' ? '#0f172a' : colors.topbarBg
 
   return (
     <>
-      <div className={styles.topbar} style={{ background: colors.topbarBg }}>
-        {/* Right side: user menu */}
-        <div className={styles.right} ref={menuRef}>
+      <header className={styles.topbar} style={{ background: bgColor }}>
+
+        {/* ── Left: branding + clock ── */}
+        <div className={styles.leftSection}>
+          <div className={styles.brandAccent} />
+          <div className={styles.brandBlock}>
+            <span className={styles.brandName}>NetLine Ops</span>
+            <span className={styles.brandSub}>Royal Air Maroc · Operations Control</span>
+          </div>
+          <div className={styles.divider} />
+          <LiveClock />
+        </div>
+
+        {/* ── Center: role badge + live ── */}
+        <div className={styles.centerSection}>
+          <div className={`${styles.roleBadge} ${styles[meta.cls]}`}>
+            <Icon size={13} />
+            <span>{meta.label}</span>
+            {user.airport && (
+              <span className={styles.airportChip}>
+                <MapPin size={10} /> {user.airport}
+              </span>
+            )}
+          </div>
+          <div className={styles.livePill}>
+            <span className={styles.liveDot} />
+            LIVE
+          </div>
+        </div>
+
+        {/* ── Right: user dropdown ── */}
+        <div className={styles.rightSection} ref={dropRef}>
           <button
             className={styles.userBtn}
-            onClick={() => setOpen(v => !v)}
-            aria-label="User menu"
+            onClick={() => setDropOpen(o => !o)}
           >
-            <div className={styles.avatar}>{initials}</div>
-            <span className={styles.userName}>{user?.name || user?.matricule}</span>
-            <ChevronDown
-              size={13}
-              className={`${styles.chevron} ${open ? styles.chevronOpen : ''}`}
-            />
+            <div className={styles.userAvatar}>{initials}</div>
+            <User size={14} className={styles.userIcon} />
+            <ChevronDown size={14} className={`${styles.userChevron} ${dropOpen ? styles.chevronUp : ''}`} />
           </button>
 
-          {/* Dropdown */}
-          {open && (
+          {dropOpen && (
             <div className={styles.dropdown}>
-              {/* Identity header */}
               <div className={styles.dropHead}>
                 <div className={styles.dropAvatar}>{initials}</div>
                 <div>
-                  <div className={styles.dropName}>{user?.name || user?.matricule}</div>
-                  <div className={styles.dropRole}>{user?.role}</div>
+                  <div className={styles.dropName}>{user.name}</div>
+                  <div className={styles.dropRole}>{meta.label}</div>
                 </div>
               </div>
-
               <div className={styles.dropDivider} />
-
-              <button className={styles.dropItem} onClick={handleProfile}>
-                <User size={14} />
-                <span>Profile</span>
+              <button className={styles.dropItem} onClick={() => { setDropOpen(false); setShowProfile(true) }}>
+                <User size={14} /> Profile
               </button>
-              <button className={styles.dropItem} onClick={handleSettings}>
-                <Settings size={14} />
-                <span>Settings</span>
+              <button className={styles.dropItem} onClick={() => { setDropOpen(false); navigate('/settings') }}>
+                <Settings size={14} /> Settings
               </button>
-
               <div className={styles.dropDivider} />
-
-              <button className={`${styles.dropItem} ${styles.dropLogout}`} onClick={handleLogout}>
-                <LogOut size={14} />
-                <span>Log Out</span>
+              <button
+                className={`${styles.dropItem} ${styles.dropLogout}`}
+                onClick={() => { logout(); navigate('/login') }}
+              >
+                <LogOut size={14} /> Log Out
               </button>
             </div>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Profile modal */}
       {showProfile && (
-        <ProfileModal user={user} onClose={() => setShowProfile(false)} />
+        <ProfileModal
+          user={user}
+          onClose={() => setShowProfile(false)}
+          onExport={exportProfile}
+        />
       )}
     </>
   )
