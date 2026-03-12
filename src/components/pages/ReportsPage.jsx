@@ -1,5 +1,6 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { legs as ALL_LEGS } from "../../data/flightsData";
+import "./ReportsPage.css";
 
 /* ── Map Leg state → FlightCard statusType ──────────────── */
 const STATE_TO_STATUS = {
@@ -108,6 +109,411 @@ const STATUS_STYLES = {
 const STATUS_LABELS = {
     scheduled: "Prévu", active: "En vol", landed: "Atterri", delayed: "Retardé", cancelled: "Annulé",
 };
+
+/* ── IATA Delay Codes ── */
+const DELAY_CODES = {
+    "15": "Boarding / Pax",
+    "71": "Météo / Weather",
+    "89": "Restrictions ATC",
+    "93": "Rotation avion / Aircraft rotation",
+    "11": "Attente passagers / Late pax",
+    "41": "Technique avion / Aircraft defect",
+    "81": "ATC restrictions en route",
+    "87": "Capacité aéroport / Airport capacity",
+    "96": "Opérations au sol / Ground ops",
+};
+
+/* ── Time diff in minutes ── */
+function timeDiff(t1, t2) {
+    if (!t1 || !t2) return null;
+    const [h1, m1] = t1.split(":").map(Number);
+    const [h2, m2] = t2.split(":").map(Number);
+    let diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+    if (diff < 0) diff += 24 * 60;
+    return diff;
+}
+
+function fmtMin(mins) {
+    if (mins == null) return "—";
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    if (h === 0) return `${m}m`;
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   LEG DETAIL MODAL — OCC Dashboard Style
+   ═══════════════════════════════════════════════════════════════ */
+function LegDetailModal({ leg, flight, onClose }) {
+    // Close on Escape
+    useEffect(() => {
+        const handler = (e) => { if (e.key === "Escape") onClose(); };
+        document.addEventListener("keydown", handler);
+        return () => document.removeEventListener("keydown", handler);
+    }, [onClose]);
+
+    // Prevent body scroll
+    useEffect(() => {
+        document.body.style.overflow = "hidden";
+        return () => { document.body.style.overflow = ""; };
+    }, []);
+
+    if (!leg || !flight) return null;
+
+    const isCancelled = flight.statusType === "cancelled";
+    const isAirborne = flight.statusType === "active";
+
+    // OOOI times
+    const offBlock  = leg.OFF_BLOCK_TIME;
+    const airborne  = leg.AIRBORNE_TIME;
+    const landing   = leg.LANDING_TIME;
+    const onBlock   = leg.ON_BLOCK_TIME;
+    const hasOOOI   = Boolean(offBlock);
+
+    // Metric calculations
+    const blockTime  = timeDiff(offBlock, onBlock);
+    const flightTime = timeDiff(airborne, landing);
+    const taxiOut    = timeDiff(offBlock, airborne);
+    const taxiIn     = timeDiff(landing, onBlock);
+
+    // Delay info
+    const delays = [];
+    if (leg.DELAY_CODE_01 && leg.DELAY_TIME_01 > 0) delays.push({ code: leg.DELAY_CODE_01, time: leg.DELAY_TIME_01 });
+    if (leg.DELAY_CODE_02 && leg.DELAY_TIME_02 > 0) delays.push({ code: leg.DELAY_CODE_02, time: leg.DELAY_TIME_02 });
+    if (leg.DELAY_CODE_03 && leg.DELAY_TIME_03 > 0) delays.push({ code: leg.DELAY_CODE_03, time: leg.DELAY_TIME_03 });
+    const totalDelay = delays.reduce((s, d) => s + d.time, 0);
+    const isMajorDelay = totalDelay >= 30;
+
+    // Schedule diff
+    const depDiff = timeDiff(leg.DEP_TIME_SCHED, offBlock);
+    const arrDiff = timeDiff(leg.ARR_TIME_SCHED, onBlock);
+
+    // Badge class
+    const badgeClass = `ldm-badge ldm-badge--${flight.statusType}`;
+    const statusLabel = STATUS_LABELS[flight.statusType] || "Prévu";
+
+    // OOOI timeline points
+    const oooi = [
+        { label: "Off Block",  time: offBlock,  done: Boolean(offBlock) },
+        { label: "Airborne",   time: airborne,  done: Boolean(airborne) },
+        { label: "Landing",    time: landing,   done: Boolean(landing) },
+        { label: "On Block",   time: onBlock,   done: Boolean(onBlock) },
+    ];
+
+    return (
+        <div className="ldm-overlay" onClick={onClose}>
+            <div className="ldm-modal" onClick={e => e.stopPropagation()}>
+
+                {/* Close */}
+                <button className="ldm-close" onClick={onClose}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                </button>
+
+                {/* ── HEADER ── */}
+                <div className="ldm-header">
+                    <div className="ldm-header-top">
+                        <div>
+                            <div className="ldm-fn">{flight.fn}</div>
+                            <div className={badgeClass} style={{ marginTop: 8 }}>
+                                <span className="ldm-badge-dot" />
+                                {statusLabel}
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Route display */}
+                    <div className="ldm-route">
+                        <div className="ldm-route-airport">
+                            <div className="ldm-route-code">{flight.dep}</div>
+                            <div className="ldm-route-city">{flight.depCity}</div>
+                        </div>
+                        <div className="ldm-route-arrow">
+                            <div className="ldm-route-line" />
+                            <div className="ldm-route-plane">
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div className="ldm-route-airport">
+                            <div className="ldm-route-code">{flight.arr}</div>
+                            <div className="ldm-route-city">{flight.arrCity}</div>
+                        </div>
+                    </div>
+
+                    {/* Meta row */}
+                    <div className="ldm-header-meta">
+                        <div className="ldm-meta-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                            <span className="ldm-meta-value">{leg.DAY_OF_ORIGIN}</span>
+                        </div>
+                        <div className="ldm-meta-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                            <span className="ldm-meta-value">{flight.duration}</span>
+                        </div>
+                        <div className="ldm-meta-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                            <span className="ldm-meta-value">{leg.LEG_TYPE}</span>
+                        </div>
+                        <div className="ldm-meta-item">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2v-4M9 21H5a2 2 0 01-2-2v-4"/></svg>
+                            <span className="ldm-meta-value">{leg.AC_REGISTRATION}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── BODY ── */}
+                <div className="ldm-body">
+
+                    {/* Cancelled banner */}
+                    {isCancelled && (
+                        <div className="ldm-cancelled-banner">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+                            <div className="ldm-cancelled-text">Vol annulé</div>
+                            <div className="ldm-cancelled-sub">Ce vol a été annulé et ne sera pas opéré</div>
+                        </div>
+                    )}
+
+                    {/* ── OOOI Timeline ── */}
+                    {!isCancelled && (
+                        <div>
+                            <div className="ldm-section-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                                Séquence OOOI
+                            </div>
+                            <div className="ldm-timeline-wrap">
+                                <svg className="ldm-timeline-svg" viewBox="0 0 620 80" preserveAspectRatio="xMidYMid meet">
+                                    {oooi.map((pt, i) => {
+                                        const x = 40 + i * 185;
+                                        const done = pt.done;
+                                        const nextDone = i < 3 && oooi[i + 1].done;
+
+                                        return (
+                                            <g key={i}>
+                                                {/* Connector line to next */}
+                                                {i < 3 && (
+                                                    <line
+                                                        x1={x + 8} y1={40} x2={x + 185 - 8} y2={40}
+                                                        stroke={done && nextDone ? "#22c55e" : done && !nextDone && isAirborne ? "#3b82f6" : "#1a2a45"}
+                                                        strokeWidth={done && nextDone ? 3 : 2}
+                                                        strokeDasharray={done && nextDone ? "none" : done && isAirborne ? "6,4" : "4,6"}
+                                                    />
+                                                )}
+                                                {/* Node circle */}
+                                                <circle
+                                                    cx={x} cy={40} r={done ? 7 : 5}
+                                                    fill={done ? "#22c55e" : "#1a2a45"}
+                                                    stroke={done ? "#22c55e" : "#334155"}
+                                                    strokeWidth={done ? 0 : 2}
+                                                />
+                                                {done && (
+                                                    <path d={`M${x - 3} ${40} l2.5 3 4.5 -5`}
+                                                        fill="none" stroke="#0a1320" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                )}
+                                                {/* Label */}
+                                                <text x={x} y={16} textAnchor="middle" className="ldm-tl-label">{pt.label}</text>
+                                                {/* Time */}
+                                                <text x={x} y={68} textAnchor="middle" className={`ldm-tl-time ${!done ? 'ldm-tl-time--pending' : ''}`}>
+                                                    {pt.time || "— —"}
+                                                </text>
+                                            </g>
+                                        );
+                                    })}
+                                    {/* Duration labels between nodes */}
+                                    {taxiOut != null && <text x={40 + 92} y={33} textAnchor="middle" className="ldm-tl-duration">{fmtMin(taxiOut)}</text>}
+                                    {flightTime != null && <text x={40 + 185 + 92} y={33} textAnchor="middle" className="ldm-tl-duration">{fmtMin(flightTime)}</text>}
+                                    {taxiIn != null && <text x={40 + 370 + 92} y={33} textAnchor="middle" className="ldm-tl-duration">{fmtMin(taxiIn)}</text>}
+
+                                    {/* Airborne pulse indicator */}
+                                    {isAirborne && airborne && !landing && (
+                                        <g>
+                                            <circle cx={40 + 185 + 60} cy={40} r={5} fill="#3b82f6" opacity="0.6">
+                                                <animate attributeName="r" values="4;8;4" dur="1.5s" repeatCount="indefinite"/>
+                                                <animate attributeName="opacity" values="0.7;0.2;0.7" dur="1.5s" repeatCount="indefinite"/>
+                                            </circle>
+                                            <circle cx={40 + 185 + 60} cy={40} r={3} fill="#3b82f6"/>
+                                            <text x={40 + 185 + 60} y={57} textAnchor="middle" style={{fontSize: 8, fill: '#60a5fa', fontFamily: 'Inter'}}>EN VOL</text>
+                                        </g>
+                                    )}
+                                </svg>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Metric cards ── */}
+                    {!isCancelled && (
+                        <div>
+                            <div className="ldm-section-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20V10M6 20V4M18 20v-4"/></svg>
+                                Métriques de vol
+                            </div>
+                            <div className="ldm-metrics">
+                                <div className="ldm-metric">
+                                    <div className="ldm-metric-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 7v5l3 3"/></svg>
+                                    </div>
+                                    <div className={`ldm-metric-value ${blockTime == null ? 'ldm-metric-value--na' : ''}`}>{fmtMin(blockTime)}</div>
+                                    <div className="ldm-metric-label">Block Time</div>
+                                </div>
+                                <div className="ldm-metric">
+                                    <div className="ldm-metric-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 10-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+                                    </div>
+                                    <div className={`ldm-metric-value ${flightTime == null ? 'ldm-metric-value--na' : ''}`}>{fmtMin(flightTime)}</div>
+                                    <div className="ldm-metric-label">Flight Time</div>
+                                </div>
+                                <div className="ldm-metric">
+                                    <div className="ldm-metric-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M5 12h14M12 5l7 7"/></svg>
+                                    </div>
+                                    <div className={`ldm-metric-value ${taxiOut == null ? 'ldm-metric-value--na' : ''}`}>{fmtMin(taxiOut)}</div>
+                                    <div className="ldm-metric-label">Taxi Out</div>
+                                </div>
+                                <div className="ldm-metric">
+                                    <div className="ldm-metric-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M19 12H5M12 19l-7-7"/></svg>
+                                    </div>
+                                    <div className={`ldm-metric-value ${taxiIn == null ? 'ldm-metric-value--na' : ''}`}>{fmtMin(taxiIn)}</div>
+                                    <div className="ldm-metric-label">Taxi In</div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Delay section ── */}
+                    {!isCancelled && delays.length > 0 && totalDelay > 0 && (
+                        <div>
+                            <div className="ldm-section-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 9v4M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>
+                                Retards
+                            </div>
+                            <div className={`ldm-delay-section ${isMajorDelay ? 'ldm-delay-section--major' : 'ldm-delay-section--minor'}`}>
+                                <div className="ldm-delay-header">
+                                    <div className="ldm-delay-total">
+                                        <span className={`ldm-delay-total-num ${isMajorDelay ? 'ldm-delay-total-num--major' : 'ldm-delay-total-num--minor'}`}>{totalDelay}</span>
+                                        <span className="ldm-delay-total-unit">min</span>
+                                    </div>
+                                    <span className={`ldm-delay-label-tag ${isMajorDelay ? 'ldm-delay-label-tag--major' : 'ldm-delay-label-tag--minor'}`}>
+                                        {isMajorDelay ? "Retard majeur" : "Retard mineur"}
+                                    </span>
+                                </div>
+                                <div className="ldm-delay-codes">
+                                    {delays.map((d, i) => {
+                                        const pct = totalDelay > 0 ? (d.time / totalDelay * 100) : 0;
+                                        const color = d.time >= 30 ? "#ef4444" : d.time >= 15 ? "#f59e0b" : "#fcd34d";
+                                        return (
+                                            <div key={i} className="ldm-delay-code-row">
+                                                <span className="ldm-delay-code-badge">{d.code}</span>
+                                                <span className="ldm-delay-code-desc">{DELAY_CODES[d.code] || `Code ${d.code}`}</span>
+                                                <span className="ldm-delay-code-time" style={{ color }}>{d.time}m</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                {/* Stacked bar */}
+                                <div className="ldm-delay-bar-track">
+                                    <div style={{ display: "flex", height: "100%" }}>
+                                        {delays.map((d, i) => {
+                                            const pct = totalDelay > 0 ? (d.time / totalDelay * 100) : 0;
+                                            const color = d.time >= 30 ? "linear-gradient(90deg, #ef4444, #dc2626)" : d.time >= 15 ? "linear-gradient(90deg, #f59e0b, #d97706)" : "linear-gradient(90deg, #fcd34d, #f59e0b)";
+                                            return <div key={i} className="ldm-delay-bar-fill" style={{ width: `${pct}%`, background: color, marginRight: i < delays.length - 1 ? 2 : 0 }} />;
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Schedule comparison ── */}
+                    {!isCancelled && (
+                        <div>
+                            <div className="ldm-section-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                                Horaires Prévu vs Réel
+                            </div>
+                            <div className="ldm-schedule">
+                                {/* Departure */}
+                                <div className="ldm-schedule-col">
+                                    <div className="ldm-schedule-col-title">Départ</div>
+                                    <div className="ldm-schedule-row">
+                                        <span className="ldm-schedule-label">Prévu</span>
+                                        <span className="ldm-schedule-time">{leg.DEP_TIME_SCHED}</span>
+                                    </div>
+                                    <div className="ldm-schedule-row">
+                                        <span className="ldm-schedule-label">Réel</span>
+                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                            <span className="ldm-schedule-time">{offBlock || "— —"}</span>
+                                            {offBlock && (
+                                                <span className={`ldm-schedule-diff ${depDiff != null && depDiff <= 0 ? 'ldm-schedule-diff--on-time' : depDiff != null ? 'ldm-schedule-diff--late' : 'ldm-schedule-diff--na'}`}>
+                                                    {depDiff != null ? (depDiff <= 0 ? "OTP" : `+${depDiff}m`) : "—"}
+                                                </span>
+                                            )}
+                                            {!offBlock && <span className="ldm-schedule-diff ldm-schedule-diff--na">N/A</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                                {/* Arrival */}
+                                <div className="ldm-schedule-col">
+                                    <div className="ldm-schedule-col-title">Arrivée</div>
+                                    <div className="ldm-schedule-row">
+                                        <span className="ldm-schedule-label">Prévu</span>
+                                        <span className="ldm-schedule-time">{leg.ARR_TIME_SCHED}</span>
+                                    </div>
+                                    <div className="ldm-schedule-row">
+                                        <span className="ldm-schedule-label">Réel</span>
+                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                            <span className="ldm-schedule-time">{onBlock || "— —"}</span>
+                                            {onBlock && (
+                                                <span className={`ldm-schedule-diff ${arrDiff != null && arrDiff <= 0 ? 'ldm-schedule-diff--on-time' : arrDiff != null ? 'ldm-schedule-diff--late' : 'ldm-schedule-diff--na'}`}>
+                                                    {arrDiff != null ? (arrDiff <= 0 ? "OTP" : `+${arrDiff}m`) : "—"}
+                                                </span>
+                                            )}
+                                            {!onBlock && <span className="ldm-schedule-diff ldm-schedule-diff--na">N/A</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── Aircraft card ── */}
+                    <div>
+                        <div className="ldm-section-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 10-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>
+                            Appareil
+                        </div>
+                        <div className="ldm-aircraft">
+                            <div className="ldm-aircraft-icon">
+                                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+                                    <path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 10-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/>
+                                </svg>
+                            </div>
+                            <div className="ldm-aircraft-details">
+                                <div>
+                                    <div className="ldm-aircraft-field-label">Immatriculation</div>
+                                    <div className="ldm-aircraft-field-value">{leg.AC_REGISTRATION}</div>
+                                </div>
+                                <div>
+                                    <div className="ldm-aircraft-field-label">Sous-type</div>
+                                    <div className="ldm-aircraft-field-value">{leg.AC_SUBTYPE}</div>
+                                </div>
+                                <div>
+                                    <div className="ldm-aircraft-field-label">Propriétaire</div>
+                                    <div className="ldm-aircraft-field-value">{leg.AC_OWNER || "RAM"}</div>
+                                </div>
+                                <div>
+                                    <div className="ldm-aircraft-field-label">Version</div>
+                                    <div className="ldm-aircraft-field-value">{leg.AC_VERSION || "STD"}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const DAYS = [
     { label: "Dimanche", date: "8 Mars", key: "sun" },
@@ -329,13 +735,14 @@ function SearchButton({ onClick, loading, disabled }) {
 }
 
 /* ── Flight card ── */
-function FlightCard({ flight }) {
+function FlightCard({ flight, onClick }) {
     const status = STATUS_STYLES[flight.statusType] || STATUS_STYLES.scheduled;
     const label = STATUS_LABELS[flight.statusType] || "Prévu";
     const progress = flight.statusType === "active" ? 42 : flight.statusType === "landed" ? 100 : 0;
 
     return (
         <div
+            onClick={() => onClick && onClick(flight)}
             style={{
                 background: "var(--bg-surface-2)", border: "1px solid var(--color-border)", borderRadius: 12,
                 padding: "20px 24px", marginBottom: 10, transition: "box-shadow 0.2s, transform 0.2s",
@@ -422,6 +829,23 @@ export default function FlightSearch({ isDark }) {
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
     const [selectedDay, setSelectedDay] = useState("mon");
+
+    // Modal
+    const [selectedFlight, setSelectedFlight] = useState(null);
+    const [selectedLeg, setSelectedLeg] = useState(null);
+
+    const handleFlightClick = useCallback((flight) => {
+        const leg = ALL_LEGS.find(l => l.id === flight.id);
+        if (leg) {
+            setSelectedLeg(leg);
+            setSelectedFlight(flight);
+        }
+    }, []);
+
+    const handleCloseModal = useCallback(() => {
+        setSelectedFlight(null);
+        setSelectedLeg(null);
+    }, []);
 
     const canSearch = tab === "route"
         ? Boolean(from && to)
@@ -579,7 +1003,7 @@ export default function FlightSearch({ isDark }) {
                             <div style={{ fontSize: 11, color: "var(--color-muted)", fontWeight: 600, textAlign: "right" }}>Arrivée</div>
                         </div>
 
-                        {results.map(f => <FlightCard key={f.id} flight={f} />)}
+                        {results.map(f => <FlightCard key={f.id} flight={f} onClick={handleFlightClick} />)}
 
                         {results.length === 0 && (
                             <div style={{ background: "var(--bg-surface)", borderRadius: 12, padding: 48, textAlign: "center", border: "1px dashed var(--color-border)" }}>
@@ -591,6 +1015,15 @@ export default function FlightSearch({ isDark }) {
                     </>
                 )}
             </div>
+
+            {/* ── Leg Detail Modal ── */}
+            {selectedFlight && selectedLeg && (
+                <LegDetailModal
+                    leg={selectedLeg}
+                    flight={selectedFlight}
+                    onClose={handleCloseModal}
+                />
+            )}
         </div>
     );
 }

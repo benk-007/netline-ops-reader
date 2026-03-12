@@ -2,8 +2,6 @@ import { DataSet } from "vis-data";
 
 /* ═══════════════════════════════════════════════════════════════
    LEG CLASS — mapped to production database columns
-   All 37 DB columns are stored as-is.
-   Getters provide backward-compatible aliases used across the app.
    ═══════════════════════════════════════════════════════════════ */
 class Leg {
   constructor({
@@ -85,7 +83,6 @@ class Leg {
     this.ENTRY_USER      = ENTRY_USER;
   }
 
-  /* ── Backward-compatible getters used across the app ── */
   get id()      { return this.LEG_NO; }
   get fn()      { return `${this.FN_CARRIER}${this.FN_NUMBER}`; }
   get reg()     { return this.AC_REGISTRATION; }
@@ -106,7 +103,7 @@ class Leg {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOCK LEGS — representative RAM network data (2026-03-05)
+   MOCK LEGS — representative RAM network data 
    ═══════════════════════════════════════════════════════════════ */
 export const legs = [
 
@@ -117,7 +114,7 @@ export const legs = [
     OFF_BLOCK_TIME: "07:55", AIRBORNE_TIME: "08:10", LANDING_TIME: "10:35", ON_BLOCK_TIME: "10:42",
   }),
   new Leg({ LEG_NO: "L002", FN_CARRIER: "AT", FN_NUMBER: "303",  AC_REGISTRATION: "CN-RHB", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "BCN", DEP_TIME_SCHED: "12:00", ARR_TIME_SCHED: "14:40",
+    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "BCN", DEP_TIME_SCHED: "08:30", ARR_TIME_SCHED: "11:40",
     LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
   }),
 

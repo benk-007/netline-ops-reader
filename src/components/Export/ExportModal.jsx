@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import "./ExportModal.css";
 
 /* ── Field groups to export — mapped to new DB schema ──────── */
@@ -131,11 +131,116 @@ function ExportHeaderIcon() {
     );
 }
 
+/* ── Inline SVG arrows for collapsible section ─────────────── */
+function ChevronDown() {
+    return (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9" />
+        </svg>
+    );
+}
+
+function ChevronRight() {
+    return (
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 6 15 12 9 18" />
+        </svg>
+    );
+}
+
+function FilterIcon() {
+    return (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+    );
+}
+
+/* ── Multi-select chip helper ──────────────────────────────── */
+function ChipSelect({ options, selected, onChange, label }) {
+    function toggle(val) {
+        const next = selected.includes(val)
+            ? selected.filter(v => v !== val)
+            : [...selected, val];
+        onChange(next);
+    }
+    return (
+        <div className="em-filter-field">
+            <span className="em-filter-label">{label}</span>
+            <div className="em-filter-chips">
+                {options.map(opt => (
+                    <button
+                        key={opt}
+                        type="button"
+                        className={`em-filter-chip ${selected.includes(opt) ? "active" : ""}`}
+                        onClick={() => toggle(opt)}
+                    >
+                        {opt}
+                    </button>
+                ))}
+                {options.length === 0 && <span className="em-filter-empty">—</span>}
+            </div>
+        </div>
+    );
+}
+
 export default function ExportModal({ isOpen, onClose, legs, filters }) {
     const [selected, setSelected] = useState(new Set(DEFAULT_SELECTED));
     const [separator, setSeparator] = useState(",");
 
-    const filteredLegs = useMemo(() => applyFilters(legs, filters), [legs, filters]);
+    /* ── Local export filter state ─────────────────────────── */
+    const [filtersOpen, setFiltersOpen] = useState(true);
+    const [localDep, setLocalDep] = useState([]);
+    const [localArr, setLocalArr] = useState([]);
+    const [localService, setLocalService] = useState([]);
+    const [localSubtype, setLocalSubtype] = useState([]);
+    const [localFlight, setLocalFlight] = useState("");
+    const [localDate, setLocalDate] = useState([]);
+
+    /* Unique option lists extracted from ALL legs (not pre-filtered) */
+    const uniqueDeps     = useMemo(() => [...new Set(legs.map(l => l.dep).filter(Boolean))].sort(), [legs]);
+    const uniqueArrs     = useMemo(() => [...new Set(legs.map(l => l.arr).filter(Boolean))].sort(), [legs]);
+    const uniqueServices = useMemo(() => [...new Set(legs.map(l => l.service).filter(Boolean))].sort(), [legs]);
+    const uniqueSubtypes = useMemo(() => [...new Set(legs.map(l => l.subtype).filter(Boolean))].sort(), [legs]);
+    const uniqueDates    = useMemo(() => [...new Set(legs.map(l => l.date).filter(Boolean))].sort(), [legs]);
+
+    /* Initialize local filters from incoming filters prop when modal opens */
+    useEffect(() => {
+        if (isOpen) {
+            const toArr = v => (Array.isArray(v) ? v : []);
+            setLocalDep(toArr(filters?.fDep));
+            setLocalArr(toArr(filters?.fArr));
+            setLocalService(toArr(filters?.fService));
+            setLocalSubtype(toArr(filters?.fSubtype));
+            setLocalFlight(filters?.fFlight || "");
+            setLocalDate(toArr(filters?.fDate));
+        }
+    }, [isOpen, filters]);
+
+    /* Compute filtered legs from LOCAL filter state (overrides incoming) */
+    const localFilters = useMemo(() => ({
+        fDep: localDep,
+        fArr: localArr,
+        fService: localService,
+        fSubtype: localSubtype,
+        fFlight: localFlight,
+        fDate: localDate,
+    }), [localDep, localArr, localService, localSubtype, localFlight, localDate]);
+
+    const filteredLegs = useMemo(() => applyFilters(legs, localFilters), [legs, localFilters]);
+
+    /* Count of active export filters */
+    const activeFilterCount = [localDep, localArr, localService, localSubtype, localDate]
+        .filter(a => a.length > 0).length + (localFlight ? 1 : 0);
+
+    function resetLocalFilters() {
+        setLocalDep([]);
+        setLocalArr([]);
+        setLocalService([]);
+        setLocalSubtype([]);
+        setLocalFlight("");
+        setLocalDate([]);
+    }
 
     if (!isOpen) return null;
 
@@ -197,6 +302,53 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
                 </div>
 
                 <div className="em-body">
+
+                    {/* ── Export filter section ── */}
+                    <div className="em-filter-section">
+                        <button
+                            type="button"
+                            className="em-filter-header"
+                            onClick={() => setFiltersOpen(o => !o)}
+                        >
+                            <div className="em-filter-header-left">
+                                <FilterIcon />
+                                <span className="em-filter-title">Filtres d'export</span>
+                                {activeFilterCount > 0 && (
+                                    <span className="em-filter-badge">{activeFilterCount}</span>
+                                )}
+                            </div>
+                            <span className="em-filter-chevron">
+                                {filtersOpen ? <ChevronDown /> : <ChevronRight />}
+                            </span>
+                        </button>
+
+                        {filtersOpen && (
+                            <div className="em-filter-body">
+                                <ChipSelect label="Aéroport DEP" options={uniqueDeps} selected={localDep} onChange={setLocalDep} />
+                                <ChipSelect label="Aéroport ARR" options={uniqueArrs} selected={localArr} onChange={setLocalArr} />
+                                <ChipSelect label="Type de service" options={uniqueServices} selected={localService} onChange={setLocalService} />
+                                <ChipSelect label="Sous-type appareil" options={uniqueSubtypes} selected={localSubtype} onChange={setLocalSubtype} />
+                                <ChipSelect label="Date" options={uniqueDates} selected={localDate} onChange={setLocalDate} />
+
+                                <div className="em-filter-field">
+                                    <span className="em-filter-label">N° de vol</span>
+                                    <input
+                                        type="text"
+                                        className="em-filter-input"
+                                        placeholder="Rechercher un vol..."
+                                        value={localFlight}
+                                        onChange={e => setLocalFlight(e.target.value)}
+                                    />
+                                </div>
+
+                                {activeFilterCount > 0 && (
+                                    <button type="button" className="em-filter-reset" onClick={resetLocalFilters}>
+                                        Réinitialiser
+                                    </button>
+                                )}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Select all / deselect all */}
                     <div className="em-select-all-row">

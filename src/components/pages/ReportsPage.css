@@ -1,0 +1,579 @@
+/* ═══════════════════════════════════════════════════════════════
+   LEG DETAIL MODAL — OCC-Style Flight Detail View
+   Prefix: ldm- (leg detail modal)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Overlay ── */
+.ldm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(3, 8, 13, 0.82);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ldm-fadeIn 0.25s ease;
+  padding: 24px;
+}
+
+/* ── Modal container ── */
+.ldm-modal {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow:
+    0 0 0 1px rgba(200, 16, 46, 0.08),
+    0 24px 80px rgba(0, 0, 0, 0.6),
+    0 0 120px rgba(200, 16, 46, 0.06);
+  animation: ldm-slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.ldm-modal::-webkit-scrollbar {
+  width: 5px;
+}
+.ldm-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+.ldm-modal::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+/* ── Close button ── */
+.ldm-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--bg-surface-2);
+  color: var(--color-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ldm-close:hover {
+  background: var(--ram-red);
+  border-color: var(--ram-red);
+  color: #fff;
+}
+
+/* ── Header ── */
+.ldm-header {
+  padding: 28px 28px 20px;
+  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(180deg, var(--bg-surface-2) 0%, var(--bg-surface) 100%);
+  position: relative;
+  overflow: hidden;
+}
+.ldm-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle at center, rgba(200, 16, 46, 0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.ldm-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.ldm-fn {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 42px;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--color-text);
+}
+
+.ldm-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.ldm-badge--active     { background: rgba(59,130,246,0.15); color: #60a5fa; border-color: rgba(59,130,246,0.3); }
+.ldm-badge--landed     { background: rgba(34,197,94,0.15);  color: #4ade80; border-color: rgba(34,197,94,0.3); }
+.ldm-badge--delayed    { background: rgba(239,68,68,0.15);  color: #f87171; border-color: rgba(239,68,68,0.3); }
+.ldm-badge--cancelled  { background: rgba(107,114,128,0.15);color: #9ca3af; border-color: rgba(107,114,128,0.3); }
+.ldm-badge--scheduled  { background: rgba(100,116,139,0.15);color: #94a3b8; border-color: rgba(100,116,139,0.3); }
+
+.ldm-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.ldm-badge--active .ldm-badge-dot     { background: #60a5fa; box-shadow: 0 0 6px #60a5fa; }
+.ldm-badge--landed .ldm-badge-dot     { background: #4ade80; }
+.ldm-badge--delayed .ldm-badge-dot    { background: #f87171; animation: ldm-pulse 1.5s infinite; }
+.ldm-badge--cancelled .ldm-badge-dot  { background: #9ca3af; }
+.ldm-badge--scheduled .ldm-badge-dot  { background: #94a3b8; }
+
+.ldm-route {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.ldm-route-airport {
+  text-align: center;
+}
+.ldm-route-code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 1px;
+}
+.ldm-route-city {
+  font-size: 11px;
+  color: var(--color-muted);
+  margin-top: 2px;
+}
+.ldm-route-arrow {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  min-width: 60px;
+}
+.ldm-route-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+  position: relative;
+}
+.ldm-route-line::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  transform: translateY(-50%);
+  border-left: 6px solid var(--color-muted);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+}
+.ldm-route-plane {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--ram-red);
+}
+
+.ldm-header-meta {
+  display: flex;
+  gap: 20px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.ldm-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-muted);
+}
+.ldm-meta-item svg {
+  color: var(--color-dim);
+}
+.ldm-meta-value {
+  color: var(--color-text-2);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+/* ── Body sections ── */
+.ldm-body {
+  padding: 24px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ldm-section-title {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ldm-section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+/* ── OOOI Timeline ── */
+.ldm-timeline-wrap {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 24px 16px;
+}
+.ldm-timeline-svg {
+  width: 100%;
+  overflow: visible;
+}
+.ldm-tl-label {
+  font-family: 'Inter', sans-serif;
+  font-size: 9px;
+  fill: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.ldm-tl-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--color-text);
+}
+.ldm-tl-time--pending {
+  fill: var(--color-dim);
+  font-weight: 400;
+}
+.ldm-tl-duration {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  fill: var(--color-muted);
+}
+
+/* ── Metric cards ── */
+.ldm-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.ldm-metric {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 14px 12px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+.ldm-metric:hover {
+  border-color: rgba(200, 16, 46, 0.25);
+}
+.ldm-metric-icon {
+  color: var(--color-dim);
+  margin-bottom: 6px;
+}
+.ldm-metric-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+.ldm-metric-value--na {
+  color: var(--color-dim);
+  font-size: 14px;
+}
+.ldm-metric-label {
+  font-size: 10px;
+  color: var(--color-muted);
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+}
+
+/* ── Delay section ── */
+.ldm-delay-section {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.ldm-delay-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3px;
+  height: 100%;
+  border-radius: 3px 0 0 3px;
+}
+.ldm-delay-section--minor::before { background: var(--ram-gold); }
+.ldm-delay-section--major::before { background: var(--ram-red-light); }
+
+.ldm-delay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.ldm-delay-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.ldm-delay-total-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+.ldm-delay-total-num--minor { color: var(--ram-gold); }
+.ldm-delay-total-num--major { color: var(--ram-red-light); }
+.ldm-delay-total-unit {
+  font-size: 13px;
+  color: var(--color-muted);
+  font-weight: 500;
+}
+.ldm-delay-label-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+.ldm-delay-label-tag--minor { background: rgba(245,158,11,0.12); color: var(--ram-gold); }
+.ldm-delay-label-tag--major { background: rgba(239,68,68,0.12); color: var(--ram-red-light); }
+
+.ldm-delay-codes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ldm-delay-code-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ldm-delay-code-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--bg-surface-3);
+  padding: 4px 10px;
+  border-radius: 6px;
+  min-width: 42px;
+  text-align: center;
+  color: var(--color-text);
+}
+.ldm-delay-code-desc {
+  font-size: 12px;
+  color: var(--color-text-2);
+  flex: 1;
+}
+.ldm-delay-code-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 48px;
+  text-align: right;
+}
+
+/* Delay bar chart */
+.ldm-delay-bar-track {
+  height: 6px;
+  background: var(--bg-surface-3);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+.ldm-delay-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Schedule comparison ── */
+.ldm-schedule {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.ldm-schedule-col {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 16px 18px;
+}
+.ldm-schedule-col-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  margin-bottom: 14px;
+}
+.ldm-schedule-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.ldm-schedule-row + .ldm-schedule-row {
+  border-top: 1px solid var(--color-border);
+}
+.ldm-schedule-label {
+  font-size: 11px;
+  color: var(--color-muted);
+}
+.ldm-schedule-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.ldm-schedule-diff {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-left: 8px;
+}
+.ldm-schedule-diff--on-time {
+  background: rgba(34,197,94,0.12);
+  color: #4ade80;
+}
+.ldm-schedule-diff--late {
+  background: rgba(239,68,68,0.12);
+  color: #f87171;
+}
+.ldm-schedule-diff--na {
+  background: var(--bg-surface-3);
+  color: var(--color-dim);
+}
+
+/* ── Aircraft card ── */
+.ldm-aircraft {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.ldm-aircraft-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--bg-surface-3);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  flex-shrink: 0;
+}
+.ldm-aircraft-details {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px 24px;
+  flex: 1;
+}
+.ldm-aircraft-field-label {
+  font-size: 9px;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.ldm-aircraft-field-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ── Cancelled overlay ── */
+.ldm-cancelled-banner {
+  background: rgba(107, 114, 128, 0.1);
+  border: 1px dashed var(--color-dim);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.ldm-cancelled-banner svg {
+  color: var(--color-dim);
+}
+.ldm-cancelled-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+.ldm-cancelled-sub {
+  font-size: 11px;
+  color: var(--color-dim);
+}
+
+/* ── Animations ── */
+@keyframes ldm-fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes ldm-slideUp {
+  from { transform: translateY(40px) scale(0.97); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+@keyframes ldm-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .ldm-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .ldm-schedule {
+    grid-template-columns: 1fr;
+  }
+  .ldm-header {
+    padding: 20px 20px 16px;
+  }
+  .ldm-body {
+    padding: 20px;
+  }
+  .ldm-fn {
+    font-size: 32px;
+  }
+  .ldm-route-code {
+    font-size: 18px;
+  }
+}
