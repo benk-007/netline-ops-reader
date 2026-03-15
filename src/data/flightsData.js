@@ -3,7 +3,7 @@ import { DataSet } from "vis-data";
 /* ═══════════════════════════════════════════════════════════════
    LEG CLASS — mapped to production database columns
    ═══════════════════════════════════════════════════════════════ */
-class Leg {
+export class Leg {
   constructor({
     LEG_NO,
     UPDATE_KEY      = null,
@@ -341,23 +341,29 @@ export const legs = [
 
 ];
 
-/* ── Groups DataSet (unique registrations) ── */
-const uniqueRegs = [...new Set(legs.map(l => l.AC_REGISTRATION))];
+/* ── Build DataSets from any legs array ── */
+export function buildGroups(legsArr) {
+  const uniqueRegs = [...new Set(legsArr.map(l => l.AC_REGISTRATION))];
+  return new DataSet(uniqueRegs.map(reg => ({ id: reg, content: reg })));
+}
 
-export const groups = new DataSet(
-  uniqueRegs.map(reg => ({ id: reg, content: reg }))
-);
+export function buildItems(legsArr) {
+  return new DataSet(
+    legsArr.map((leg, index) => ({
+      id: index + 1,
+      group: leg.AC_REGISTRATION,
+      content: `${leg.fn} ${leg.dep} → ${leg.arr}`,
+      start: `${leg.DAY_OF_ORIGIN}T${leg.DEP_TIME_SCHED}:00`,
+      end:   `${leg.DAY_OF_ORIGIN}T${leg.ARR_TIME_SCHED}:00`,
+    }))
+  );
+}
 
-/* ── Items DataSet (for vis-timeline) ── */
-export const items = new DataSet(
-  legs.map((leg, index) => ({
-    id: index + 1,
-    group: leg.AC_REGISTRATION,
-    content: `${leg.fn} ${leg.dep} → ${leg.arr}`,
-    start: `${leg.DAY_OF_ORIGIN}T${leg.DEP_TIME_SCHED}:00`,
-    end:   `${leg.DAY_OF_ORIGIN}T${leg.ARR_TIME_SCHED}:00`,
-  }))
-);
+export function buildDates(legsArr) {
+  return [...new Set(legsArr.map(l => l.DAY_OF_ORIGIN))].sort();
+}
 
-/* ── Unique dates ── */
-export const dates = [...new Set(legs.map(l => l.DAY_OF_ORIGIN))].sort();
+/* ── Default DataSets (from mock data) ── */
+export const groups = buildGroups(legs);
+export const items  = buildItems(legs);
+export const dates  = buildDates(legs);

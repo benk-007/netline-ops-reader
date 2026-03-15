@@ -209,8 +209,8 @@
 
 .bp-grid-6 {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
 }
 
 .bp-grid-4 {
@@ -225,7 +225,7 @@
   background: var(--bg-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  padding: 10px 13px;
+  padding: 14px 18px;
   transition: border-color var(--transition-fast), background-color 0.3s ease;
 }
 
@@ -237,7 +237,7 @@
 }
 
 .bp-card-label {
-  font-size: 8px;
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: var(--color-dim);
@@ -246,7 +246,7 @@
 }
 
 .bp-card-value {
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--color-text);
   font-family: 'JetBrains Mono', monospace;
@@ -623,6 +623,173 @@
   font-size: 15px;
   font-weight: 700;
   color: var(--color-text);
+}
+
+/* ─── Redesigned Vol Tab ─────────────────────────────────── */
+
+.bp-vol-layout {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.bp-vol-data {
+  flex: 1;
+  min-width: 0;
+}
+
+.bp-vol-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.bp-card-lg {
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  transition: border-color var(--transition-fast), background-color 0.3s ease;
+}
+
+.bp-card-lg:hover {
+  background: var(--bg-surface-3);
+  border-color: var(--color-muted);
+}
+
+.bp-card-label-lg {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--color-dim);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.bp-card-value-lg {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--color-text);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Delay Section ──────────────────────────────────────── */
+
+.bp-delay-section {
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--bg-surface-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.bp-delay-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bp-delay-header-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--color-dim);
+}
+
+.bp-delay-total {
+  font-family: 'Bebas Neue', cursive;
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: 2px;
+}
+
+.bp-delay-total-unit {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: 0.7;
+}
+
+.bp-delay-divider {
+  height: 1px;
+  background: var(--color-border);
+  margin-bottom: 12px;
+}
+
+.bp-delay-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.bp-delay-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.bp-delay-row:last-child {
+  border-bottom: none;
+}
+
+.bp-delay-code-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.bp-delay-desc {
+  flex: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-2);
+  line-height: 1.3;
+  letter-spacing: 0.2px;
+}
+
+.bp-delay-time {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+  letter-spacing: 0.5px;
+}
+
+@media (max-width: 900px) {
+  .bp-vol-layout {
+    flex-direction: column;
+  }
+  .bp-delay-section {
+    width: 100%;
+  }
+  .bp-vol-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .bp-vol-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 /* ─── Mount animation ─────────────────────────────────────── */

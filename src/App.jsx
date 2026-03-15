@@ -17,7 +17,7 @@ import AdminPage from "./components/pages/AdminPage";
 import LoginPage from "./components/Auth/LoginPage";
 
 /* Data */
-import { legs } from "./data/flightsData";
+import { legs as defaultLegs } from "./data/flightsData";
 
 /* ── Role-based access control ──────────────────────────────── */
 const ROLE_PAGES = {
@@ -35,6 +35,9 @@ const ROLE_DEFAULT_PAGE = {
 /* ─────────────────────────────────────────────────────────── */
 
 function App() {
+  /* Flight data state — can be replaced via CSV upload in Admin */
+  const [legsData, setLegsData] = useState(defaultLegs);
+
   /* Auth state */
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -137,6 +140,8 @@ function App() {
           sidebarOpen={sidebarOpen}
           onToggleDark={() => setIsDark(d => !d)}
           onToggleUtc={() => setUtcMode(u => !u)}
+          currentUser={currentUser}
+          onLogout={handleLogout}
         />
 
         {/* Page content */}
@@ -161,7 +166,7 @@ function App() {
               {/* Timeline */}
               <div className="timeline-container">
                 <FlightGantt
-                  legs={legs}
+                  legs={legsData}
                   filters={filters}
                   onSelectLeg={setSelectedLeg}
                   zoom={zoom}
@@ -178,13 +183,13 @@ function App() {
           )}
 
           {/* ── SCHEDULE PAGE ── */}
-          {safePage === "schedule" && <SchedulePage isDark={isDark} legs={legs} />}
+          {safePage === "schedule" && <SchedulePage isDark={isDark} legs={legsData} />}
 
           {/* ── REPORTS PAGE ── */}
-          {safePage === "reports" && <ReportsPage isDark={isDark} />}
+          {safePage === "reports" && <ReportsPage isDark={isDark} legs={legsData} />}
 
           {/* ── ADMIN PAGE ── */}
-          {safePage === "admin" && <AdminPage isDark={isDark} />}
+          {safePage === "admin" && <AdminPage isDark={isDark} onLegsImported={setLegsData} />}
 
         </div>
       </div>
@@ -203,7 +208,7 @@ function App() {
       <ExportModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
-        legs={legs}
+        legs={legsData}
         filters={filters}
       />
 

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { legs as ALL_LEGS } from "../../data/flightsData";
 import "./ReportsPage.css";
 
 /* ── Map Leg state → FlightCard statusType ──────────────── */
@@ -812,7 +811,7 @@ function FlightCard({ flight, onClick }) {
 }
 
 /* ── MAIN ── */
-export default function FlightSearch({ isDark }) {
+export default function FlightSearch({ isDark, legs: ALL_LEGS = [] }) {
     const [tab, setTab] = useState("route");
 
     // Route
@@ -840,7 +839,7 @@ export default function FlightSearch({ isDark }) {
             setSelectedLeg(leg);
             setSelectedFlight(flight);
         }
-    }, []);
+    }, [ALL_LEGS]);
 
     const handleCloseModal = useCallback(() => {
         setSelectedFlight(null);

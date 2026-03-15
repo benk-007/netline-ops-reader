@@ -1,85 +1,52 @@
-import { useState, useEffect } from "react";
-import { legs as ALL_LEGS } from "../../data/flightsData";
+import { useState, useMemo } from "react";
 
-const mockFlights = [
-    {
-        id: "AT1001", fn_carrier: "AT", fn_number: "1001", flight_type: "Régulier",
-        destination: "CDG", provenance: "CMN", direction: "DEP",
-        operational_day: "2026-02-25", aircraft_registration: "CN-RGX", aircraft_subtype: "B737-800",
-        scheduled_departure: "06:30", scheduled_arrival: "10:45", block_time: "04:15",
-        off_block: "06:47", airborne: "07:02", landing: null, on_block: null,
-        delay_code_01: "93", delay_time_01: 17, delay_code_02: null, delay_code_03: null,
-        leg_state: "Airborne", leg_type: "Revenue",
-        boarding_time: "06:05", closing_time: "06:20",
-        fuel_status: "OK", catering_status: "OK", cleaning_status: "OK", loadsheet_status: "Signed",
-    },
-    {
-        id: "AT204", fn_carrier: "AT", fn_number: "204", flight_type: "Régulier",
-        destination: "CMN", provenance: "LHR", direction: "ARR",
-        operational_day: "2026-02-25", aircraft_registration: "CN-RNM", aircraft_subtype: "B787-9",
-        scheduled_departure: "07:00", scheduled_arrival: "11:20", block_time: "03:50",
-        off_block: "07:00", airborne: "07:14", landing: "11:09", on_block: "11:22",
-        delay_code_01: null, delay_time_01: 0, delay_code_02: null, delay_code_03: null,
-        leg_state: "Arrived", leg_type: "Revenue",
-        boarding_time: "06:30", closing_time: "06:45",
-        fuel_status: "OK", catering_status: "OK", cleaning_status: "Done", loadsheet_status: "Signed",
-    },
-    {
-        id: "AT568", fn_carrier: "AT", fn_number: "568", flight_type: "Régulier",
-        destination: "JFK", provenance: "CMN", direction: "DEP",
-        operational_day: "2026-02-25", aircraft_registration: "CN-ROB", aircraft_subtype: "B787-8",
-        scheduled_departure: "09:15", scheduled_arrival: "15:30", block_time: "09:15",
-        off_block: null, airborne: null, landing: null, on_block: null,
-        delay_code_01: "71", delay_time_01: 35, delay_code_02: "15", delay_code_03: null,
-        leg_state: "Delayed", leg_type: "Revenue",
-        boarding_time: "09:50", closing_time: null,
-        fuel_status: "In Progress", catering_status: "OK", cleaning_status: "OK", loadsheet_status: "Pending",
-    },
-    {
-        id: "AT312", fn_carrier: "AT", fn_number: "312", flight_type: "Charter",
-        destination: "AGA", provenance: "CMN", direction: "DEP",
-        operational_day: "2026-02-25", aircraft_registration: "CN-RGA", aircraft_subtype: "B737-700",
-        scheduled_departure: "10:00", scheduled_arrival: "11:05", block_time: "01:05",
-        off_block: null, airborne: null, landing: null, on_block: null,
-        delay_code_01: null, delay_time_01: 0, delay_code_02: null, delay_code_03: null,
-        leg_state: "Boarding", leg_type: "Charter",
-        boarding_time: "09:30", closing_time: "09:45",
-        fuel_status: "OK", catering_status: "OK", cleaning_status: "OK", loadsheet_status: "Signed",
-    },
-    {
-        id: "AT771", fn_carrier: "AT", fn_number: "771", flight_type: "Régulier",
-        destination: "DXB", provenance: "CMN", direction: "DEP",
-        operational_day: "2026-02-25", aircraft_registration: "CN-RNL", aircraft_subtype: "B787-9",
-        scheduled_departure: "11:45", scheduled_arrival: "20:10", block_time: "07:25",
-        off_block: null, airborne: null, landing: null, on_block: null,
-        delay_code_01: null, delay_time_01: 0, delay_code_02: null, delay_code_03: null,
-        leg_state: "Scheduled", leg_type: "Revenue",
-        boarding_time: "11:20", closing_time: "11:35",
-        fuel_status: "Planned", catering_status: "Planned", cleaning_status: "Planned", loadsheet_status: "Not Started",
-    },
-    {
-        id: "AT099", fn_carrier: "AT", fn_number: "099", flight_type: "Ferry",
-        destination: "RBA", provenance: "CMN", direction: "DEP",
-        operational_day: "2026-02-25", aircraft_registration: "CN-RGT", aircraft_subtype: "ATR72-600",
-        scheduled_departure: "12:30", scheduled_arrival: "13:00", block_time: "00:30",
-        off_block: null, airborne: null, landing: null, on_block: null,
-        delay_code_01: "89", delay_time_01: 50, delay_code_02: null, delay_code_03: null,
-        leg_state: "Cancelled", leg_type: "Ferry",
-        boarding_time: null, closing_time: null,
-        fuel_status: "N/A", catering_status: "N/A", cleaning_status: "N/A", loadsheet_status: "N/A",
-    },
-];
+/* ── Convert Leg objects to schedule-row format ── */
+function legToScheduleRow(leg) {
+    const depMins = timeToMins(leg.DEP_TIME_SCHED);
+    const arrMins = timeToMins(leg.ARR_TIME_SCHED);
+    let blockMins = arrMins - depMins;
+    if (blockMins < 0) blockMins += 24 * 60;
+    const bh = Math.floor(blockMins / 60);
+    const bm = blockMins % 60;
+
+    return {
+        id:                    leg.LEG_NO,
+        fn_carrier:            leg.FN_CARRIER,
+        fn_number:             leg.FN_NUMBER,
+        flight_type:           leg.LEG_TYPE === 'Charter' ? 'Charter' : leg.LEG_TYPE === 'Ferry' ? 'Ferry' : 'Régulier',
+        destination:           leg.ARR_AP_SCHED,
+        provenance:            leg.DEP_AP_SCHED,
+        direction:             "DEP",
+        operational_day:       leg.DAY_OF_ORIGIN,
+        aircraft_registration: leg.AC_REGISTRATION,
+        aircraft_subtype:      leg.AC_SUBTYPE,
+        scheduled_departure:   leg.DEP_TIME_SCHED,
+        scheduled_arrival:     leg.ARR_TIME_SCHED,
+        block_time:            `${String(bh).padStart(2,'0')}:${String(bm).padStart(2,'0')}`,
+        off_block:             leg.OFF_BLOCK_TIME || null,
+        airborne:              leg.AIRBORNE_TIME || null,
+        landing:               leg.LANDING_TIME || null,
+        on_block:              leg.ON_BLOCK_TIME || null,
+        delay_code_01:         leg.DELAY_CODE_01,
+        delay_time_01:         leg.DELAY_TIME_01 || 0,
+        delay_code_02:         leg.DELAY_CODE_02,
+        delay_code_03:         leg.DELAY_CODE_03,
+        leg_state:             leg.LEG_STATE,
+        leg_type:              leg.LEG_TYPE,
+        boarding_time:         null,
+        closing_time:          null,
+        fuel_status:           leg.LEG_STATE === 'Arrived' ? 'OK' : leg.LEG_STATE === 'Scheduled' ? 'Planned' : 'OK',
+        catering_status:       leg.LEG_STATE === 'Arrived' ? 'OK' : leg.LEG_STATE === 'Scheduled' ? 'Planned' : 'OK',
+        cleaning_status:       leg.LEG_STATE === 'Arrived' ? 'Done' : leg.LEG_STATE === 'Scheduled' ? 'Planned' : 'OK',
+        loadsheet_status:      leg.LEG_STATE === 'Arrived' ? 'Signed' : leg.LEG_STATE === 'Scheduled' ? 'Not Started' : 'Pending',
+    };
+}
 
 const delayCodes = {
     "15": "Embarquement tardif passagers",
     "71": "Technique avion — Maintenance",
     "89": "Météo — Conditions défavorables",
     "93": "Restrictions ATC",
-};
-
-const kpis = {
-    otp: 62, avg_delay: 25.5, turnaround_avg: "48 min",
-    total_flights: 6, on_time: 2, delayed: 2, cancelled: 1,
 };
 
 const stateConfig = {
@@ -339,19 +306,6 @@ function timeToMins(hhmm) {
     return h * 60 + m;
 }
 
-const nowMins = NOW_H * 60 + NOW_M;
-const windowEnd = nowMins + WINDOW_H * 60;
-
-const legsNext3h = ALL_LEGS.filter(l => {
-    const dep = timeToMins(l.depUtc);
-    return dep >= nowMins && dep <= windowEnd;
-});
-
-const next3hByState = legsNext3h.reduce((acc, l) => {
-    acc[l.state] = (acc[l.state] || 0) + 1;
-    return acc;
-}, {});
-
 const STATE_COLORS_SCH = {
     Scheduled: { color: "#64748b", bg: "rgba(100,116,139,0.12)" },
     Boarding:  { color: "#f59e0b", bg: "rgba(245,158,11,0.12)" },
@@ -360,14 +314,43 @@ const STATE_COLORS_SCH = {
     Arrived:   { color: "#22c55e", bg: "rgba(34,197,94,0.12)" },
 };
 
-export default function SchedulePage({ isDark }) {
+export default function SchedulePage({ isDark, legs = [] }) {
     const [selected, setSelected] = useState(null);
     const [filter, setFilter] = useState("Tous");
 
     const t = themes[isDark ? "dark" : "light"];
 
+    /* ── Derive schedule rows from legs prop ── */
+    const scheduleFlights = useMemo(() => legs.map(legToScheduleRow), [legs]);
+
+    /* ── Next 3h banner data ── */
+    const nowMins = NOW_H * 60 + NOW_M;
+    const windowEnd = nowMins + WINDOW_H * 60;
+    const legsNext3h = useMemo(() => legs.filter(l => {
+        const dep = timeToMins(l.depUtc);
+        return dep >= nowMins && dep <= windowEnd;
+    }), [legs]);
+    const next3hByState = useMemo(() => legsNext3h.reduce((acc, l) => {
+        acc[l.state] = (acc[l.state] || 0) + 1;
+        return acc;
+    }, {}), [legsNext3h]);
+
+    /* ── KPIs from real data ── */
+    const computedKpis = useMemo(() => {
+        const total = scheduleFlights.length;
+        const onTime = scheduleFlights.filter(f => f.leg_state === 'Arrived' && (f.delay_time_01 || 0) === 0).length;
+        const delayed = scheduleFlights.filter(f => f.leg_state === 'Delayed' || (f.delay_time_01 || 0) > 0).length;
+        const cancelled = scheduleFlights.filter(f => f.leg_state === 'Cancelled').length;
+        const delayedFlights = scheduleFlights.filter(f => (f.delay_time_01 || 0) > 0);
+        const avgDelay = delayedFlights.length > 0
+            ? Math.round((delayedFlights.reduce((s, f) => s + (f.delay_time_01 || 0), 0) / delayedFlights.length) * 10) / 10
+            : 0;
+        const otp = total > 0 ? Math.round(((total - delayed - cancelled) / total) * 100) : 0;
+        return { otp, avg_delay: avgDelay, turnaround_avg: "—", total_flights: total, on_time: onTime, delayed, cancelled };
+    }, [scheduleFlights]);
+
     const states = ["Tous", "Scheduled", "Boarding", "Airborne", "Arrived", "Delayed", "Cancelled"];
-    const filtered = filter === "Tous" ? mockFlights : mockFlights.filter(f => f.leg_state === filter);
+    const filtered = filter === "Tous" ? scheduleFlights : scheduleFlights.filter(f => f.leg_state === filter);
 
     const COLS = "90px 70px 150px 120px 140px 120px 80px 100px 100px";
 
@@ -424,10 +407,10 @@ export default function SchedulePage({ isDark }) {
                 {/* KPIs */}
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 22 }}>
                     {[
-                        { label: "OTP", value: `${kpis.otp}%`, sub: "On Time Performance", warn: true },
-                        { label: "Retard moyen", value: `${kpis.avg_delay} min`, sub: "Vols retardés", warn: true },
-                        { label: "Rotation moy.", value: kpis.turnaround_avg, sub: "Temps de rotation avion", warn: false },
-                        { label: "Vols du jour", value: kpis.total_flights, sub: `${kpis.on_time} à l'heure · ${kpis.delayed} retardés · ${kpis.cancelled} annulé`, warn: false },
+                        { label: "OTP", value: `${computedKpis.otp}%`, sub: "On Time Performance", warn: true },
+                        { label: "Retard moyen", value: `${computedKpis.avg_delay} min`, sub: "Vols retardés", warn: true },
+                        { label: "Rotation moy.", value: computedKpis.turnaround_avg, sub: "Temps de rotation avion", warn: false },
+                        { label: "Vols du jour", value: computedKpis.total_flights, sub: `${computedKpis.on_time} à l'heure · ${computedKpis.delayed} retardés · ${computedKpis.cancelled} annulé`, warn: false },
                     ].map(({ label, value, sub, warn }) => (
                         <div key={label} style={{ background: t.kpiBg, border: `1px solid ${warn ? "rgba(200,16,46,0.22)" : t.border}`, borderRadius: 12, padding: "20px 22px", position: "relative", overflow: "hidden", boxShadow: isDark ? "none" : "0 1px 8px rgba(0,0,0,0.05)", transition: "background 0.3s" }}>
                             {warn && <div style={{ position: "absolute", top: 0, right: 0, width: 3, height: "100%", background: "linear-gradient(180deg,#c8102e,transparent)" }} />}
@@ -442,9 +425,9 @@ export default function SchedulePage({ isDark }) {
                 <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "14px 22px", marginBottom: 22, display: "flex", alignItems: "center", gap: 18, boxShadow: isDark ? "none" : "0 1px 5px rgba(0,0,0,0.04)", transition: "background 0.3s" }}>
                     <span style={{ color: t.textDim, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap" }}>Performance OTP</span>
                     <div style={{ flex: 1, height: 5, background: t.otpTrack, borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{ width: `${kpis.otp}%`, height: "100%", background: "linear-gradient(90deg,#c8102e,#e8223a)", borderRadius: 3 }} />
+                        <div style={{ width: `${computedKpis.otp}%`, height: "100%", background: "linear-gradient(90deg,#c8102e,#e8223a)", borderRadius: 3 }} />
                     </div>
-                    <span style={{ color: t.text, fontSize: 12, fontWeight: 700, fontFamily: "monospace", whiteSpace: "nowrap" }}>{kpis.otp}%</span>
+                    <span style={{ color: t.text, fontSize: 12, fontWeight: 700, fontFamily: "monospace", whiteSpace: "nowrap" }}>{computedKpis.otp}%</span>
                 </div>
 
                 {/* Filters */}
@@ -459,7 +442,7 @@ export default function SchedulePage({ isDark }) {
                                 color: active ? "#e05f72" : t.filterText,
                                 fontSize: 10, fontWeight: 600, letterSpacing: 1,
                                 textTransform: "uppercase", cursor: "pointer", transition: "all 0.18s"
-                            }}>{s === "Tous" ? `Tous (${mockFlights.length})` : s}</button>
+                            }}>{s === "Tous" ? `Tous (${scheduleFlights.length})` : s}</button>
                         );
                     })}
                 </div>

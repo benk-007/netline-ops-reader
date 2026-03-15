@@ -7,6 +7,91 @@ const TABS = [
     { key: "trajectoire",  label: "Trajectoire" },
 ];
 
+/* ── IATA Delay Codes ────────────────────────────────────── */
+const DELAY_CODES = {
+    "00": "Approbation interne compagnie / défaut attributable",
+    "01": "Passager – retard individuel",
+    "02": "Passager – retard de groupe",
+    "03": "Passager – recherche de bagages",
+    "04": "Passager – sur-réservation (overbooking)",
+    "05": "Passager – non-présentation (no-show)",
+    "06": "Passager – connexion tardive",
+    "09": "Passager – autres causes",
+    "11": "Fret / courrier – documentation",
+    "12": "Fret / courrier – retard de livraison",
+    "13": "Fret / courrier – chargement tardif",
+    "15": "Bagages – traitement / tri",
+    "16": "Bagages – chargement tardif",
+    "17": "Bagages – déchargement excessif",
+    "18": "Bagages – bagages en excès",
+    "19": "Bagages – autres causes",
+    "21": "Avitaillement – carburant",
+    "22": "Avitaillement – catering",
+    "23": "Avitaillement – nettoyage cabine",
+    "24": "Avitaillement – matériel de service",
+    "25": "Avitaillement – chargement / déchargement",
+    "26": "Avitaillement – équipements de cabine",
+    "27": "Avitaillement – ULD / conteneurs",
+    "29": "Avitaillement – autres causes",
+    "31": "Aéronef – panne avant départ",
+    "32": "Aéronef – panne en escale",
+    "33": "Aéronef – maintenance programmée",
+    "34": "Aéronef – maintenance non programmée",
+    "35": "Aéronef – changement d'appareil",
+    "36": "Aéronef – substitution d'appareil",
+    "37": "Aéronef – inspection / vérification",
+    "38": "Aéronef – réparation mineure",
+    "39": "Aéronef – autres raisons techniques",
+    "41": "Technique – défaut moteur",
+    "42": "Technique – système avionique",
+    "43": "Technique – train d'atterrissage",
+    "44": "Technique – pneus",
+    "45": "Technique – système hydraulique",
+    "46": "Technique – système électrique",
+    "47": "Technique – APU",
+    "51": "Dommages – collision avec oiseau",
+    "52": "Dommages – collision au sol",
+    "55": "Dommages – FOD (corps étranger)",
+    "61": "Opérations aériennes – plan de vol",
+    "62": "Opérations aériennes – documentation équipage",
+    "63": "Opérations aériennes – dégivrage",
+    "64": "Opérations aériennes – restrictions opérationnelles",
+    "65": "Opérations aériennes – déroutement",
+    "66": "Opérations aériennes – escale technique",
+    "67": "Opérations aériennes – briefing",
+    "68": "Opérations aériennes – restrictions de masse",
+    "69": "Opérations aériennes – autres raisons",
+    "71": "Équipage – indisponibilité capitaine",
+    "72": "Équipage – indisponibilité copilote",
+    "73": "Équipage – indisponibilité PNC",
+    "75": "Équipage – temps de service dépassé",
+    "76": "Équipage – formation / contrôle",
+    "77": "Équipage – connexion tardive",
+    "81": "Météo – départ",
+    "82": "Météo – destination",
+    "83": "Météo – en route",
+    "84": "Météo – dégivrage",
+    "85": "Météo – neige / verglas piste",
+    "86": "ATC – régulation CFMU / ATFM",
+    "87": "ATC – restriction en route",
+    "88": "ATC – restriction aéroport",
+    "89": "ATC – slot / créneau",
+    "91": "Aéroport – piste / taxiway fermé",
+    "92": "Aéroport – porte / parking indisponible",
+    "93": "Aéroport – congestion aéroport",
+    "94": "Aéroport – services au sol indisponibles",
+    "95": "Aéroport – sûreté / contrôle",
+    "96": "Gouvernemental – immigration / douanes",
+    "97": "Gouvernemental – restrictions sanitaires",
+    "98": "Réactionnaire – retard vol précédent",
+    "99": "Divers – autres raisons",
+};
+
+function getDelayDescription(code) {
+    if (!code) return "Code inconnu";
+    return DELAY_CODES[code] || `Code IATA ${code}`;
+}
+
 /* ── Flight progress by state ─────────────────────────────── */
 const STATE_PROGRESS = {
     Scheduled:  5,
@@ -34,12 +119,93 @@ function PlaneIcon({ color }) {
     );
 }
 
-/* ── Phase label for delay ────────────────────────────────── */
+/* ── Delay severity helper ────────────────────────────────── */
 function delaySeverity(min) {
     if (!min || min <= 0) return null;
     if (min <= 15) return { color: "#f59e0b", label: `+${min} min` };
     if (min <= 30) return { color: "#f97316", label: `+${min} min` };
     return { color: "#ef4444", label: `+${min} min ⚠` };
+}
+
+function delaySeverityColor(min) {
+    if (!min || min <= 0) return "#22c55e";
+    if (min <= 15) return "#f59e0b";
+    if (min <= 30) return "#f97316";
+    return "#ef4444";
+}
+
+/* ── Delay Code Row component ─────────────────────────────── */
+function DelayCodeRow({ code, time }) {
+    if (!code && !time) return null;
+    const sevColor = delaySeverityColor(time);
+    return (
+        <div className="bp-delay-row">
+            <div className="bp-delay-code-badge" style={{ background: `${sevColor}18`, color: sevColor, borderColor: `${sevColor}40` }}>
+                {code || "??"}
+            </div>
+            <div className="bp-delay-desc">{getDelayDescription(code)}</div>
+            <div className="bp-delay-time" style={{ color: sevColor }}>
+                {time ? `+${time} min` : "—"}
+            </div>
+        </div>
+    );
+}
+
+/* ── Vol Tab (redesigned) ──────────────────────────────────── */
+function VolTab({ leg, sc }) {
+    const hasDelay = leg.totalDelay > 0;
+    const delayCodes = [
+        { code: leg.DELAY_CODE_01, time: leg.DELAY_TIME_01 },
+        { code: leg.DELAY_CODE_02, time: leg.DELAY_TIME_02 },
+        { code: leg.DELAY_CODE_03, time: leg.DELAY_TIME_03 },
+    ].filter(d => d.code || d.time);
+
+    const totalSevColor = delaySeverityColor(leg.totalDelay);
+
+    return (
+        <div className="bp-vol-layout">
+            {/* Left: Flight data grid */}
+            <div className="bp-vol-data">
+                <div className="bp-vol-grid">
+                    {[
+                        ["Vol",     leg.fn,      sc.bar],
+                        ["Immat.",  leg.reg,     null],
+                        ["Type",    leg.subtype,  null],
+                        ["Service", leg.service,  sc.text],
+                        ["Départ",  leg.dep,     null],
+                        ["Arrivée", leg.arr,     null],
+                        ["Statut",  leg.state,   STATE_COLORS[leg.state]],
+                        ["Date",    leg.date,    null],
+                    ].map(([k, v, color]) => (
+                        <div key={k} className="bp-card-lg">
+                            <div className="bp-card-label-lg">{k}</div>
+                            <div className="bp-card-value-lg" style={{ color: color || undefined }}>
+                                {v}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* Right: Delay section (only if delayed) */}
+            {hasDelay && (
+                <div className="bp-delay-section">
+                    <div className="bp-delay-header">
+                        <div className="bp-delay-header-label">RETARD TOTAL</div>
+                        <div className="bp-delay-total" style={{ color: totalSevColor }}>
+                            +{leg.totalDelay} <span className="bp-delay-total-unit">min</span>
+                        </div>
+                    </div>
+                    <div className="bp-delay-divider" />
+                    <div className="bp-delay-list">
+                        {delayCodes.map((d, i) => (
+                            <DelayCodeRow key={i} code={d.code} time={d.time} />
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 /* ── OCC Trajectory component ─────────────────────────────── */
@@ -232,31 +398,7 @@ export default function GanttBottomPanel({ leg, onClose, isDark }) {
             <div className="bp-body">
 
                 {/* ── VOL ── */}
-                {tab === "vol" && (
-                    <div className="bp-grid-6">
-                        {[
-                            ["Vol",        leg.fn],
-                            ["Immat.",     leg.reg],
-                            ["Type",       leg.subtype],
-                            ["Service",    leg.service],
-                            ["Départ",     leg.dep],
-                            ["Arrivée",    leg.arr],
-                            ["Retard",     leg.delay > 0 ? `+${leg.delay} min` : "—"],
-                            ["Statut",     leg.state],
-                            ["Date",       leg.date],
-                        ].map(([k, v]) => (
-                            <div key={k} className="bp-card">
-                                <div className="bp-card-label">{k}</div>
-                                <div
-                                    className="bp-card-value"
-                                    style={{ color: k === "Retard" && leg.delay > 0 ? "#ef4444" : undefined }}
-                                >
-                                    {v}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
+                {tab === "vol" && <VolTab leg={leg} sc={sc} />}
 
                 {/* ── TRAJECTOIRE ── */}
                 {tab === "trajectoire" && (

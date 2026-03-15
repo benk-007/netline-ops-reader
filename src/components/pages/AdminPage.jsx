@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import './AdminPage.css';
 import SearchableSelect from '../Filters/SearchableSelect';
-import { legs } from '../../data/flightsData';
+import { legs, Leg } from '../../data/flightsData';
 
 /* ── Auth roles matching the app auth system ── */
 const APP_ROLES = [
@@ -26,6 +27,16 @@ const SERVICE_COLOR_DEFS = [
     { key: "maintBar",   label: "Maintenance",               cssVar: "--svc-maint-bar", default: "#d97706" },
 ];
 
+/* ── State colors config ── */
+const STATE_COLOR_DEFS = [
+    { key: "arrived",   label: "Arrivé (Arrived)",     cssVar: "--state-arrived",   default: "#22c55e" },
+    { key: "airborne",  label: "En vol (Airborne)",    cssVar: "--state-airborne",  default: "#3b82f6" },
+    { key: "boarding",  label: "Embarquement",         cssVar: "--state-boarding",  default: "#f59e0b" },
+    { key: "delayed",   label: "Retardé (Delayed)",    cssVar: "--state-delayed",   default: "#ef4444" },
+    { key: "scheduled", label: "Programmé (Scheduled)", cssVar: "--state-scheduled", default: "#808b99" },
+    { key: "cancelled", label: "Annulé (Cancelled)",   cssVar: "--state-cancelled", default: "#64748b" },
+];
+
 /* ── Helpers ── */
 function initials(name) {
     return (name || "??").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
@@ -44,7 +55,7 @@ const INIT_USERS = [
 
 /* ══════════════════════════════════════════════════════════ */
 
-export default function AdminPage() {
+export default function AdminPage({ onLegsImported }) {
     const [activeTab, setActiveTab] = useState('users');
     const [users, setUsers] = useState(INIT_USERS);
 
@@ -57,13 +68,18 @@ export default function AdminPage() {
     const [formAirports, setFormAirports] = useState([]);
     const [formStatus, setFormStatus]   = useState('Active');
 
-    /* ── CSV import ── */
+    /* ── CSV import (users) ── */
     const csvInputRef = useRef(null);
     const [csvFeedback, setCsvFeedback] = useState('');
 
+    /* ── CSV import (leg data) ── */
+    const legCsvRef = useRef(null);
+    const [legCsvFeedback, setLegCsvFeedback] = useState('');
+    const [legImportCount, setLegImportCount] = useState(0);
+
     /* ── Theme colors ── */
     const [themeColors, setThemeColors] = useState(
-        Object.fromEntries(SERVICE_COLOR_DEFS.map(d => [d.key, d.default]))
+        Object.fromEntries([...SERVICE_COLOR_DEFS, ...STATE_COLOR_DEFS].map(d => [d.key, d.default]))
     );
 
     /* ── Form helpers ── */
@@ -136,6 +152,151 @@ export default function AdminPage() {
         e.target.value = '';
     }
 
+    /* ── Shared: convert rows (array of arrays) to Leg objects ── */
+    function processRows(headerRow, dataRows) {
+        const colIdx = {};
+        headerRow.forEach((h, i) => { colIdx[String(h).trim().toUpperCase()] = i; });
+
+        const requiredCols = ['LEG_NO', 'FN_CARRIER', 'FN_NUMBER', 'DEP_AP_SCHED', 'ARR_AP_SCHED', 'DEP_TIME_SCHED', 'ARR_TIME_SCHED', 'DAY_OF_ORIGIN'];
+        const missing = requiredCols.filter(c => colIdx[c] === undefined);
+        if (missing.length > 0) {
+            setLegCsvFeedback(`Colonnes manquantes : ${missing.join(', ')}`);
+            setTimeout(() => setLegCsvFeedback(''), 5000);
+            return;
+        }
+
+        function getVal(row, col) {
+            const idx = colIdx[col];
+            if (idx === undefined) return null;
+            const v = String(row[idx] ?? '').trim();
+            return v === '' ? null : v;
+        }
+
+        const newLegs = [];
+        let skipped = 0;
+        for (const cells of dataRows) {
+            const legNo = getVal(cells, 'LEG_NO');
+            const carrier = getVal(cells, 'FN_CARRIER');
+            const fnNum = getVal(cells, 'FN_NUMBER');
+            const dayOfOrigin = getVal(cells, 'DAY_OF_ORIGIN');
+            if (!legNo || !carrier || !fnNum || !dayOfOrigin) { skipped++; continue; }
+
+            try {
+                const leg = new Leg({
+                    LEG_NO: legNo, UPDATE_KEY: getVal(cells, 'UPDATE_KEY'),
+                    FN_CARRIER: carrier, FN_NUMBER: fnNum,
+                    FN_SUFFIX: getVal(cells, 'FN_SUFFIX') || '',
+                    DAY_OF_ORIGIN: dayOfOrigin,
+                    AC_OWNER: getVal(cells, 'AC_OWNER') || '',
+                    AC_SUBTYPE: getVal(cells, 'AC_SUBTYPE') || 'Unknown',
+                    AC_VERSION: getVal(cells, 'AC_VERSION') || '',
+                    AC_REGISTRATION: getVal(cells, 'AC_REGISTRATION') || 'N/A',
+                    DEP_AP_SCHED: getVal(cells, 'DEP_AP_SCHED'),
+                    ARR_AP_SCHED: getVal(cells, 'ARR_AP_SCHED'),
+                    DEP_AP_ACTUAL: getVal(cells, 'DEP_AP_ACTUAL'),
+                    ARR_AP_ACTUAL: getVal(cells, 'ARR_AP_ACTUAL'),
+                    LEG_STATE: getVal(cells, 'LEG_STATE') || 'Scheduled',
+                    LEG_TYPE: getVal(cells, 'LEG_TYPE') || 'PAX',
+                    DEP_DAY_SCHED: getVal(cells, 'DEP_DAY_SCHED') || dayOfOrigin,
+                    DEP_TIME_SCHED: getVal(cells, 'DEP_TIME_SCHED'),
+                    ARR_DAY_SCHED: getVal(cells, 'ARR_DAY_SCHED') || dayOfOrigin,
+                    ARR_TIME_SCHED: getVal(cells, 'ARR_TIME_SCHED'),
+                    DELAY_CODE_01: getVal(cells, 'DELAY_CODE_01'),
+                    DELAY_TIME_01: Number(getVal(cells, 'DELAY_TIME_01')) || 0,
+                    DELAY_CODE_02: getVal(cells, 'DELAY_CODE_02'),
+                    DELAY_TIME_02: Number(getVal(cells, 'DELAY_TIME_02')) || 0,
+                    DELAY_CODE_03: getVal(cells, 'DELAY_CODE_03'),
+                    DELAY_TIME_03: Number(getVal(cells, 'DELAY_TIME_03')) || 0,
+                    OFF_BLOCK_DAY: getVal(cells, 'OFF_BLOCK_DAY'),
+                    OFF_BLOCK_TIME: getVal(cells, 'OFF_BLOCK_TIME'),
+                    AIRBORNE_DAY: getVal(cells, 'AIRBORNE_DAY'),
+                    AIRBORNE_TIME: getVal(cells, 'AIRBORNE_TIME'),
+                    LANDING_DAY: getVal(cells, 'LANDING_DAY'),
+                    LANDING_TIME: getVal(cells, 'LANDING_TIME'),
+                    ON_BLOCK_DAY: getVal(cells, 'ON_BLOCK_DAY'),
+                    ON_BLOCK_TIME: getVal(cells, 'ON_BLOCK_TIME'),
+                    PRBD: getVal(cells, 'PRBD'),
+                    CHANGE_TIME: getVal(cells, 'CHANGE_TIME'),
+                    ENTRY_USER: getVal(cells, 'ENTRY_USER') || '',
+                });
+                newLegs.push(leg);
+            } catch { skipped++; }
+        }
+
+        if (newLegs.length === 0) {
+            setLegCsvFeedback('Aucun leg valide trouvé dans le fichier.');
+            setTimeout(() => setLegCsvFeedback(''), 4000);
+            return;
+        }
+
+        onLegsImported(newLegs);
+        setLegImportCount(newLegs.length);
+        setLegCsvFeedback(`${newLegs.length} leg${newLegs.length > 1 ? 's' : ''} importé${newLegs.length > 1 ? 's' : ''}${skipped ? ` (${skipped} ignoré${skipped > 1 ? 's' : ''})` : ''}`);
+        setTimeout(() => setLegCsvFeedback(''), 5000);
+    }
+
+    /* ── Leg file import (CSV + Excel) ── */
+    function handleLegFileImport(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        if (ext === 'xlsx' || ext === 'xls') {
+            // ── Excel path ──
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'array' });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    if (rows.length < 2) { setLegCsvFeedback('Fichier vide ou invalide.'); return; }
+                    const [headerRow, ...dataRows] = rows;
+                    processRows(headerRow, dataRows);
+                } catch (err) {
+                    setLegCsvFeedback('Erreur de lecture du fichier Excel.');
+                    setTimeout(() => setLegCsvFeedback(''), 4000);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            // ── CSV path with auto-delimiter detection ──
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const text = ev.target.result;
+                const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+                if (lines.length < 2) { setLegCsvFeedback('Fichier vide ou invalide.'); return; }
+
+                // Auto-detect delimiter from header line
+                const headerLine = lines[0];
+                const commas = (headerLine.match(/,/g) || []).length;
+                const semis  = (headerLine.match(/;/g) || []).length;
+                const tabs   = (headerLine.match(/\t/g) || []).length;
+                const delim = semis >= commas && semis >= tabs ? ';' : tabs > commas ? '\t' : ',';
+
+                const [hLine, ...dataLines] = lines;
+                const headerRow = hLine.split(delim).map(h => h.trim().replace(/^"|"$/g, ''));
+
+                const dataRows = dataLines.map(line => {
+                    const cells = [];
+                    let current = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        const ch = line[i];
+                        if (ch === '"') { inQuotes = !inQuotes; continue; }
+                        if (ch === delim && !inQuotes) { cells.push(current.trim()); current = ''; continue; }
+                        current += ch;
+                    }
+                    cells.push(current.trim());
+                    return cells;
+                });
+
+                processRows(headerRow, dataRows);
+            };
+            reader.readAsText(file);
+        }
+        e.target.value = '';
+    }
+
     /* ── Theme ── */
     function handleThemeChange(key, value, cssVar) {
         setThemeColors(prev => ({ ...prev, [key]: value }));
@@ -145,8 +306,9 @@ export default function AdminPage() {
     /* ── Tabs ── */
     const tabs = [
         { id: 'users',  label: 'Utilisateurs' },
+        { id: 'data',   label: 'Données Vols' },
         { id: 'roles',  label: 'Rôles & Accès' },
-        { id: 'theme',  label: 'Couleurs' },
+        { id: 'theme',  label: 'Apparence' },
     ];
 
     return (
@@ -317,6 +479,79 @@ export default function AdminPage() {
                     </div>
                 )}
 
+                {/* ══ DATA TAB ══ */}
+                {activeTab === 'data' && (
+                    <div className="admin-section fade-in">
+                        <div className="section-header">
+                            <div>
+                                <h2>Import des données de vols</h2>
+                                <p className="section-desc">
+                                    Chargez un fichier CSV (export legs) pour alimenter le Gantt, Schedule et Reports
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="leg-import-card">
+                            <div className="leg-import-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="12" y1="18" x2="12" y2="12"/>
+                                    <polyline points="9 15 12 12 15 15"/>
+                                </svg>
+                            </div>
+                            <h3>Importer un fichier CSV ou Excel</h3>
+                            <p className="leg-import-desc">
+                                Formats acceptés : .csv (auto-détection du séparateur) et .xlsx / .xls (Excel).
+                                Le fichier doit contenir les colonnes : LEG_NO, FN_CARRIER, FN_NUMBER, DAY_OF_ORIGIN, DEP_AP_SCHED, ARR_AP_SCHED, DEP_TIME_SCHED, ARR_TIME_SCHED, etc.
+                            </p>
+                            <p className="leg-import-hint">
+                                Les données importées remplaceront les données actuelles dans toutes les vues.
+                            </p>
+
+                            <input ref={legCsvRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={handleLegFileImport} />
+                            <button className="btn-primary leg-import-btn" onClick={() => legCsvRef.current?.click()}>
+                                Charger un fichier (CSV / Excel)
+                            </button>
+
+                            {legCsvFeedback && (
+                                <span className={`leg-csv-feedback ${legCsvFeedback.includes('manquantes') || legCsvFeedback.includes('Aucun') || legCsvFeedback.includes('invalide') ? 'error' : ''}`}>
+                                    {legCsvFeedback}
+                                </span>
+                            )}
+
+                            {legImportCount > 0 && !legCsvFeedback && (
+                                <p className="leg-import-status">
+                                    {legImportCount} leg{legImportCount > 1 ? 's' : ''} actuellement chargé{legImportCount > 1 ? 's' : ''}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="leg-import-columns">
+                            <h4>Colonnes attendues</h4>
+                            <div className="columns-grid">
+                                {['LEG_NO', 'UPDATE_KEY', 'FN_CARRIER', 'FN_NUMBER', 'FN_SUFFIX', 'DAY_OF_ORIGIN',
+                                  'AC_OWNER', 'AC_SUBTYPE', 'AC_VERSION', 'AC_REGISTRATION',
+                                  'DEP_AP_SCHED', 'ARR_AP_SCHED', 'DEP_AP_ACTUAL', 'ARR_AP_ACTUAL',
+                                  'LEG_STATE', 'LEG_TYPE', 'DEP_DAY_SCHED', 'DEP_TIME_SCHED',
+                                  'ARR_DAY_SCHED', 'ARR_TIME_SCHED', 'DELAY_CODE_01', 'DELAY_TIME_01',
+                                  'DELAY_CODE_02', 'DELAY_TIME_02', 'DELAY_CODE_03', 'DELAY_TIME_03',
+                                  'OFF_BLOCK_DAY', 'OFF_BLOCK_TIME', 'AIRBORNE_DAY', 'AIRBORNE_TIME',
+                                  'LANDING_DAY', 'LANDING_TIME', 'ON_BLOCK_DAY', 'ON_BLOCK_TIME',
+                                  'PRBD', 'CHANGE_TIME', 'ENTRY_USER'
+                                ].map(col => (
+                                    <span key={col} className={`col-tag ${['LEG_NO','FN_CARRIER','FN_NUMBER','DAY_OF_ORIGIN','DEP_AP_SCHED','ARR_AP_SCHED','DEP_TIME_SCHED','ARR_TIME_SCHED'].includes(col) ? 'required' : ''}`}>
+                                        {col}
+                                    </span>
+                                ))}
+                            </div>
+                            <p className="leg-import-hint" style={{ marginTop: 10 }}>
+                                Les colonnes en rouge sont obligatoires. Les autres sont optionnelles.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {/* ══ ROLES TAB ══ */}
                 {activeTab === 'roles' && (
                     <div className="admin-section fade-in">
@@ -364,17 +599,52 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* ══ THEME / COLORS TAB ══ */}
+                {/* ══ APPARENCE TAB ══ */}
                 {activeTab === 'theme' && (
                     <div className="admin-section fade-in">
                         <div className="section-header">
                             <div>
-                                <h2>Personnalisation des couleurs</h2>
-                                <p className="section-desc">Modifiez les variables CSS globales en direct</p>
+                                <h2>Personnalisation de l'apparence</h2>
+                                <p className="section-desc">Couleurs des services, états de vol et thème global</p>
+                            </div>
+                            <div className="section-header-actions">
+                                <button className="btn-secondary" onClick={() => {
+                                    const defaults = Object.fromEntries([...SERVICE_COLOR_DEFS, ...STATE_COLOR_DEFS].map(d => [d.key, d.default]));
+                                    setThemeColors(defaults);
+                                    [...SERVICE_COLOR_DEFS, ...STATE_COLOR_DEFS].forEach(d => {
+                                        document.documentElement.style.setProperty(d.cssVar, d.default);
+                                    });
+                                }}>
+                                    ↺ Réinitialiser les valeurs par défaut
+                                </button>
                             </div>
                         </div>
+
+                        {/* Service colors */}
+                        <h3 className="apparence-section-title">Couleurs des services</h3>
                         <div className="theme-grid">
                             {SERVICE_COLOR_DEFS.map(def => (
+                                <div key={def.key} className="theme-card">
+                                    <div className="theme-swatch" style={{ background: themeColors[def.key] }} />
+                                    <div className="theme-card-body">
+                                        <div className="theme-card-label">{def.label}</div>
+                                        <div className="color-picker-row">
+                                            <input
+                                                type="color"
+                                                value={themeColors[def.key]}
+                                                onChange={e => handleThemeChange(def.key, e.target.value, def.cssVar)}
+                                            />
+                                            <code className="color-hex">{themeColors[def.key]}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* State colors */}
+                        <h3 className="apparence-section-title" style={{ marginTop: 28 }}>Couleurs des états de vol</h3>
+                        <div className="theme-grid">
+                            {STATE_COLOR_DEFS.map(def => (
                                 <div key={def.key} className="theme-card">
                                     <div className="theme-swatch" style={{ background: themeColors[def.key] }} />
                                     <div className="theme-card-body">
