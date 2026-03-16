@@ -2,12 +2,12 @@ import React, { useEffect, useRef, useState } from "react";
 import { Timeline } from "vis-timeline/standalone";
 import "vis-timeline/styles/vis-timeline-graph2d.css";
 import { DataSet } from "vis-data";
-import { SERVICE_COLORS } from "../../constants/ganttConstants";
 
 import "./gantt.css";
 import "./gantt-legend.css";
 import FlightCard from "../FlightCard/FlightCard";
 
+/* ── Build netline template for a planned bar ── */
 function buildLegTemplate(leg) {
   const container = document.createElement("div");
   container.className = "leg-content";
@@ -23,6 +23,30 @@ function buildLegTemplate(leg) {
   const right = document.createElement("span");
   right.className = "leg-arr";
   right.textContent = `${leg.arrUtc.slice(0, 5)} ${leg.arr}`;
+
+  container.appendChild(left);
+  container.appendChild(center);
+  container.appendChild(right);
+
+  return container;
+}
+
+/* ── Build netline template for an actual bar ── */
+function buildActualTemplate(leg, actStart, actEnd) {
+  const container = document.createElement("div");
+  container.className = "leg-content";
+
+  const left = document.createElement("span");
+  left.className = "leg-dep";
+  left.textContent = actStart.slice(0, 5);
+
+  const center = document.createElement("span");
+  center.className = "leg-flight";
+  center.textContent = leg.fn;
+
+  const right = document.createElement("span");
+  right.className = "leg-arr";
+  right.textContent = actEnd.slice(0, 5);
 
   container.appendChild(left);
   container.appendChild(center);
@@ -55,29 +79,88 @@ function applyFilters(allLegs, filters) {
 
   const uniqueRegs = [...new Set(filtered.map(l => l.reg))];
 
+  /* Groups with subgroup support — planned stacks above actual */
   const groups = new DataSet(
-    uniqueRegs.map(reg => ({ id: reg, content: reg }))
+    uniqueRegs.map(reg => ({
+      id: reg,
+      content: reg,
+      subgroupStack: true,
+      subgroupOrder: function (a, b) {
+        return (a.subgroupOrder || 0) - (b.subgroupOrder || 0);
+      },
+    }))
   );
 
-  const items = new DataSet(
-    filtered.map((leg, idx) => ({
-      id: `f-${idx}-${leg.id}`,
+  /* Build dual items: planned (blue) + actual (gray) per leg */
+  const itemsArr = [];
+
+  filtered.forEach((leg, idx) => {
+    const baseId = `f-${idx}-${leg.id}`;
+    const isCancelled = leg.state === "Cancelled";
+    const isDelayed = leg.state === "Delayed";
+    const isBoarding = leg.state === "Boarding";
+
+    /* CSS classes for the planned bar */
+    const plannedClasses = [
+      "leg-planned",
+      `leg-svc-${leg.service}`,
+      isCancelled && "leg-cancelled",
+      isDelayed && "leg-delayed",
+      isBoarding && "leg-boarding",
+    ].filter(Boolean).join(" ");
+
+    /* ── PLANNED bar (always created) ── */
+    itemsArr.push({
+      id: `${baseId}-plan`,
       group: leg.reg,
+      subgroup: "planned",
+      subgroupOrder: 0,
       content: buildLegTemplate(leg),
       start: `${leg.date}T${leg.depUtc}:00`,
       end: `${leg.date}T${leg.arrUtc}:00`,
-      className: `svc-${leg.service}`,
+      className: plannedClasses,
       legId: leg.id,
-    }))
-  );
+    });
+
+    /* ── ACTUAL bar (only if actual times exist) ── */
+    const actStart = leg.OFF_BLOCK_TIME || leg.AIRBORNE_TIME;
+    const actEnd = leg.ON_BLOCK_TIME || leg.LANDING_TIME || leg.arrUtc;
+
+    if (actStart) {
+      const actualClasses = [
+        "leg-actual",
+        `leg-svc-${leg.service}`,
+        isDelayed && "leg-delayed",
+      ].filter(Boolean).join(" ");
+
+      itemsArr.push({
+        id: `${baseId}-act`,
+        group: leg.reg,
+        subgroup: "actual",
+        subgroupOrder: 1,
+        content: buildActualTemplate(leg, actStart, actEnd),
+        start: `${leg.date}T${actStart}:00`,
+        end: `${leg.date}T${actEnd}:00`,
+        className: actualClasses,
+        legId: leg.id,
+      });
+    }
+  });
+
+  const items = new DataSet(itemsArr);
 
   return { groups, items, filtered };
 }
 
-const LEGEND_SERVICES = Object.entries(SERVICE_COLORS).map(([label, colors]) => ({
-  label,
-  color: colors.bar,
-}));
+/* ── Legend entries for the new color scheme ── */
+const LEGEND_ENTRIES = [
+  { label: "Planifié",    color: "#2563eb" },
+  { label: "Actuel",      color: "#6b7280" },
+  { label: "Maintenance", color: "#d97706" },
+  { label: "F Actuel",    color: "#f9a8d4" },
+  { label: "Retardé",     color: "#ef4444" },
+  { label: "Annulé",      color: "#374151" },
+];
 
 const MIN_TIME = new Date("2026-03-04T00:00:00").getTime();
 const MAX_TIME = new Date("2026-03-07T00:00:00").getTime();
@@ -122,7 +205,7 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom 
       min: new Date(MIN_TIME),
       max: new Date(MAX_TIME),
       timeAxis: { scale: "hour", step: 1 },
-      margin: { item: { horizontal: -10, vertical: 6 }, axis: 4 },
+      margin: { item: { horizontal: -10, vertical: 3 }, axis: 4 },
       showCurrentTime: true,
     };
 
@@ -261,7 +344,7 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom 
       </div>
 
       <div className="gantt-legend">
-        {LEGEND_SERVICES.map(({ label, color }) => (
+        {LEGEND_ENTRIES.map(({ label, color }) => (
           <div key={label} className="gantt-legend-item">
             <div className="gantt-legend-dot" style={{ background: color }} />
             {label}

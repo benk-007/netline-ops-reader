@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <!-- Royal Air Maroc — pentagram star -->
+  <polygon
+    points="50,5 61,35 95,35 67,55 78,88 50,68 22,88 33,55 5,35 39,35"
+    fill="#c8102e"
+    stroke="#fff"
+    stroke-width="1.5"
+  />
+  <polygon
+    points="50,20 57,38 78,38 61,50 68,70 50,57 32,70 39,50 22,38 43,38"
+    fill="rgba(255,255,255,0.15)"
+  />
+</svg>

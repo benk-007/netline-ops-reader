@@ -103,243 +103,162 @@ export class Leg {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOCK LEGS — representative RAM network data 
+   MOCK LEGS — representative RAM network data
+   ~85 legs across 25 aircraft. Majority Scheduled (grey),
+   some Arrived, a few Airborne/Boarding/Delayed, 2 Cancelled.
+   All service types represented: PAX, J, F, P, O, S, VJ, Charter, Cargo, Ferry, Maintenance
    ═══════════════════════════════════════════════════════════════ */
+const D = "2026-03-05";
+const L = (no, fn, reg, sub, dep, arr, dt, at, st, svc, extra = {}) =>
+  new Leg({ LEG_NO: no, FN_CARRIER: "AT", FN_NUMBER: fn, AC_REGISTRATION: reg, AC_SUBTYPE: sub,
+    DEP_AP_SCHED: dep, ARR_AP_SCHED: arr, DEP_TIME_SCHED: dt, ARR_TIME_SCHED: at,
+    LEG_STATE: st, LEG_TYPE: svc, DAY_OF_ORIGIN: D, ...extra });
+
 export const legs = [
+  /* ── CN-RHA  B737-800 — Europe (J) ───────────────── */
+  L("L001","200","CN-RHA","B737-800","CMN","ORY","06:00","09:30","Arrived","J",{OFF_BLOCK_TIME:"06:02",AIRBORNE_TIME:"06:14",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:35"}),
+  L("L002","201","CN-RHA","B737-800","ORY","CMN","11:30","15:00","Airborne","J",{OFF_BLOCK_TIME:"11:33",AIRBORNE_TIME:"11:45"}),
+  L("L003","202","CN-RHA","B737-800","CMN","LYS","17:00","20:30","Scheduled","J"),
+  L("L004","203","CN-RHA","B737-800","LYS","CMN","21:30","23:50","Scheduled","J"),
 
-  /* ── CN-RHB  B737-800 ─────────────────────────────── */
-  new Leg({ LEG_NO: "L001", FN_CARRIER: "AT", FN_NUMBER: "302",  AC_REGISTRATION: "CN-RHB", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "BCN", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "08:00", ARR_TIME_SCHED: "10:40",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "07:55", AIRBORNE_TIME: "08:10", LANDING_TIME: "10:35", ON_BLOCK_TIME: "10:42",
-  }),
-  new Leg({ LEG_NO: "L002", FN_CARRIER: "AT", FN_NUMBER: "303",  AC_REGISTRATION: "CN-RHB", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "BCN", DEP_TIME_SCHED: "08:30", ARR_TIME_SCHED: "11:40",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RHB  B737-800 — Spain (PAX) ─────────────── */
+  L("L005","300","CN-RHB","B737-800","CMN","BCN","07:00","09:40","Arrived","PAX",{OFF_BLOCK_TIME:"07:03",AIRBORNE_TIME:"07:15",LANDING_TIME:"09:38",ON_BLOCK_TIME:"09:44"}),
+  L("L006","301","CN-RHB","B737-800","BCN","CMN","11:00","13:40","Scheduled","PAX"),
+  L("L007","302","CN-RHB","B737-800","CMN","MAD","15:30","17:10","Scheduled","PAX"),
+  L("L008","303","CN-RHB","B737-800","MAD","CMN","18:30","20:10","Scheduled","PAX"),
 
-  /* ── CN-RHC  B737-800 ─────────────────────────────── */
-  new Leg({ LEG_NO: "L003", FN_CARRIER: "AT", FN_NUMBER: "411",  AC_REGISTRATION: "CN-RHC", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "MAD", DEP_TIME_SCHED: "07:10", ARR_TIME_SCHED: "08:50",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "07:12", AIRBORNE_TIME: "07:22", LANDING_TIME: "08:48", ON_BLOCK_TIME: "08:55",
-  }),
-  new Leg({ LEG_NO: "L004", FN_CARRIER: "AT", FN_NUMBER: "412",  AC_REGISTRATION: "CN-RHC", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "MAD", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "10:30", ARR_TIME_SCHED: "12:10",
-    LEG_STATE: "Airborne",  LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "10:35", AIRBORNE_TIME: "10:45",
-  }),
+  /* ── CN-RHC  B737-800 — Italy (PAX) ─────────────── */
+  L("L009","400","CN-RHC","B737-800","CMN","FCO","08:00","11:40","Arrived","PAX",{OFF_BLOCK_TIME:"08:02",AIRBORNE_TIME:"08:14",LANDING_TIME:"11:38",ON_BLOCK_TIME:"11:45"}),
+  L("L010","401","CN-RHC","B737-800","FCO","CMN","13:30","17:10","Scheduled","PAX"),
+  L("L011","402","CN-RHC","B737-800","CMN","MXP","18:30","22:00","Scheduled","PAX"),
 
-  /* ── CN-RHD  B737-800 Cargo ───────────────────────── */
-  new Leg({ LEG_NO: "L005", FN_CARRIER: "AT", FN_NUMBER: "221",  AC_REGISTRATION: "CN-RHD", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "FRA", DEP_TIME_SCHED: "03:00", ARR_TIME_SCHED: "07:30",
-    LEG_STATE: "Arrived",   LEG_TYPE: "Cargo", DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "03:02", AIRBORNE_TIME: "03:14", LANDING_TIME: "07:28", ON_BLOCK_TIME: "07:35",
-  }),
-  new Leg({ LEG_NO: "L006", FN_CARRIER: "AT", FN_NUMBER: "222",  AC_REGISTRATION: "CN-RHD", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "FRA", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "10:00", ARR_TIME_SCHED: "14:30",
-    LEG_STATE: "Airborne",  LEG_TYPE: "Cargo", DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "10:05", AIRBORNE_TIME: "10:18",
-  }),
+  /* ── CN-RHD  B737-800 — Belgium (J) ─────────────── */
+  L("L012","410","CN-RHD","B737-800","CMN","BRU","06:30","10:00","Arrived","J",{OFF_BLOCK_TIME:"06:32",AIRBORNE_TIME:"06:44",LANDING_TIME:"09:58",ON_BLOCK_TIME:"10:05"}),
+  L("L013","411","CN-RHD","B737-800","BRU","CMN","12:00","15:20","Delayed","J",{DELAY_CODE_01:"93",DELAY_TIME_01:40}),
+  L("L014","412","CN-RHD","B737-800","CMN","AMS","17:30","21:00","Scheduled","J"),
 
-  /* ── CN-RHE  B737-800 Charter ─────────────────────── */
-  new Leg({ LEG_NO: "L007", FN_CARRIER: "AT", FN_NUMBER: "510",  AC_REGISTRATION: "CN-RHE", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "IST", DEP_TIME_SCHED: "08:30", ARR_TIME_SCHED: "13:00",
-    LEG_STATE: "Delayed",   LEG_TYPE: "Charter", DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "71",    DELAY_TIME_01: 35,
-    OFF_BLOCK_TIME: "09:05", AIRBORNE_TIME: "09:18",
-  }),
-  new Leg({ LEG_NO: "L008", FN_CARRIER: "AT", FN_NUMBER: "511",  AC_REGISTRATION: "CN-RHE", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "IST", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "16:00", ARR_TIME_SCHED: "20:30",
-    LEG_STATE: "Scheduled", LEG_TYPE: "Charter", DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RHE  B737-800 — UK (PAX) ────────────────── */
+  L("L015","500","CN-RHE","B737-800","CMN","LHR","07:30","11:00","Arrived","PAX",{OFF_BLOCK_TIME:"07:32",AIRBORNE_TIME:"07:45",LANDING_TIME:"10:58",ON_BLOCK_TIME:"11:05"}),
+  L("L016","501","CN-RHE","B737-800","LHR","CMN","13:00","16:30","Boarding","PAX"),
+  L("L017","502","CN-RHE","B737-800","CMN","MAN","18:00","21:30","Scheduled","PAX"),
 
-  /* ── CN-RHF  B737-800 ─────────────────────────────── */
-  new Leg({ LEG_NO: "L009", FN_CARRIER: "AT", FN_NUMBER: "620",  AC_REGISTRATION: "CN-RHF", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "BRU", DEP_TIME_SCHED: "07:00", ARR_TIME_SCHED: "10:20",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "07:03", AIRBORNE_TIME: "07:15", LANDING_TIME: "10:18", ON_BLOCK_TIME: "10:25",
-  }),
-  new Leg({ LEG_NO: "L010", FN_CARRIER: "AT", FN_NUMBER: "621",  AC_REGISTRATION: "CN-RHF", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "BRU", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "12:00", ARR_TIME_SCHED: "15:20",
-    LEG_STATE: "Delayed",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "93",    DELAY_TIME_01: 55,
-  }),
+  /* ── CN-RHF  B737-800 — Germany (PAX) ───────────── */
+  L("L018","510","CN-RHF","B737-800","CMN","FRA","06:00","09:30","Arrived","PAX",{OFF_BLOCK_TIME:"06:03",AIRBORNE_TIME:"06:15",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:34"}),
+  L("L019","511","CN-RHF","B737-800","FRA","CMN","11:30","15:00","Scheduled","PAX"),
+  L("L020","512","CN-RHF","B737-800","CMN","MUC","16:30","20:00","Scheduled","PAX"),
+  L("L021","513","CN-RHF","B737-800","MUC","CMN","21:00","23:30","Scheduled","PAX"),
 
-  /* ── CN-ROA  B787-9 longhaul ──────────────────────── */
-  new Leg({ LEG_NO: "L011", FN_CARRIER: "AT", FN_NUMBER: "201",  AC_REGISTRATION: "CN-ROA", AC_SUBTYPE: "B787-9",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "JFK", DEP_TIME_SCHED: "01:15", ARR_TIME_SCHED: "09:40",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "01:18", AIRBORNE_TIME: "01:30", LANDING_TIME: "09:38", ON_BLOCK_TIME: "09:45",
-  }),
-  new Leg({ LEG_NO: "L012", FN_CARRIER: "AT", FN_NUMBER: "202",  AC_REGISTRATION: "CN-ROA", AC_SUBTYPE: "B787-9",
-    DEP_AP_SCHED: "JFK", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "14:30", ARR_TIME_SCHED: "04:20",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RHG  B737-800 — Domestic (PAX) — Cancelled ─ */
+  L("L022","600","CN-RHG","B737-800","CMN","AGA","08:00","09:00","Cancelled","PAX"),
+  L("L023","601","CN-RHG","B737-800","AGA","CMN","10:30","11:30","Cancelled","PAX"),
 
-  /* ── CN-ROB  B787-8 ───────────────────────────────── */
-  new Leg({ LEG_NO: "L013", FN_CARRIER: "AT", FN_NUMBER: "603",  AC_REGISTRATION: "CN-ROB", AC_SUBTYPE: "B787-8",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "CDG", DEP_TIME_SCHED: "06:00", ARR_TIME_SCHED: "09:30",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "06:02", AIRBORNE_TIME: "06:14", LANDING_TIME: "09:28", ON_BLOCK_TIME: "09:35",
-  }),
-  new Leg({ LEG_NO: "L014", FN_CARRIER: "AT", FN_NUMBER: "604",  AC_REGISTRATION: "CN-ROB", AC_SUBTYPE: "B787-8",
-    DEP_AP_SCHED: "CDG", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "11:45", ARR_TIME_SCHED: "15:15",
-    LEG_STATE: "Airborne",  LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "11:48", AIRBORNE_TIME: "12:00",
-  }),
+  /* ── CN-RHH  B737-800 — Maghreb (PAX) ──────────── */
+  L("L024","610","CN-RHH","B737-800","CMN","TUN","07:00","09:10","Arrived","PAX",{OFF_BLOCK_TIME:"07:04",AIRBORNE_TIME:"07:16",LANDING_TIME:"09:08",ON_BLOCK_TIME:"09:14"}),
+  L("L025","611","CN-RHH","B737-800","TUN","CMN","10:30","12:40","Delayed","PAX",{DELAY_CODE_01:"15",DELAY_TIME_01:25}),
+  L("L026","612","CN-RHH","B737-800","CMN","ALG","15:00","16:50","Scheduled","PAX"),
+  L("L027","613","CN-RHH","B737-800","ALG","CMN","18:00","19:50","Scheduled","PAX"),
 
-  /* ── CN-ROC  B737-800 Maghreb ─────────────────────── */
-  new Leg({ LEG_NO: "L015", FN_CARRIER: "AT", FN_NUMBER: "401",  AC_REGISTRATION: "CN-ROC", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "TUN", DEP_TIME_SCHED: "07:00", ARR_TIME_SCHED: "09:05",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "07:05", AIRBORNE_TIME: "07:18", LANDING_TIME: "09:02", ON_BLOCK_TIME: "09:08",
-  }),
-  new Leg({ LEG_NO: "L016", FN_CARRIER: "AT", FN_NUMBER: "402",  AC_REGISTRATION: "CN-ROC", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "TUN", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "10:30", ARR_TIME_SCHED: "12:35",
-    LEG_STATE: "Delayed",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "15",    DELAY_TIME_01: 28,
-  }),
-  new Leg({ LEG_NO: "L017", FN_CARRIER: "AT", FN_NUMBER: "403",  AC_REGISTRATION: "CN-ROC", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "ALG", DEP_TIME_SCHED: "15:00", ARR_TIME_SCHED: "16:50",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RHI  B737-800 — Domestic shuttle (PAX) ──── */
+  L("L028","620","CN-RHI","B737-800","CMN","RAK","07:30","08:30","Arrived","PAX",{OFF_BLOCK_TIME:"07:33",AIRBORNE_TIME:"07:43",LANDING_TIME:"08:28",ON_BLOCK_TIME:"08:33"}),
+  L("L029","621","CN-RHI","B737-800","RAK","CMN","09:30","10:30","Arrived","PAX",{OFF_BLOCK_TIME:"09:32",AIRBORNE_TIME:"09:42",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:34"}),
+  L("L030","622","CN-RHI","B737-800","CMN","FES","12:00","12:50","Boarding","PAX"),
+  L("L031","623","CN-RHI","B737-800","FES","CMN","14:00","14:50","Scheduled","PAX"),
+  L("L032","624","CN-RHI","B737-800","CMN","OUD","16:00","17:10","Scheduled","PAX"),
+  L("L033","625","CN-RHI","B737-800","OUD","CMN","18:30","19:40","Scheduled","PAX"),
 
-  /* ── CN-RGA  B737-800 domestic ────────────────────── */
-  new Leg({ LEG_NO: "L018", FN_CARRIER: "AT", FN_NUMBER: "501",  AC_REGISTRATION: "CN-RGA", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "AGA", DEP_TIME_SCHED: "07:30", ARR_TIME_SCHED: "08:25",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "07:32", AIRBORNE_TIME: "07:42", LANDING_TIME: "08:23", ON_BLOCK_TIME: "08:28",
-  }),
-  new Leg({ LEG_NO: "L019", FN_CARRIER: "AT", FN_NUMBER: "502",  AC_REGISTRATION: "CN-RGA", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "AGA", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "09:15", ARR_TIME_SCHED: "10:10",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "09:18", AIRBORNE_TIME: "09:28", LANDING_TIME: "10:08", ON_BLOCK_TIME: "10:14",
-  }),
-  new Leg({ LEG_NO: "L020", FN_CARRIER: "AT", FN_NUMBER: "503",  AC_REGISTRATION: "CN-RGA", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "OUD", DEP_TIME_SCHED: "12:00", ARR_TIME_SCHED: "13:20",
-    LEG_STATE: "Boarding",  LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "89",    DELAY_TIME_01: 5,
-  }),
+  /* ── CN-RHJ  B737-800 — Freight (F) ─────────────── */
+  L("L034","880","CN-RHJ","B737-800","CMN","ACC","03:00","07:30","Arrived","F",{OFF_BLOCK_TIME:"03:04",AIRBORNE_TIME:"03:16",LANDING_TIME:"07:28",ON_BLOCK_TIME:"07:35"}),
+  L("L035","881","CN-RHJ","B737-800","ACC","CMN","10:00","14:30","Airborne","F",{OFF_BLOCK_TIME:"10:05",AIRBORNE_TIME:"10:18"}),
+  L("L036","882","CN-RHJ","B737-800","CMN","LOS","17:00","21:00","Scheduled","F"),
 
-  /* ── CN-RGB  B787-9 Charter ───────────────────────── */
-  new Leg({ LEG_NO: "L021", FN_CARRIER: "AT", FN_NUMBER: "711",  AC_REGISTRATION: "CN-RGB", AC_SUBTYPE: "B787-9",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "IST", DEP_TIME_SCHED: "08:00", ARR_TIME_SCHED: "12:15",
-    LEG_STATE: "Airborne",  LEG_TYPE: "Charter", DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "08:04", AIRBORNE_TIME: "08:15",
-  }),
-  new Leg({ LEG_NO: "L022", FN_CARRIER: "AT", FN_NUMBER: "712",  AC_REGISTRATION: "CN-RGB", AC_SUBTYPE: "B787-9",
-    DEP_AP_SCHED: "IST", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "14:30", ARR_TIME_SCHED: "18:45",
-    LEG_STATE: "Scheduled", LEG_TYPE: "Charter", DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-ROA  B787-9 — Longhaul JFK (PAX) ────────── */
+  L("L037","100","CN-ROA","B787-9","CMN","JFK","01:15","09:40","Arrived","PAX",{OFF_BLOCK_TIME:"01:18",AIRBORNE_TIME:"01:30",LANDING_TIME:"09:38",ON_BLOCK_TIME:"09:45"}),
+  L("L038","101","CN-ROA","B787-9","JFK","CMN","14:30","04:20","Scheduled","PAX"),
 
-  /* ── CN-RGS  ATR72-600 regional ───────────────────── */
-  new Leg({ LEG_NO: "L023", FN_CARRIER: "AT", FN_NUMBER: "301",  AC_REGISTRATION: "CN-RGS", AC_SUBTYPE: "ATR72-600",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "RAK", DEP_TIME_SCHED: "08:00", ARR_TIME_SCHED: "09:05",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "08:02", AIRBORNE_TIME: "08:12", LANDING_TIME: "09:03", ON_BLOCK_TIME: "09:08",
-  }),
-  new Leg({ LEG_NO: "L024", FN_CARRIER: "AT", FN_NUMBER: "302",  AC_REGISTRATION: "CN-RGS", AC_SUBTYPE: "ATR72-600",
-    DEP_AP_SCHED: "RAK", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "09:45", ARR_TIME_SCHED: "10:50",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "09:53", AIRBORNE_TIME: "10:02", LANDING_TIME: "10:48", ON_BLOCK_TIME: "10:53",
-    DELAY_CODE_01: "93",    DELAY_TIME_01: 8,
-  }),
-  new Leg({ LEG_NO: "L025", FN_CARRIER: "AT", FN_NUMBER: "303",  AC_REGISTRATION: "CN-RGS", AC_SUBTYPE: "ATR72-600",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "FES", DEP_TIME_SCHED: "13:00", ARR_TIME_SCHED: "13:40",
-    LEG_STATE: "Delayed",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "15",    DELAY_TIME_01: 20,
-  }),
+  /* ── CN-ROB  B787-9 — Longhaul MTL (PAX) ────────── */
+  L("L039","110","CN-ROB","B787-9","CMN","YUL","02:00","10:30","Arrived","PAX",{OFF_BLOCK_TIME:"02:03",AIRBORNE_TIME:"02:15",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:35"}),
+  L("L040","111","CN-ROB","B787-9","YUL","CMN","15:00","04:00","Scheduled","PAX"),
 
-  /* ── CN-RNT  ATR72-600 domestic ───────────────────── */
-  new Leg({ LEG_NO: "L026", FN_CARRIER: "AT", FN_NUMBER: "910",  AC_REGISTRATION: "CN-RNT", AC_SUBTYPE: "ATR72-600",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "RAK", DEP_TIME_SCHED: "11:30", ARR_TIME_SCHED: "12:40",
-    LEG_STATE: "Boarding",  LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "89",    DELAY_TIME_01: 12,
-  }),
-  new Leg({ LEG_NO: "L027", FN_CARRIER: "AT", FN_NUMBER: "911",  AC_REGISTRATION: "CN-RNT", AC_SUBTYPE: "ATR72-600",
-    DEP_AP_SCHED: "RAK", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "14:00", ARR_TIME_SCHED: "15:10",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-ROC  B787-8 — CDG (J) ───────────────────── */
+  L("L041","120","CN-ROC","B787-8","CMN","CDG","06:00","09:30","Arrived","J",{OFF_BLOCK_TIME:"06:02",AIRBORNE_TIME:"06:14",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:35"}),
+  L("L042","121","CN-ROC","B787-8","CDG","CMN","11:45","15:15","Airborne","J",{OFF_BLOCK_TIME:"11:48",AIRBORNE_TIME:"12:00"}),
+  L("L043","122","CN-ROC","B787-8","CMN","CDG","18:00","21:30","Scheduled","J"),
 
-  /* ── CN-RNQ  B737-800 Cargo ───────────────────────── */
-  new Leg({ LEG_NO: "L028", FN_CARRIER: "AT", FN_NUMBER: "901",  AC_REGISTRATION: "CN-RNQ", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "CAI", DEP_TIME_SCHED: "17:00", ARR_TIME_SCHED: "21:45",
-    LEG_STATE: "Scheduled", LEG_TYPE: "Cargo", DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-ROD  B787-9 — Charter IST ───────────────── */
+  L("L044","700","CN-ROD","B787-9","CMN","IST","08:00","12:30","Airborne","Charter",{OFF_BLOCK_TIME:"08:04",AIRBORNE_TIME:"08:16"}),
+  L("L045","701","CN-ROD","B787-9","IST","CMN","15:00","19:30","Scheduled","Charter"),
 
-  /* ── CN-ROQ  B737-800 ─────────────────────────────── */
-  new Leg({ LEG_NO: "L029", FN_CARRIER: "AT", FN_NUMBER: "305",  AC_REGISTRATION: "CN-ROQ", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "DXB", DEP_TIME_SCHED: "02:00", ARR_TIME_SCHED: "09:30",
-    LEG_STATE: "Arrived",   LEG_TYPE: "Cargo", DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "02:03", AIRBORNE_TIME: "02:15", LANDING_TIME: "09:28", ON_BLOCK_TIME: "09:35",
-  }),
-  new Leg({ LEG_NO: "L030", FN_CARRIER: "AT", FN_NUMBER: "520",  AC_REGISTRATION: "CN-ROQ", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "DXB", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "14:00", ARR_TIME_SCHED: "18:00",
-    LEG_STATE: "Scheduled", LEG_TYPE: "Charter", DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-ROE  B737-800 — Cargo CMN-CAI ───────────── */
+  L("L046","890","CN-ROE","B737-800","CMN","CAI","04:00","09:00","Arrived","Cargo",{OFF_BLOCK_TIME:"04:03",AIRBORNE_TIME:"04:15",LANDING_TIME:"08:58",ON_BLOCK_TIME:"09:05"}),
+  L("L047","891","CN-ROE","B737-800","CAI","CMN","12:00","17:00","Scheduled","Cargo"),
 
-  /* ── CN-ROP  B787-9 longhaul ──────────────────────── */
-  new Leg({ LEG_NO: "L031", FN_CARRIER: "AT", FN_NUMBER: "701",  AC_REGISTRATION: "CN-ROP", AC_SUBTYPE: "B787-9",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "CDG", DEP_TIME_SCHED: "06:15", ARR_TIME_SCHED: "09:45",
-    LEG_STATE: "Arrived",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "06:18", AIRBORNE_TIME: "06:30", LANDING_TIME: "09:43", ON_BLOCK_TIME: "09:50",
-  }),
-  new Leg({ LEG_NO: "L032", FN_CARRIER: "AT", FN_NUMBER: "702",  AC_REGISTRATION: "CN-ROP", AC_SUBTYPE: "B787-9",
-    DEP_AP_SCHED: "CDG", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "13:00", ARR_TIME_SCHED: "16:30",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RGA  ATR72-600 — Regional RAK (PAX) ─────── */
+  L("L048","630","CN-RGA","ATR72-600","CMN","RAK","08:00","09:00","Arrived","PAX",{OFF_BLOCK_TIME:"08:02",AIRBORNE_TIME:"08:12",LANDING_TIME:"08:58",ON_BLOCK_TIME:"09:04"}),
+  L("L049","631","CN-RGA","ATR72-600","RAK","CMN","10:00","11:00","Arrived","PAX",{OFF_BLOCK_TIME:"10:03",AIRBORNE_TIME:"10:13",LANDING_TIME:"10:58",ON_BLOCK_TIME:"11:04"}),
+  L("L050","632","CN-RGA","ATR72-600","CMN","NDR","13:00","14:10","Scheduled","PAX"),
+  L("L051","633","CN-RGA","ATR72-600","NDR","CMN","15:30","16:40","Scheduled","PAX"),
 
-  /* ── CN-RNP  B787-8 ───────────────────────────────── */
-  new Leg({ LEG_NO: "L033", FN_CARRIER: "AT", FN_NUMBER: "803",  AC_REGISTRATION: "CN-RNP", AC_SUBTYPE: "B787-8",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "LHR", DEP_TIME_SCHED: "07:30", ARR_TIME_SCHED: "11:15",
-    LEG_STATE: "Delayed",   LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "71",    DELAY_TIME_01: 45,
-    OFF_BLOCK_TIME: "08:15", AIRBORNE_TIME: "08:28",
-  }),
-  new Leg({ LEG_NO: "L034", FN_CARRIER: "AT", FN_NUMBER: "804",  AC_REGISTRATION: "CN-RNP", AC_SUBTYPE: "B787-8",
-    DEP_AP_SCHED: "LHR", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "15:00", ARR_TIME_SCHED: "18:45",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RGB  ATR72-600 — Regional FES/TNG (PAX) ─── */
+  L("L052","640","CN-RGB","ATR72-600","CMN","FES","07:30","08:20","Arrived","PAX",{OFF_BLOCK_TIME:"07:32",AIRBORNE_TIME:"07:42",LANDING_TIME:"08:18",ON_BLOCK_TIME:"08:24"}),
+  L("L053","641","CN-RGB","ATR72-600","FES","TNG","09:00","09:50","Arrived","PAX",{OFF_BLOCK_TIME:"09:02",AIRBORNE_TIME:"09:12",LANDING_TIME:"09:48",ON_BLOCK_TIME:"09:54"}),
+  L("L054","642","CN-RGB","ATR72-600","TNG","CMN","11:00","12:00","Delayed","PAX",{DELAY_CODE_01:"89",DELAY_TIME_01:15}),
+  L("L055","643","CN-RGB","ATR72-600","CMN","OZZ","14:00","15:30","Scheduled","PAX"),
+  L("L056","644","CN-RGB","ATR72-600","OZZ","CMN","17:00","18:30","Scheduled","PAX"),
 
-  /* ── CN-RHG  B737-800 Cancelled ───────────────────── */
-  new Leg({ LEG_NO: "L035", FN_CARRIER: "AT", FN_NUMBER: "771",  AC_REGISTRATION: "CN-RHG", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "DKR", DEP_TIME_SCHED: "10:00", ARR_TIME_SCHED: "14:30",
-    LEG_STATE: "Cancelled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    DELAY_CODE_01: "89",    DELAY_TIME_01: 0,
-  }),
+  /* ── CN-RGC  B737-800 — Positioning (P) ─────────── */
+  L("L057","001","CN-RGC","B737-800","CMN","MRS","05:00","08:20","Arrived","P",{OFF_BLOCK_TIME:"05:03",AIRBORNE_TIME:"05:15",LANDING_TIME:"08:18",ON_BLOCK_TIME:"08:25"}),
+  L("L058","002","CN-RGC","B737-800","MRS","CMN","14:00","17:20","Scheduled","P"),
 
-  /* ── CN-RHH  Ferry ────────────────────────────────── */
-  new Leg({ LEG_NO: "L036", FN_CARRIER: "AT", FN_NUMBER: "099",  AC_REGISTRATION: "CN-RHH", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "TNG", DEP_TIME_SCHED: "06:30", ARR_TIME_SCHED: "07:15",
-    LEG_STATE: "Arrived",   LEG_TYPE: "Ferry", DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "06:32", AIRBORNE_TIME: "06:42", LANDING_TIME: "07:13", ON_BLOCK_TIME: "07:18",
-  }),
-  new Leg({ LEG_NO: "L037", FN_CARRIER: "AT", FN_NUMBER: "098",  AC_REGISTRATION: "CN-RHH", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "TNG", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "13:00", ARR_TIME_SCHED: "13:45",
-    LEG_STATE: "Scheduled", LEG_TYPE: "Maintenance", DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RGD  B737-800 — Other/Charter (O) ───────── */
+  L("L059","950","CN-RGD","B737-800","CMN","SSH","07:00","12:30","Airborne","O",{OFF_BLOCK_TIME:"07:05",AIRBORNE_TIME:"07:18"}),
+  L("L060","951","CN-RGD","B737-800","SSH","CMN","16:00","21:30","Scheduled","O"),
 
-  /* ── CN-RHA  B737-800 GVA / FCO ───────────────────── */
-  new Leg({ LEG_NO: "L038", FN_CARRIER: "AT", FN_NUMBER: "451",  AC_REGISTRATION: "CN-RHA", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "FCO", DEP_TIME_SCHED: "09:30", ARR_TIME_SCHED: "13:10",
-    LEG_STATE: "Airborne",  LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-    OFF_BLOCK_TIME: "09:33", AIRBORNE_TIME: "09:45",
-  }),
-  new Leg({ LEG_NO: "L039", FN_CARRIER: "AT", FN_NUMBER: "452",  AC_REGISTRATION: "CN-RHA", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "FCO", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "15:00", ARR_TIME_SCHED: "18:40",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
-  new Leg({ LEG_NO: "L040", FN_CARRIER: "AT", FN_NUMBER: "601",  AC_REGISTRATION: "CN-RHA", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "CMN", ARR_AP_SCHED: "GVA", DEP_TIME_SCHED: "19:30", ARR_TIME_SCHED: "23:00",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
-  new Leg({ LEG_NO: "L041", FN_CARRIER: "AT", FN_NUMBER: "602",  AC_REGISTRATION: "CN-RHA", AC_SUBTYPE: "B737-800",
-    DEP_AP_SCHED: "GVA", ARR_AP_SCHED: "CMN", DEP_TIME_SCHED: "20:45", ARR_TIME_SCHED: "22:15",
-    LEG_STATE: "Scheduled", LEG_TYPE: "PAX",   DAY_OF_ORIGIN: "2026-03-05",
-  }),
+  /* ── CN-RGE  ATR72-600 — Special (S) ────────────── */
+  L("L061","005","CN-RGE","ATR72-600","CMN","ERH","09:00","10:30","Arrived","S",{OFF_BLOCK_TIME:"09:02",AIRBORNE_TIME:"09:12",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:34"}),
+  L("L062","006","CN-RGE","ATR72-600","ERH","CMN","12:00","13:30","Scheduled","S"),
 
+  /* ── CN-RGF  B787-8 — VJ (vol journée) ─────────── */
+  L("L063","960","CN-RGF","B787-8","CMN","DOH","03:00","10:30","Arrived","VJ",{OFF_BLOCK_TIME:"03:04",AIRBORNE_TIME:"03:16",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:35"}),
+  L("L064","961","CN-RGF","B787-8","DOH","CMN","14:00","21:30","Scheduled","VJ"),
+
+  /* ── CN-RGG  B737-800 — Ferry + Maintenance ─────── */
+  L("L065","098","CN-RGG","B737-800","CMN","TNG","06:30","07:15","Arrived","Ferry",{OFF_BLOCK_TIME:"06:32",AIRBORNE_TIME:"06:42",LANDING_TIME:"07:13",ON_BLOCK_TIME:"07:18"}),
+  L("L066","099","CN-RGG","B737-800","TNG","CMN","13:00","13:45","Scheduled","Maintenance"),
+
+  /* ── CN-RGH  B737-800 — Swiss/Portugal (PAX) ────── */
+  L("L067","520","CN-RGH","B737-800","CMN","GVA","08:30","12:00","Arrived","PAX",{OFF_BLOCK_TIME:"08:33",AIRBORNE_TIME:"08:45",LANDING_TIME:"11:58",ON_BLOCK_TIME:"12:05"}),
+  L("L068","521","CN-RGH","B737-800","GVA","CMN","14:00","17:30","Scheduled","PAX"),
+  L("L069","522","CN-RGH","B737-800","CMN","LIS","19:00","21:00","Scheduled","PAX"),
+  L("L070","523","CN-RGH","B737-800","LIS","CMN","22:00","23:50","Scheduled","PAX"),
+
+  /* ── CN-RGI  B737-800 — West Africa (PAX) ───────── */
+  L("L071","530","CN-RGI","B737-800","CMN","DKR","09:00","13:30","Delayed","PAX",{DELAY_CODE_01:"71",DELAY_TIME_01:35,OFF_BLOCK_TIME:"09:35",AIRBORNE_TIME:"09:48"}),
+  L("L072","531","CN-RGI","B737-800","DKR","CMN","16:00","20:30","Scheduled","PAX"),
+
+  /* ── CN-RGJ  B787-9 — Longhaul BKK (PAX) ────────── */
+  L("L073","140","CN-RGJ","B787-9","CMN","DOH","02:00","09:00","Arrived","PAX",{OFF_BLOCK_TIME:"02:03",AIRBORNE_TIME:"02:15",LANDING_TIME:"08:58",ON_BLOCK_TIME:"09:05"}),
+  L("L074","141","CN-RGJ","B787-9","DOH","CMN","13:00","20:00","Scheduled","PAX"),
+
+  /* ── CN-RGK  B737-800 — Turkey (J) ──────────────── */
+  L("L075","540","CN-RGK","B737-800","CMN","IST","06:00","10:30","Arrived","J",{OFF_BLOCK_TIME:"06:03",AIRBORNE_TIME:"06:15",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:35"}),
+  L("L076","541","CN-RGK","B737-800","IST","CMN","13:00","17:30","Scheduled","J"),
+
+  /* ── CN-RGL  B737-800 — Netherlands (PAX) ───────── */
+  L("L077","550","CN-RGL","B737-800","CMN","AMS","07:00","10:30","Arrived","PAX",{OFF_BLOCK_TIME:"07:02",AIRBORNE_TIME:"07:14",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:34"}),
+  L("L078","551","CN-RGL","B737-800","AMS","CMN","12:30","16:00","Scheduled","PAX"),
+  L("L079","552","CN-RGL","B737-800","CMN","DUS","17:30","21:00","Scheduled","PAX"),
+  L("L080","553","CN-RGL","B737-800","DUS","CMN","22:00","23:40","Scheduled","PAX"),
+
+  /* ── CN-RGM  B737-800 — Domestic extra (PAX) ────── */
+  L("L081","660","CN-RGM","B737-800","CMN","AGA","06:30","07:30","Arrived","PAX",{OFF_BLOCK_TIME:"06:32",AIRBORNE_TIME:"06:42",LANDING_TIME:"07:28",ON_BLOCK_TIME:"07:34"}),
+  L("L082","661","CN-RGM","B737-800","AGA","CMN","08:30","09:30","Arrived","PAX",{OFF_BLOCK_TIME:"08:33",AIRBORNE_TIME:"08:43",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:34"}),
+  L("L083","662","CN-RGM","B737-800","CMN","RAK","11:00","12:00","Boarding","PAX"),
+  L("L084","663","CN-RGM","B737-800","RAK","CMN","13:30","14:30","Scheduled","PAX"),
+  L("L085","664","CN-RGM","B737-800","CMN","TNG","16:00","17:00","Scheduled","PAX"),
+  L("L086","665","CN-RGM","B737-800","TNG","CMN","18:30","19:30","Scheduled","PAX"),
 ];
+
+
 
 /* ── Build DataSets from any legs array ── */
 export function buildGroups(legsArr) {

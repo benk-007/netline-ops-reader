@@ -1,6 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════
-   TOP BAR — OCC Flight Operations Control
-   Modern glassmorphism + RAM branding
+   TOP BAR — Simplified, taller (68px), RAM-branded
    ═══════════════════════════════════════════════════════════════ */
 
 .topbar {
@@ -12,23 +11,21 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 20px;
+    padding: 0 24px;
     z-index: 800;
     transition: left var(--transition-mid);
-
-    /* Layered gradient: deep RAM crimson with subtle noise texture */
     background:
-        linear-gradient(92deg,
-            #5a0a1a 0%,
-            #8b0e24 25%,
-            #c8102e 55%,
-            #a01229 80%,
-            #6b0f20 100%);
+        linear-gradient(95deg,
+            #4a0a18 0%,
+            #8b0e24 30%,
+            #c8102e 60%,
+            #a01229 85%,
+            #5a0a1a 100%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.04),
-        0 4px 30px rgba(0, 0, 0, 0.45),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+        0 2px 20px rgba(0, 0, 0, 0.4),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .topbar::before {
@@ -36,8 +33,8 @@
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(ellipse 60% 120% at 10% 50%, rgba(255, 255, 255, 0.06) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 100% at 90% 50%, rgba(0, 0, 0, 0.15) 0%, transparent 60%);
+        radial-gradient(ellipse 50% 150% at 15% 50%, rgba(255, 255, 255, 0.05) 0%, transparent 60%),
+        radial-gradient(ellipse 30% 100% at 85% 50%, rgba(0, 0, 0, 0.12) 0%, transparent 50%);
     pointer-events: none;
 }
 
@@ -45,40 +42,29 @@
     left: var(--sidebar-expanded);
 }
 
-/* ── Brand ──────────────────────────────────────────────── */
+/* ── Brand ── */
 .topbar-brand {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
     position: relative;
     z-index: 1;
 }
 
 .topbar-logo {
-    width: 38px;
-    height: 38px;
+    width: 42px;
+    height: 42px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: 12px;
     background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: #fff;
     flex-shrink: 0;
     box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        0 2px 8px rgba(0, 0, 0, 0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.topbar-logo::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-    border-radius: inherit;
-    pointer-events: none;
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .topbar-brand-text {
@@ -88,8 +74,8 @@
 
 .topbar-title {
     font-weight: 800;
-    font-size: 13.5px;
-    letter-spacing: 2.5px;
+    font-size: 14px;
+    letter-spacing: 2.8px;
     text-transform: uppercase;
     color: #fff;
     text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
@@ -97,251 +83,124 @@
 }
 
 .topbar-subtitle {
-    font-size: 8.5px;
-    color: rgba(255, 255, 255, 0.5);
-    letter-spacing: 3px;
+    font-size: 9px;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 3.5px;
     text-transform: uppercase;
     margin-top: 3px;
     font-weight: 600;
 }
 
-/* ── Center: Clock + Date ───────────────────────────────── */
+/* ── Center: Compact clock + date ── */
 .topbar-center {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 16px;
     position: relative;
     z-index: 1;
-    padding: 4px 18px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(8px);
-}
-
-.topbar-center-divider {
-    width: 1px;
-    height: 22px;
-    background: rgba(255, 255, 255, 0.12);
-    flex-shrink: 0;
-}
-
-/* Primary clock */
-.topbar-clock-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
 }
 
 .topbar-clock {
     display: flex;
-    align-items: baseline;
-    gap: 2px;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 16px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.topbar-clock-pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+    animation: topbar-pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+@keyframes topbar-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(34, 197, 94, 0.6); }
+    50% { opacity: 0.4; box-shadow: 0 0 3px rgba(34, 197, 94, 0.3); }
 }
 
 .topbar-clock-hm {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 700;
     color: #fff;
     letter-spacing: 1px;
     line-height: 1;
-    text-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
 .topbar-clock-sec {
     font-family: 'JetBrains Mono', monospace;
     font-size: 11px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.45);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.35);
     line-height: 1;
     min-width: 16px;
 }
 
-.topbar-clock-label {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 8px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.4);
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
+.topbar-clock-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.15);
+    flex-shrink: 0;
 }
 
-/* Live pulse dot */
-.topbar-clock-pulse {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 6px rgba(34, 197, 94, 0.6);
-    animation: topbar-pulse 2s ease-in-out infinite;
-}
-
-@keyframes topbar-pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); }
-    50% { opacity: 0.4; box-shadow: 0 0 2px rgba(34, 197, 94, 0.3); }
-}
-
-/* UTC / Zulu clock */
-.topbar-utc-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1px;
-}
-
-.topbar-utc-time {
+.topbar-utc {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 15px;
+    font-size: 13px;
     font-weight: 700;
-    color: rgba(255, 255, 255, 0.8);
-    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 0.8px;
     line-height: 1;
 }
 
-.topbar-utc-label {
-    font-size: 8px;
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.35);
-    letter-spacing: 2px;
-}
-
-/* Date chip */
-.topbar-date-chip {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
+.topbar-date {
+    font-size: 12px;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.65);
+    color: rgba(255, 255, 255, 0.5);
     letter-spacing: 0.3px;
     white-space: nowrap;
 }
 
-.topbar-date-chip svg {
-    opacity: 0.5;
-    flex-shrink: 0;
-}
-
-/* ── Right: Status + Actions ────────────────────────────── */
+/* ── Right ── */
 .topbar-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     position: relative;
     z-index: 1;
 }
 
-/* System status */
-.topbar-status {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.2);
-    border: 1px solid rgba(34, 197, 94, 0.2);
-    color: rgba(255, 255, 255, 0.55);
-    margin-right: 4px;
-}
-
-.topbar-status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
-    animation: topbar-pulse 2s ease-in-out infinite;
-}
-
-.topbar-status-text {
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.55);
-    letter-spacing: 0.3px;
-}
-
-/* Toggle buttons */
+/* Theme toggle — icon-only circle */
 .topbar-toggle {
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 6px 14px;
-    border-radius: 8px;
-    font-size: 11px;
-    font-weight: 700;
+    border-radius: 50%;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    font-family: 'Inter', sans-serif;
     transition: all 0.2s ease;
-    letter-spacing: 0.5px;
-    position: relative;
-    overflow: hidden;
-}
-
-.topbar-toggle::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-    pointer-events: none;
-    border-radius: inherit;
 }
 
 .topbar-toggle:hover {
-    background: rgba(0, 0, 0, 0.35);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.25);
     color: #fff;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3);
+    transform: scale(1.08);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
-.topbar-toggle:active {
-    transform: translateY(0);
-    box-shadow: none;
-}
-
-.topbar-toggle--active {
-    background: rgba(37, 99, 235, 0.2);
-    border-color: rgba(37, 99, 235, 0.35);
-    color: #93c5fd;
-}
-
-.topbar-toggle--active:hover {
-    background: rgba(37, 99, 235, 0.3);
-    border-color: rgba(37, 99, 235, 0.5);
-    color: #bfdbfe;
-}
-
-/* ── Responsive ─────────────────────────────────────────── */
-@media (max-width: 1100px) {
-    .topbar-status-text {
-        display: none;
-    }
-    .topbar-status {
-        padding: 5px 8px;
-    }
-}
-
-@media (max-width: 900px) {
-    .topbar-date-chip span {
-        display: none;
-    }
-    .topbar-center {
-        gap: 10px;
-        padding: 4px 12px;
-    }
-    .topbar-status {
-        display: none;
-    }
-}
-
-/* ── User Profile ──────────────────────────────────────── */
+/* ── User Profile ── */
 .topbar-user-wrap {
     position: relative;
 }
@@ -349,36 +208,43 @@
 .topbar-user-btn {
     display: flex;
     align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
     cursor: pointer;
-    padding: 0;
-    margin-left: 4px;
+    padding: 3px 14px 3px 3px;
+    transition: all 0.2s ease;
+}
+
+.topbar-user-btn:hover {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.18);
 }
 
 .topbar-user-avatar {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.5px;
     color: #fff;
     background: rgba(0, 0, 0, 0.35);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.2s ease;
+    border: 2px solid rgba(255, 255, 255, 0.15);
     text-transform: uppercase;
+    flex-shrink: 0;
 }
 
-.topbar-user-btn:hover .topbar-user-avatar {
-    border-color: rgba(255, 255, 255, 0.45);
-    background: rgba(0, 0, 0, 0.5);
-    transform: scale(1.05);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+.topbar-user-name-inline {
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    letter-spacing: 0.2px;
+    white-space: nowrap;
 }
 
 /* Dropdown */
@@ -387,8 +253,8 @@
     top: calc(100% + 10px);
     right: 0;
     min-width: 220px;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--bg-card, var(--bg-surface));
+    border: 1px solid var(--color-border);
     border-radius: 12px;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
     padding: 14px;
@@ -427,21 +293,21 @@
 .topbar-user-name {
     font-size: 13px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--color-text);
     line-height: 1.2;
 }
 
 .topbar-user-role {
     font-size: 10px;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--color-muted);
     letter-spacing: 0.3px;
     margin-top: 2px;
 }
 
 .topbar-user-divider {
     height: 1px;
-    background: var(--border);
+    background: var(--color-border);
     margin-bottom: 10px;
 }
 
@@ -456,7 +322,7 @@
     background: none;
     font-size: 12px;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--color-text-2);
     cursor: pointer;
     font-family: 'Inter', sans-serif;
     transition: all 0.15s ease;
@@ -467,14 +333,15 @@
     color: #ef4444;
 }
 
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .topbar-date { display: none; }
+    .topbar-user-name-inline { display: none; }
+    .topbar-user-btn { padding: 3px; }
+}
+
 @media (max-width: 700px) {
-    .topbar-brand-text {
-        display: none;
-    }
-    .topbar-utc-group {
-        display: none;
-    }
-    .topbar-center-divider:last-of-type {
-        display: none;
-    }
+    .topbar-brand-text { display: none; }
+    .topbar-utc { display: none; }
+    .topbar-clock-divider { display: none; }
 }

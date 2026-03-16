@@ -1,9 +1,9 @@
 import "./FlightCard.css";
-import { SERVICE_COLORS, STATE_COLORS } from "../../constants/ganttConstants";
+import { STATE_COLORS, getServiceColor } from "../../constants/ganttConstants";
 
 export default function FlightCard({ leg }) {
   if (!leg) return null;
-  const sc = SERVICE_COLORS[leg.service] || SERVICE_COLORS.PAX;
+  const sc = getServiceColor(leg.service);
   const stateColor = STATE_COLORS[leg.state] || "#808b99";
 
   return (

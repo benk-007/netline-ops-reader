@@ -1,4 +1,6 @@
-/* ─── App Layout ──────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   APP LAYOUT — Main structure with modern transitions
+   ═══════════════════════════════════════════════════════════════ */
 
 .app-root {
   display: flex;
@@ -30,7 +32,7 @@
   overflow: hidden;
 }
 
-/* ─── Filter + Gantt area ─────────────────────────────────────────────── */
+/* ── Filter + Gantt area ── */
 
 .gantt-area {
   flex: 1;
@@ -39,15 +41,16 @@
   overflow: hidden;
 }
 
-/* ─── Timeline container ──────────────────────────────────────────────── */
+/* ── Timeline container ── */
 
 .timeline-container {
   flex: 1;
   overflow: hidden;
   min-height: 0;
+  position: relative;
 }
 
-/* ─── Fade page transition ────────────────────────────────────────────── */
+/* ── Page transitions ── */
 
 .page-fade {
   animation: fadeIn 0.25s ease;

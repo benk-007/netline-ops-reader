@@ -17,14 +17,14 @@ const ALL_AIRPORTS = [...new Set([
     ...legs.map(l => l.arr),
 ])].sort();
 
-/* ── Service colors config ── */
-const SERVICE_COLOR_DEFS = [
-    { key: "ramRed",     label: "Accent principal (RAM Red)", cssVar: "--ram-red",       default: "#c8102e" },
-    { key: "paxBar",     label: "PAX",                       cssVar: "--svc-pax-bar",   default: "#2563eb" },
-    { key: "charterBar", label: "Charter",                   cssVar: "--svc-charter-bar", default: "#7c3aed" },
-    { key: "cargoBar",   label: "Cargo",                     cssVar: "--svc-cargo-bar", default: "#0891b2" },
-    { key: "ferryBar",   label: "Ferry",                     cssVar: "--svc-ferry-bar", default: "#059669" },
-    { key: "maintBar",   label: "Maintenance",               cssVar: "--svc-maint-bar", default: "#d97706" },
+/* ── Planned / Actual bar colors config ── */
+const BAR_COLOR_DEFS = [
+    { key: "legPlanned",     label: "Planifié (Bleu)",           cssVar: "--leg-planned",        default: "#2563eb" },
+    { key: "legActual",      label: "Actuel (Gris)",             cssVar: "--leg-actual",         default: "#6b7280" },
+    { key: "legMaintPlan",   label: "Maintenance Planifié (Jaune)", cssVar: "--leg-maint-planned", default: "#d97706" },
+    { key: "legMaintActual", label: "Maintenance Actuel",        cssVar: "--leg-maint-actual",   default: "#b45309" },
+    { key: "legFActual",     label: "F Actuel (Rose)",           cssVar: "--leg-f-actual",       default: "#f9a8d4" },
+    { key: "ramRed",         label: "Accent principal (RAM Red)", cssVar: "--ram-red",            default: "#c8102e" },
 ];
 
 /* ── State colors config ── */
@@ -79,7 +79,7 @@ export default function AdminPage({ onLegsImported }) {
 
     /* ── Theme colors ── */
     const [themeColors, setThemeColors] = useState(
-        Object.fromEntries([...SERVICE_COLOR_DEFS, ...STATE_COLOR_DEFS].map(d => [d.key, d.default]))
+        Object.fromEntries([...BAR_COLOR_DEFS, ...STATE_COLOR_DEFS].map(d => [d.key, d.default]))
     );
 
     /* ── Form helpers ── */
@@ -152,6 +152,84 @@ export default function AdminPage({ onLegsImported }) {
         e.target.value = '';
     }
 
+    /* ── Helpers: normalize Excel date/time values ── */
+    let _normDateLogCount = 0;
+    function normalizeDate(val) {
+        if (val == null || val === '') return null;
+        // Already a YYYY-MM-DD string
+        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) return val.trim();
+        // Log non-trivial values (first 5 only to avoid flooding)
+        if (_normDateLogCount < 5) {
+            console.log('[normalizeDate] non-trivial input:', typeof val, JSON.stringify(val));
+            _normDateLogCount++;
+        }
+        // JS Date object (XLSX may return these)
+        if (val instanceof Date) {
+            const y = val.getFullYear();
+            const m = String(val.getMonth() + 1).padStart(2, '0');
+            const d = String(val.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        // Excel serial number (days since 1900-01-01, with the 1900 leap year bug)
+        const num = Number(val);
+        if (!isNaN(num) && num > 40000 && num < 60000) {
+            const epoch = new Date(1899, 11, 30); // Excel epoch adjusted
+            const date = new Date(epoch.getTime() + num * 86400000);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+        // Try parsing other common formats (DD/MM/YYYY, MM/DD/YYYY, etc.)
+        let str = String(val).trim();
+        // Strip trailing time portion (e.g. "24/01/2026  08:15:00" → "24/01/2026")
+        str = str.replace(/\s+\d{1,2}:\d{2}(:\d{2})?.*$/, '').trim();
+        const slashParts = str.split(/[\/\-\.]/);
+        if (slashParts.length === 3) {
+            let [a, b, c] = slashParts;
+            // If first part is 4 digits, it's YYYY-MM-DD or YYYY/MM/DD
+            if (a.length === 4) return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`;
+            // If last part is 4 digits, try DD/MM/YYYY
+            if (c.length === 4) return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
+        }
+        return str || null;
+    }
+
+    let _normTimeLogCount = 0;
+    function normalizeTime(val) {
+        if (val == null || val === '') return null;
+        // Already HH:MM format
+        if (typeof val === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(val.trim())) {
+            return val.trim().slice(0, 5).padStart(5, '0');
+        }
+        // Log non-trivial values (first 5 only)
+        if (_normTimeLogCount < 5) {
+            console.log('[normalizeTime] non-trivial input:', typeof val, JSON.stringify(val));
+            _normTimeLogCount++;
+        }
+        // JS Date object (XLSX sometimes converts time cells to Date)
+        if (val instanceof Date) {
+            const h = String(val.getHours()).padStart(2, '0');
+            const m = String(val.getMinutes()).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+        // Excel time fraction (0.0 - 1.0 representing fraction of day)
+        const num = Number(val);
+        if (!isNaN(num) && num >= 0 && num < 1) {
+            const totalMinutes = Math.round(num * 24 * 60);
+            const h = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
+            const m = String(totalMinutes % 60).padStart(2, '0');
+            return `${h}:${m}`;
+        }
+        // Small numbers that might be hours (e.g. Excel stored "8:30" as 0.354)
+        if (!isNaN(num) && num >= 1 && num < 24) {
+            const h = Math.floor(num);
+            const m = Math.round((num - h) * 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+        return String(val).trim() || null;
+    }
+
     /* ── Shared: convert rows (array of arrays) to Leg objects ── */
     function processRows(headerRow, dataRows) {
         const colIdx = {};
@@ -168,8 +246,22 @@ export default function AdminPage({ onLegsImported }) {
         function getVal(row, col) {
             const idx = colIdx[col];
             if (idx === undefined) return null;
-            const v = String(row[idx] ?? '').trim();
+            const raw = row[idx];
+            if (raw == null) return null;
+            const v = String(raw).trim();
             return v === '' ? null : v;
+        }
+
+        function getDate(row, col) {
+            const idx = colIdx[col];
+            if (idx === undefined) return null;
+            return normalizeDate(row[idx]);
+        }
+
+        function getTime(row, col) {
+            const idx = colIdx[col];
+            if (idx === undefined) return null;
+            return normalizeTime(row[idx]);
         }
 
         const newLegs = [];
@@ -178,8 +270,12 @@ export default function AdminPage({ onLegsImported }) {
             const legNo = getVal(cells, 'LEG_NO');
             const carrier = getVal(cells, 'FN_CARRIER');
             const fnNum = getVal(cells, 'FN_NUMBER');
-            const dayOfOrigin = getVal(cells, 'DAY_OF_ORIGIN');
+            const dayOfOrigin = getDate(cells, 'DAY_OF_ORIGIN');
             if (!legNo || !carrier || !fnNum || !dayOfOrigin) { skipped++; continue; }
+
+            const depTime = getTime(cells, 'DEP_TIME_SCHED');
+            const arrTime = getTime(cells, 'ARR_TIME_SCHED');
+            if (!depTime || !arrTime) { skipped++; continue; }
 
             try {
                 const leg = new Leg({
@@ -197,24 +293,24 @@ export default function AdminPage({ onLegsImported }) {
                     ARR_AP_ACTUAL: getVal(cells, 'ARR_AP_ACTUAL'),
                     LEG_STATE: getVal(cells, 'LEG_STATE') || 'Scheduled',
                     LEG_TYPE: getVal(cells, 'LEG_TYPE') || 'PAX',
-                    DEP_DAY_SCHED: getVal(cells, 'DEP_DAY_SCHED') || dayOfOrigin,
-                    DEP_TIME_SCHED: getVal(cells, 'DEP_TIME_SCHED'),
-                    ARR_DAY_SCHED: getVal(cells, 'ARR_DAY_SCHED') || dayOfOrigin,
-                    ARR_TIME_SCHED: getVal(cells, 'ARR_TIME_SCHED'),
+                    DEP_DAY_SCHED: getDate(cells, 'DEP_DAY_SCHED') || dayOfOrigin,
+                    DEP_TIME_SCHED: depTime,
+                    ARR_DAY_SCHED: getDate(cells, 'ARR_DAY_SCHED') || dayOfOrigin,
+                    ARR_TIME_SCHED: arrTime,
                     DELAY_CODE_01: getVal(cells, 'DELAY_CODE_01'),
                     DELAY_TIME_01: Number(getVal(cells, 'DELAY_TIME_01')) || 0,
                     DELAY_CODE_02: getVal(cells, 'DELAY_CODE_02'),
                     DELAY_TIME_02: Number(getVal(cells, 'DELAY_TIME_02')) || 0,
                     DELAY_CODE_03: getVal(cells, 'DELAY_CODE_03'),
                     DELAY_TIME_03: Number(getVal(cells, 'DELAY_TIME_03')) || 0,
-                    OFF_BLOCK_DAY: getVal(cells, 'OFF_BLOCK_DAY'),
-                    OFF_BLOCK_TIME: getVal(cells, 'OFF_BLOCK_TIME'),
-                    AIRBORNE_DAY: getVal(cells, 'AIRBORNE_DAY'),
-                    AIRBORNE_TIME: getVal(cells, 'AIRBORNE_TIME'),
-                    LANDING_DAY: getVal(cells, 'LANDING_DAY'),
-                    LANDING_TIME: getVal(cells, 'LANDING_TIME'),
-                    ON_BLOCK_DAY: getVal(cells, 'ON_BLOCK_DAY'),
-                    ON_BLOCK_TIME: getVal(cells, 'ON_BLOCK_TIME'),
+                    OFF_BLOCK_DAY: getDate(cells, 'OFF_BLOCK_DAY'),
+                    OFF_BLOCK_TIME: getTime(cells, 'OFF_BLOCK_TIME'),
+                    AIRBORNE_DAY: getDate(cells, 'AIRBORNE_DAY'),
+                    AIRBORNE_TIME: getTime(cells, 'AIRBORNE_TIME'),
+                    LANDING_DAY: getDate(cells, 'LANDING_DAY'),
+                    LANDING_TIME: getTime(cells, 'LANDING_TIME'),
+                    ON_BLOCK_DAY: getDate(cells, 'ON_BLOCK_DAY'),
+                    ON_BLOCK_TIME: getTime(cells, 'ON_BLOCK_TIME'),
                     PRBD: getVal(cells, 'PRBD'),
                     CHANGE_TIME: getVal(cells, 'CHANGE_TIME'),
                     ENTRY_USER: getVal(cells, 'ENTRY_USER') || '',
@@ -222,6 +318,27 @@ export default function AdminPage({ onLegsImported }) {
                 newLegs.push(leg);
             } catch { skipped++; }
         }
+
+        // ── DEBUG: log imported legs ──
+        console.group('[AdminPage] Import results');
+        console.log('Total created:', newLegs.length, '| Skipped:', skipped);
+        if (newLegs.length > 0) {
+            const s = newLegs[0];
+            console.log('Sample imported leg:', {
+                id: s.id, fn: s.fn, date: s.date, depUtc: s.depUtc, arrUtc: s.arrUtc,
+                reg: s.reg, dep: s.dep, arr: s.arr, service: s.service, subtype: s.subtype,
+                DAY_OF_ORIGIN: s.DAY_OF_ORIGIN, DEP_TIME_SCHED: s.DEP_TIME_SCHED,
+                ARR_TIME_SCHED: s.ARR_TIME_SCHED, AC_REGISTRATION: s.AC_REGISTRATION,
+            });
+            const allDates = [...new Set(newLegs.map(l => l.date))];
+            console.log('All unique dates:', allDates);
+            const missingFields = newLegs.filter(l => !l.date || !l.depUtc || !l.arrUtc || !l.reg);
+            if (missingFields.length > 0) {
+                console.warn('Legs with missing critical fields:', missingFields.length);
+                console.warn('First bad leg:', missingFields[0]);
+            }
+        }
+        console.groupEnd();
 
         if (newLegs.length === 0) {
             setLegCsvFeedback('Aucun leg valide trouvé dans le fichier.');
@@ -246,9 +363,9 @@ export default function AdminPage({ onLegsImported }) {
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
-                    const wb = XLSX.read(ev.target.result, { type: 'array' });
+                    const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
                     const ws = wb.Sheets[wb.SheetNames[0]];
-                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
                     if (rows.length < 2) { setLegCsvFeedback('Fichier vide ou invalide.'); return; }
                     const [headerRow, ...dataRows] = rows;
                     processRows(headerRow, dataRows);
@@ -609,9 +726,9 @@ export default function AdminPage({ onLegsImported }) {
                             </div>
                             <div className="section-header-actions">
                                 <button className="btn-secondary" onClick={() => {
-                                    const defaults = Object.fromEntries([...SERVICE_COLOR_DEFS, ...STATE_COLOR_DEFS].map(d => [d.key, d.default]));
+                                    const defaults = Object.fromEntries([...BAR_COLOR_DEFS, ...STATE_COLOR_DEFS].map(d => [d.key, d.default]));
                                     setThemeColors(defaults);
-                                    [...SERVICE_COLOR_DEFS, ...STATE_COLOR_DEFS].forEach(d => {
+                                    [...BAR_COLOR_DEFS, ...STATE_COLOR_DEFS].forEach(d => {
                                         document.documentElement.style.setProperty(d.cssVar, d.default);
                                     });
                                 }}>
@@ -621,9 +738,9 @@ export default function AdminPage({ onLegsImported }) {
                         </div>
 
                         {/* Service colors */}
-                        <h3 className="apparence-section-title">Couleurs des services</h3>
+                        <h3 className="apparence-section-title">Couleurs Planifié / Actuel</h3>
                         <div className="theme-grid">
-                            {SERVICE_COLOR_DEFS.map(def => (
+                            {BAR_COLOR_DEFS.map(def => (
                                 <div key={def.key} className="theme-card">
                                     <div className="theme-swatch" style={{ background: themeColors[def.key] }} />
                                     <div className="theme-card-body">

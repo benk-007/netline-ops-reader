@@ -1,14 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
+import * as XLSX from "xlsx";
 import "./ExportModal.css";
 
 /* ── Field groups to export — mapped to new DB schema ──────── */
 const FIELD_GROUPS = [
     {
-        title: "Identité vol",
+        title: "Identite vol",
         fields: [
             { key: "LEG_NO",          label: "LEG_NO"      },
             { key: "FN_CARRIER",      label: "Compagnie"   },
-            { key: "FN_NUMBER",       label: "N° Vol"      },
+            { key: "FN_NUMBER",       label: "N Vol"       },
             { key: "FN_SUFFIX",       label: "Suffixe"     },
             { key: "DAY_OF_ORIGIN",   label: "Date"        },
         ],
@@ -18,30 +19,30 @@ const FIELD_GROUPS = [
         fields: [
             { key: "AC_REGISTRATION", label: "Immat."      },
             { key: "AC_SUBTYPE",      label: "Type"        },
-            { key: "AC_OWNER",        label: "Propriétaire"},
+            { key: "AC_OWNER",        label: "Proprietaire"},
             { key: "AC_VERSION",      label: "Version"     },
         ],
     },
     {
         title: "Route",
         fields: [
-            { key: "DEP_AP_SCHED",    label: "DEP (prévu)" },
-            { key: "ARR_AP_SCHED",    label: "ARR (prévu)" },
-            { key: "DEP_AP_ACTUAL",   label: "DEP (réel)"  },
-            { key: "ARR_AP_ACTUAL",   label: "ARR (réel)"  },
+            { key: "DEP_AP_SCHED",    label: "DEP (prevu)" },
+            { key: "ARR_AP_SCHED",    label: "ARR (prevu)" },
+            { key: "DEP_AP_ACTUAL",   label: "DEP (reel)"  },
+            { key: "ARR_AP_ACTUAL",   label: "ARR (reel)"  },
         ],
     },
     {
-        title: "Horaires planifiés",
+        title: "Horaires planifies",
         fields: [
-            { key: "DEP_TIME_SCHED",  label: "Heure Dép."  },
+            { key: "DEP_TIME_SCHED",  label: "Heure Dep."  },
             { key: "ARR_TIME_SCHED",  label: "Heure Arr."  },
-            { key: "DEP_DAY_SCHED",   label: "Jour Dép."   },
+            { key: "DEP_DAY_SCHED",   label: "Jour Dep."   },
             { key: "ARR_DAY_SCHED",   label: "Jour Arr."   },
         ],
     },
     {
-        title: "OOOI (Réels)",
+        title: "OOOI (Reels)",
         fields: [
             { key: "OFF_BLOCK_TIME",  label: "Off Block"   },
             { key: "AIRBORNE_TIME",   label: "Airborne"    },
@@ -61,16 +62,18 @@ const FIELD_GROUPS = [
         ],
     },
     {
-        title: "Système",
+        title: "Systeme",
         fields: [
             { key: "UPDATE_KEY",      label: "Update Key"  },
             { key: "ENTRY_USER",      label: "Utilisateur" },
-            { key: "CHANGE_TIME",     label: "Modifié le"  },
+            { key: "CHANGE_TIME",     label: "Modifie le"  },
         ],
     },
 ];
 
 const ALL_KEYS = FIELD_GROUPS.flatMap(g => g.fields.map(f => f.key));
+const KEY_TO_LABEL = Object.fromEntries(FIELD_GROUPS.flatMap(g => g.fields.map(f => [f.key, f.label])));
+
 const DEFAULT_SELECTED = new Set([
     "LEG_NO", "FN_CARRIER", "FN_NUMBER", "DAY_OF_ORIGIN",
     "AC_REGISTRATION", "AC_SUBTYPE",
@@ -79,12 +82,6 @@ const DEFAULT_SELECTED = new Set([
     "OFF_BLOCK_TIME", "AIRBORNE_TIME", "LANDING_TIME", "ON_BLOCK_TIME",
     "LEG_STATE", "LEG_TYPE", "DELAY_CODE_01", "DELAY_TIME_01",
 ]);
-
-const SEP_OPTIONS = [
-    { key: ",",  label: "Virgule" },
-    { key: ";",  label: "Point-virgule" },
-    { key: "\t", label: "Tab" },
-];
 
 /* ── Apply the same filter logic as FlightGantt ────────────── */
 function applyFilters(allLegs, filters) {
@@ -131,7 +128,6 @@ function ExportHeaderIcon() {
     );
 }
 
-/* ── Inline SVG arrows for collapsible section ─────────────── */
 function ChevronDown() {
     return (
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -178,15 +174,27 @@ function ChipSelect({ options, selected, onChange, label }) {
                         {opt}
                     </button>
                 ))}
-                {options.length === 0 && <span className="em-filter-empty">—</span>}
+                {options.length === 0 && <span className="em-filter-empty">--</span>}
             </div>
         </div>
     );
 }
 
+const FORMAT_OPTIONS = [
+    { key: "xlsx", label: "Excel (.xlsx)" },
+    { key: "csv",  label: "CSV" },
+];
+
+const SEP_OPTIONS = [
+    { key: ",",  label: "Virgule" },
+    { key: ";",  label: "Point-virgule" },
+    { key: "\t", label: "Tab" },
+];
+
 export default function ExportModal({ isOpen, onClose, legs, filters }) {
     const [selected, setSelected] = useState(new Set(DEFAULT_SELECTED));
-    const [separator, setSeparator] = useState(",");
+    const [separator, setSeparator] = useState(";");
+    const [format, setFormat] = useState("xlsx");
 
     /* ── Local export filter state ─────────────────────────── */
     const [filtersOpen, setFiltersOpen] = useState(true);
@@ -197,7 +205,7 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
     const [localFlight, setLocalFlight] = useState("");
     const [localDate, setLocalDate] = useState([]);
 
-    /* Unique option lists extracted from ALL legs (not pre-filtered) */
+    /* Unique option lists extracted from ALL legs */
     const uniqueDeps     = useMemo(() => [...new Set(legs.map(l => l.dep).filter(Boolean))].sort(), [legs]);
     const uniqueArrs     = useMemo(() => [...new Set(legs.map(l => l.arr).filter(Boolean))].sort(), [legs]);
     const uniqueServices = useMemo(() => [...new Set(legs.map(l => l.service).filter(Boolean))].sort(), [legs]);
@@ -217,7 +225,7 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
         }
     }, [isOpen, filters]);
 
-    /* Compute filtered legs from LOCAL filter state (overrides incoming) */
+    /* Compute filtered legs from LOCAL filter state */
     const localFilters = useMemo(() => ({
         fDep: localDep,
         fArr: localArr,
@@ -229,7 +237,6 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
 
     const filteredLegs = useMemo(() => applyFilters(legs, localFilters), [legs, localFilters]);
 
-    /* Count of active export filters */
     const activeFilterCount = [localDep, localArr, localService, localSubtype, localDate]
         .filter(a => a.length > 0).length + (localFlight ? 1 : 0);
 
@@ -259,46 +266,74 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
         const keys = ALL_KEYS.filter(k => selected.has(k));
         if (keys.length === 0 || filteredLegs.length === 0) return;
 
-        const header = keys.join(separator);
-        const rows = filteredLegs.map(leg =>
-            keys.map(k => {
-                const v = leg[k];
-                const str = v === null || v === undefined ? "" : String(v);
-                // Quote if contains separator or newline
-                return str.includes(separator) || str.includes("\n")
-                    ? `"${str.replace(/"/g, '""')}"`
-                    : str;
-            }).join(separator)
-        );
+        if (format === "xlsx") {
+            // Build data rows with readable headers
+            const headers = keys.map(k => KEY_TO_LABEL[k] || k);
+            const dataRows = filteredLegs.map(leg =>
+                keys.map(k => {
+                    const v = leg[k];
+                    return v === null || v === undefined ? "" : v;
+                })
+            );
 
-        const csv = [header, ...rows].join("\n");
-        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `ram_gantt_export_${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+
+            // Auto-size columns
+            ws["!cols"] = headers.map((h, i) => {
+                let maxLen = h.length;
+                for (const row of dataRows) {
+                    const cellLen = String(row[i] ?? "").length;
+                    if (cellLen > maxLen) maxLen = cellLen;
+                }
+                return { wch: Math.min(maxLen + 2, 40) };
+            });
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Flights");
+            XLSX.writeFile(wb, `ram_gantt_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+        } else {
+            // CSV export
+            const header = keys.map(k => KEY_TO_LABEL[k] || k).join(separator);
+            const rows = filteredLegs.map(leg =>
+                keys.map(k => {
+                    const v = leg[k];
+                    const str = v === null || v === undefined ? "" : String(v);
+                    return str.includes(separator) || str.includes("\n")
+                        ? `"${str.replace(/"/g, '""')}"`
+                        : str;
+                }).join(separator)
+            );
+
+            const csv = [header, ...rows].join("\n");
+            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `ram_gantt_export_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
         onClose();
     }
 
     return (
         <div className="em-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-            <div className="em-modal" role="dialog" aria-label="Export CSV" aria-modal="true">
+            <div className="em-modal" role="dialog" aria-label="Export" aria-modal="true">
 
                 {/* Header */}
                 <div className="em-header">
                     <div className="em-header-left">
                         <div className="em-header-icon"><ExportHeaderIcon /></div>
                         <div>
-                            <div className="em-title">Exporter les données</div>
-                            <div className="em-subtitle">Sélectionnez les champs à inclure dans l'export CSV</div>
+                            <div className="em-title">Exporter les donnees</div>
+                            <div className="em-subtitle">Selectionnez les champs et le format d'export</div>
                             <div className="em-count-badge">
                                 {filteredLegs.length} leg{filteredLegs.length > 1 ? "s" : ""} correspondant{filteredLegs.length > 1 ? "s" : ""}
                             </div>
                         </div>
                     </div>
-                    <button className="em-close" onClick={onClose} aria-label="Fermer">×</button>
+                    <button className="em-close" onClick={onClose} aria-label="Fermer">x</button>
                 </div>
 
                 <div className="em-body">
@@ -324,14 +359,14 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
 
                         {filtersOpen && (
                             <div className="em-filter-body">
-                                <ChipSelect label="Aéroport DEP" options={uniqueDeps} selected={localDep} onChange={setLocalDep} />
-                                <ChipSelect label="Aéroport ARR" options={uniqueArrs} selected={localArr} onChange={setLocalArr} />
+                                <ChipSelect label="Aeroport DEP" options={uniqueDeps} selected={localDep} onChange={setLocalDep} />
+                                <ChipSelect label="Aeroport ARR" options={uniqueArrs} selected={localArr} onChange={setLocalArr} />
                                 <ChipSelect label="Type de service" options={uniqueServices} selected={localService} onChange={setLocalService} />
                                 <ChipSelect label="Sous-type appareil" options={uniqueSubtypes} selected={localSubtype} onChange={setLocalSubtype} />
                                 <ChipSelect label="Date" options={uniqueDates} selected={localDate} onChange={setLocalDate} />
 
                                 <div className="em-filter-field">
-                                    <span className="em-filter-label">N° de vol</span>
+                                    <span className="em-filter-label">N de vol</span>
                                     <input
                                         type="text"
                                         className="em-filter-input"
@@ -343,20 +378,68 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
 
                                 {activeFilterCount > 0 && (
                                     <button type="button" className="em-filter-reset" onClick={resetLocalFilters}>
-                                        Réinitialiser
+                                        Reinitialiser
                                     </button>
                                 )}
                             </div>
                         )}
                     </div>
 
+                    {/* Format selector */}
+                    <div className="em-format-row">
+                        <span className="em-format-label">Format :</span>
+                        <div className="em-format-options">
+                            {FORMAT_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.key}
+                                    className={`em-format-btn ${format === opt.key ? "active" : ""}`}
+                                    type="button"
+                                    onClick={() => setFormat(opt.key)}
+                                >
+                                    {opt.key === "xlsx" && (
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" />
+                                            <path d="M9 3v18M3 9h18M3 15h18" />
+                                        </svg>
+                                    )}
+                                    {opt.key === "csv" && (
+                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                        </svg>
+                                    )}
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* CSV separator (only for CSV) */}
+                    {format === "csv" && (
+                        <div className="em-sep-row">
+                            <span className="em-sep-label">Separateur :</span>
+                            <div className="em-sep-options">
+                                {SEP_OPTIONS.map(opt => (
+                                    <button
+                                        key={opt.key}
+                                        className={`em-sep-btn ${separator === opt.key ? "active" : ""}`}
+                                        type="button"
+                                        onClick={() => setSeparator(opt.key)}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     {/* Select all / deselect all */}
                     <div className="em-select-all-row">
-                        <span className="em-select-all-label">Champs à exporter</span>
+                        <span className="em-select-all-label">Champs a exporter</span>
                         <div className="em-select-all-btns">
-                            <button className="em-link-btn select" type="button" onClick={selectAll}>Tout sélectionner</button>
-                            <span style={{ color: "var(--color-dim)" }}>·</span>
-                            <button className="em-link-btn deselect" type="button" onClick={deselectAll}>Tout décocher</button>
+                            <button className="em-link-btn select" type="button" onClick={selectAll}>Tout selectionner</button>
+                            <span style={{ color: "var(--color-dim)" }}>.</span>
+                            <button className="em-link-btn deselect" type="button" onClick={deselectAll}>Tout decocher</button>
                         </div>
                     </div>
 
@@ -383,29 +466,12 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
                             </div>
                         </div>
                     ))}
-
-                    {/* Separator */}
-                    <div className="em-sep-row">
-                        <span className="em-sep-label">Séparateur :</span>
-                        <div className="em-sep-options">
-                            {SEP_OPTIONS.map(opt => (
-                                <button
-                                    key={opt.key}
-                                    className={`em-sep-btn ${separator === opt.key ? "active" : ""}`}
-                                    type="button"
-                                    onClick={() => setSeparator(opt.key)}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
                 </div>
 
                 {/* Footer */}
                 <div className="em-footer">
                     <span className="em-selected-count">
-                        <strong>{selected.size}</strong> champ{selected.size > 1 ? "s" : ""} sélectionné{selected.size > 1 ? "s" : ""}
+                        <strong>{selected.size}</strong> champ{selected.size > 1 ? "s" : ""} selectionne{selected.size > 1 ? "s" : ""}
                     </span>
                     <div className="em-footer-btns">
                         <button className="em-cancel-btn" type="button" onClick={onClose}>Annuler</button>
@@ -416,7 +482,7 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
                             disabled={selected.size === 0 || filteredLegs.length === 0}
                         >
                             <DownloadIcon />
-                            Exporter CSV
+                            {format === "xlsx" ? "Exporter Excel" : "Exporter CSV"}
                         </button>
                     </div>
                 </div>

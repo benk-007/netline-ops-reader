@@ -169,7 +169,7 @@ function Modal({ flight, onClose, t, isDark }) {
 
                 {/* Tabs */}
                 <div style={{ display: "flex", padding: "0 32px", borderBottom: `1px solid ${t.tabBorder}` }}>
-                    {[["general", "Général"], ["horaires", "Horaires"], ["escale", "Escale"], ["retards", "Retards"]].map(([k, v]) => (
+                    {[["general", "Général"], ["horaires", "Horaires"], /* ["escale", "Escale"], */ ["retards", "Retards"]].map(([k, v]) => (
                         <button key={k} onClick={() => setTab(k)} style={{ background: "transparent", border: "none", borderBottom: tab === k ? "2px solid #c8102e" : "2px solid transparent", color: tab === k ? t.text : t.tabInactive, padding: "14px 20px", cursor: "pointer", fontSize: 12, fontWeight: 600, letterSpacing: 1, textTransform: "uppercase", transition: "all 0.2s" }}>
                             {v}
                         </button>
@@ -236,6 +236,7 @@ function Modal({ flight, onClose, t, isDark }) {
                         </div>
                     )}
 
+                    {/* Escale tab — commented out for now
                     {tab === "escale" && (
                         <div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
@@ -263,6 +264,7 @@ function Modal({ flight, onClose, t, isDark }) {
                             </div>
                         </div>
                     )}
+                    */}
 
                     {tab === "retards" && (
                         <div>

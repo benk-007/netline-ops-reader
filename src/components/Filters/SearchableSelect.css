@@ -1,33 +1,28 @@
-/* ─── SearchableSelect Dropdown ──────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════
+   SearchableSelect — Modern dropdown with glassmorphism
+   ═══════════════════════════════════════════════════════════════ */
 
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-6px); }
-    to   { opacity: 1; transform: translateY(0); }
+@keyframes ssSlideDown {
+    from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .ss-root {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
     position: relative;
 }
 
 .ss-label {
     font-size: 8px;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--color-dim);
 }
 
-/* Active state (multi with selections) */
-.ss-trigger.active {
-    border-color: rgba(200, 16, 46, 0.5);
-    color: var(--color-text);
-    background: rgba(200, 16, 46, 0.07);
-}
-
-/* Trigger button */
+/* ── Trigger button ── */
 .ss-trigger {
     display: flex;
     align-items: center;
@@ -35,27 +30,42 @@
     gap: 6px;
     background: var(--filter-bg);
     border: 1px solid var(--filter-border);
-    border-radius: var(--radius-md);
-    padding: 6px 10px;
+    border-radius: 8px;
+    padding: 5px 10px;
     color: var(--color-text-2);
     font-size: 11px;
     font-weight: 600;
     font-family: 'Inter', sans-serif;
     cursor: pointer;
-    min-width: 110px;
-    transition: border-color var(--transition-fast), color var(--transition-fast);
+    min-width: 105px;
+    height: 30px;
+    transition: all var(--transition-fast);
     text-align: left;
+    position: relative;
 }
 
 .ss-trigger:hover {
     border-color: var(--color-muted);
     color: var(--color-text);
+    background: var(--bg-surface-2);
 }
 
 .ss-trigger.open {
     border-color: var(--filter-border-focus);
     color: var(--color-text);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+    background: var(--bg-surface-2);
+}
+
+/* Active state (multi with selections) */
+.ss-trigger.active {
+    border-color: rgba(200, 16, 46, 0.4);
+    color: var(--color-text);
+    background: rgba(200, 16, 46, 0.06);
+}
+
+.ss-trigger.active:hover {
+    background: rgba(200, 16, 46, 0.1);
 }
 
 .ss-value {
@@ -73,33 +83,35 @@
 
 .ss-trigger.open .ss-caret {
     transform: rotate(180deg);
+    color: var(--filter-border-focus);
 }
 
-/* Dropdown panel — must be above vis-timeline */
+/* ── Dropdown panel ── */
 .ss-dropdown {
     position: fixed;
-    /* fixed so it escapes any overflow:hidden parent */
     min-width: 180px;
     width: max-content;
     max-width: 260px;
     background: var(--bg-surface-2);
     border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+    border-radius: 12px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.03);
     z-index: 9999;
-    /* above everything including vis-timeline */
-    animation: slideDown 0.12s ease;
+    animation: ssSlideDown 0.15s cubic-bezier(0.16, 1, 0.3, 1);
     overflow: hidden;
 }
 
-/* Search row */
+/* ── Search row ── */
 .ss-search-wrap {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 10px;
+    gap: 7px;
+    padding: 10px 12px;
     border-bottom: 1px solid var(--color-border-2);
     color: var(--color-dim);
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .ss-search {
@@ -128,35 +140,44 @@
     display: flex;
     align-items: center;
     transition: color var(--transition-fast);
+    width: 18px;
+    height: 18px;
+    justify-content: center;
+    border-radius: 4px;
 }
 
 .ss-clear-btn:hover {
     color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
 }
 
-/* Options list */
+/* ── Options list ── */
 .ss-list {
     max-height: 200px;
     overflow-y: auto;
     padding: 4px;
 }
 
+.ss-list::-webkit-scrollbar { width: 4px; }
+.ss-list::-webkit-scrollbar-track { background: transparent; }
+.ss-list::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+
 .ss-option {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     width: 100%;
     padding: 7px 10px;
     background: transparent;
     border: none;
-    border-radius: var(--radius-sm);
+    border-radius: 7px;
     color: var(--color-text-2);
     font-size: 11px;
     font-weight: 500;
     font-family: 'Inter', sans-serif;
     cursor: pointer;
     text-align: left;
-    transition: background var(--transition-fast), color var(--transition-fast);
+    transition: all var(--transition-fast);
 }
 
 .ss-option:hover {
@@ -166,7 +187,7 @@
 
 .ss-option.selected {
     color: var(--color-text);
-    background: rgba(200, 16, 46, 0.1);
+    background: rgba(200, 16, 46, 0.08);
 }
 
 .ss-option.selected svg {
@@ -174,20 +195,18 @@
 }
 
 .ss-no-results {
-    padding: 12px;
+    padding: 16px 12px;
     text-align: center;
     font-size: 11px;
     color: var(--color-dim);
 }
 
-/* ─── Multi-select additions ─────────────────────────────── */
-
-/* Square checkbox indicator */
+/* ── Multi-select checkbox ── */
 .ss-checkbox {
     flex-shrink: 0;
-    width: 13px;
-    height: 13px;
-    border-radius: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
     border: 1.5px solid var(--color-dim);
     display: flex;
     align-items: center;
@@ -200,21 +219,22 @@
     background: var(--ram-red);
     border-color: var(--ram-red);
     color: #fff;
-    box-shadow: 0 0 6px rgba(200, 16, 46, 0.3);
+    box-shadow: 0 0 8px rgba(200, 16, 46, 0.25);
 }
 
 .ss-option:hover .ss-checkbox:not(.checked) {
     border-color: var(--color-muted);
+    background: rgba(255, 255, 255, 0.03);
 }
 
-/* Apply / close footer row */
+/* ── Apply / close footer row ── */
 .ss-apply-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 10px;
+    padding: 8px 12px;
     border-top: 1px solid var(--color-border-2);
-    background: var(--bg-surface);
+    background: rgba(0, 0, 0, 0.1);
 }
 
 .ss-apply-count {
@@ -225,21 +245,40 @@
 }
 
 .ss-apply-btn {
-    background: var(--ram-red);
+    background: linear-gradient(135deg, var(--ram-red), var(--ram-red-dark));
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     color: #fff;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.8px;
     text-transform: uppercase;
-    padding: 5px 12px;
+    padding: 5px 14px;
     cursor: pointer;
     font-family: 'Inter', sans-serif;
     transition: all var(--transition-fast);
+    box-shadow: 0 2px 8px rgba(200, 16, 46, 0.25);
 }
 
 .ss-apply-btn:hover {
     filter: brightness(1.1);
-    box-shadow: 0 0 10px rgba(200, 16, 46, 0.3);
+    box-shadow: 0 3px 12px rgba(200, 16, 46, 0.35);
+    transform: translateY(-1px);
+}
+
+/* ── Light theme ── */
+[data-theme='light'] .ss-dropdown {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme='light'] .ss-search-wrap {
+    background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='light'] .ss-apply-row {
+    background: var(--bg-surface);
+}
+
+[data-theme='light'] .ss-option.selected {
+    background: rgba(200, 16, 46, 0.06);
 }

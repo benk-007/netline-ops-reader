@@ -6,12 +6,28 @@ export const HEADER_H = 48;
 export const LABEL_W = 180;
 
 export const SERVICE_COLORS = {
+  /* Named service types */
   PAX:         { bar: "#2563eb", bg: "rgba(37,99,235,0.15)",   text: "#93c5fd"  },
   Charter:     { bar: "#7c3aed", bg: "rgba(124,58,237,0.15)",  text: "#c4b5fd"  },
   Cargo:       { bar: "#0891b2", bg: "rgba(8,145,178,0.15)",   text: "#67e8f9"  },
   Ferry:       { bar: "#059669", bg: "rgba(5,150,105,0.15)",   text: "#6ee7b7"  },
   Maintenance: { bar: "#d97706", bg: "rgba(217,119,6,0.15)",   text: "#fcd34d"  },
+  /* IATA LEG_TYPE codes */
+  J:           { bar: "#3b82f6", bg: "rgba(59,130,246,0.15)",  text: "#93c5fd"  },
+  F:           { bar: "#0e7490", bg: "rgba(14,116,144,0.15)",  text: "#67e8f9"  },
+  P:           { bar: "#059669", bg: "rgba(5,150,105,0.15)",   text: "#6ee7b7"  },
+  O:           { bar: "#f97316", bg: "rgba(249,115,22,0.15)",  text: "#fdba74"  },
+  S:           { bar: "#8b5cf6", bg: "rgba(139,92,246,0.15)",  text: "#c4b5fd"  },
+  VJ:          { bar: "#ec4899", bg: "rgba(236,72,153,0.15)",  text: "#f9a8d4"  },
 };
+
+/** Fallback for unknown service types */
+export const DEFAULT_SERVICE_COLOR = { bar: "#6366f1", bg: "rgba(99,102,241,0.15)", text: "#a5b4fc" };
+
+/** Get service color, with fallback */
+export function getServiceColor(serviceType) {
+  return SERVICE_COLORS[serviceType] || DEFAULT_SERVICE_COLOR;
+}
 
 export const STATE_COLORS = {
   Arrived: "#22c55e",
@@ -37,7 +53,7 @@ export const SUBTYPE_OPTIONS = [
  * Helper to get day offset relative to "today" 
  * "2026-02-26" is our base today for the mock data
  */
-const BASE_DATE = new Date("2026-02-26T00:00:00Z");
+const BASE_DATE = new Date("2026-03-05T00:00:00Z");
 
 export function getDayOffset(dateStr) {
   const d = new Date(dateStr + "T00:00:00Z");
@@ -59,8 +75,8 @@ export function timeToFrac(hhmm, dateStr) {
 
 /** Compute now fraction within the 3-day window */
 export function nowFraction() {
-  const now = new Date("2026-02-26T11:00:00Z"); // Fixed mock "now" for consistency
-  const dayOffset = getDayOffset("2026-02-26");
+  const now = new Date("2026-03-05T11:00:00Z"); // Fixed mock "now" for consistency
+  const dayOffset = getDayOffset("2026-03-05");
   const h = now.getUTCHours();
   const m = now.getUTCMinutes();
   const totalHoursFromWindowStart = (dayOffset + 1) * 24 + h + m / 60;

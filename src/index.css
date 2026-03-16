@@ -64,6 +64,12 @@
   --svc-pax-bg: rgba(37, 99, 235, 0.15);
   --svc-pax-text: #93c5fd;
 
+  --svc-j-bar: #3b82f6;
+  /* J (scheduled pax) — bright blue */
+
+  --svc-default-bar: #6366f1;
+  /* Unknown service — indigo fallback */
+
   --svc-charter-bar: #7c3aed;
   /* Charter — violet */
   --svc-charter-bg: rgba(124, 58, 237, 0.15);
@@ -84,6 +90,18 @@
   --svc-maint-bg: rgba(217, 119, 6, 0.15);
   --svc-maint-text: #fcd34d;
 
+  /* IATA LEG_TYPE codes */
+  --svc-f-bar: #0e7490;
+  /* F (freight) — dark cyan */
+  --svc-p-bar: #059669;
+  /* P (positioning) — emerald */
+  --svc-o-bar: #f97316;
+  /* O (other/charter) — orange */
+  --svc-s-bar: #8b5cf6;
+  /* S (special) — violet */
+  --svc-vj-bar: #ec4899;
+  /* VJ — pink */
+
   /* ── State Colors (admin-modifiable) ─────────────── */
   --state-arrived: #22c55e;
   --state-airborne: #3b82f6;
@@ -92,11 +110,18 @@
   --state-scheduled: #64748b;
   --state-cancelled: #6b7280;
 
+  /* ── Planned / Actual bar colors (admin-modifiable) ── */
+  --leg-planned: #2563eb;          /* Blue — planned */
+  --leg-actual: #6b7280;           /* Gray — actual */
+  --leg-maint-planned: #d97706;    /* Yellow — maintenance planned */
+  --leg-maint-actual: #b45309;     /* Dark amber — maintenance actual */
+  --leg-f-actual: #f9a8d4;         /* Light pink — F actual */
+
   /* ── Sidebar ─────────────────────────────────────── */
   --sidebar-bg: #020509;
   --sidebar-width: 64px;
   --sidebar-expanded: 200px;
-  --topbar-h: 58px;
+  --topbar-h: 68px;
 
   /* ── Animations ──────────────────────────────────── */
   --transition-fast: 0.15s ease;
