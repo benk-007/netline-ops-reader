@@ -1,16 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { DEFAULT_PROFILE } from "../../constants/ganttConstants";
 import "./ProfileManager.css";
 import { SERVICE_COLORS, SUBTYPE_OPTIONS } from "../../constants/ganttConstants";
 import { legs, dates } from "../../data/flightsData";
 import SearchableSelect from "../Filters/SearchableSelect";
+import { filtersApi } from "../../api";
+
 const STORAGE_KEY = "ram_gantt_profiles";
 const allDeps     = ["Tous", ...[...new Set(legs.map(l => l.dep))].sort()];
 const allArrs     = ["Tous", ...[...new Set(legs.map(l => l.arr))].sort()];
 const allServices = ["Tous", ...Object.keys(SERVICE_COLORS)];
 const allDates    = ["Tous", ...dates];
 const allSubtypes = ["Tous", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types")];
-function loadProfiles() {
+
+/* ── Local fallback if backend is unavailable ── */
+function loadLocalProfiles() {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (raw) return JSON.parse(raw);
@@ -18,7 +22,7 @@ function loadProfiles() {
     return [{ ...DEFAULT_PROFILE }];
 }
 
-function saveProfiles(profiles) {
+function saveLocalProfiles(profiles) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
 }
 
@@ -26,26 +30,54 @@ function generateId() {
     return `profile_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export default function ProfileManager({ isOpen, onClose, currentFilters, utcMode, zoom, onLoadProfile }) {
-    const [profiles, setProfiles] = useState(loadProfiles);
+export default function ProfileManager({ isOpen, onClose, currentFilters, utcMode, zoom, onLoadProfile, userId }) {
+    const [profiles, setProfiles] = useState(loadLocalProfiles);
     const [newName, setNewName] = useState("");
-    const [activeTab, setActiveTab] = useState("load"); // "load" | "save"
+    const [activeTab, setActiveTab] = useState("load");
     const [saved, setSaved] = useState(false);
     const [profileFilters, setProfileFilters] = useState({ ...currentFilters });
 
+    /* ── Load profiles from backend when user is logged in ── */
+    const fetchProfiles = useCallback(async () => {
+        if (!userId) return;
+        try {
+            const data = await filtersApi.getByUser(userId);
+            const backendProfiles = data.map(f => ({
+                id: f.id,
+                backendId: f.id,
+                name: f.name,
+                filters: {
+                    fDep: f.depAirport || [],
+                    fArr: f.arrAirport || [],
+                    fService: f.serviceType || [],
+                    fSubtype: f.aircraftType || [],
+                    fFlight: (f.flightNumber && f.flightNumber[0]) || "",
+                    fDate: [],
+                },
+                savedAt: new Date().toISOString(),
+            }));
+            const localProfiles = loadLocalProfiles().filter(p => !p.backendId);
+            const merged = [...localProfiles, ...backendProfiles];
+            setProfiles(merged.length > 0 ? merged : [{ ...DEFAULT_PROFILE }]);
+        } catch {
+            setProfiles(loadLocalProfiles());
+        }
+    }, [userId]);
+
     useEffect(() => {
         if (isOpen) {
-            setProfiles(loadProfiles());
+            fetchProfiles();
             setNewName("");
             setSaved(false);
             setProfileFilters({ ...currentFilters });
         }
-    }, [isOpen, currentFilters]);
+    }, [isOpen, currentFilters, fetchProfiles]);
 
     if (!isOpen) return null;
 
-    function handleSave() {
+    async function handleSave() {
         if (!newName.trim()) return;
+
         const profile = {
             id: generateId(),
             name: newName.trim(),
@@ -54,19 +86,45 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
             zoom,
             savedAt: new Date().toISOString(),
         };
+
+        // Save to backend if userId is available
+        if (userId) {
+            try {
+                const created = await filtersApi.create({
+                    name: newName.trim(),
+                    userId,
+                    depAirport: profileFilters.fDep || [],
+                    arrAirport: profileFilters.fArr || [],
+                    serviceType: profileFilters.fService || [],
+                    aircraftType: profileFilters.fSubtype || [],
+                    flightNumber: profileFilters.fFlight ? [profileFilters.fFlight] : [],
+                });
+                profile.backendId = created.id;
+                profile.id = created.id;
+            } catch {
+                // Fall back to local storage
+            }
+        }
+
         const updated = [...profiles, profile];
         setProfiles(updated);
-        saveProfiles(updated);
+        saveLocalProfiles(updated);
         setNewName("");
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     }
 
-    function handleDelete(id) {
-        if (id === "default") return; // can't delete default
+    async function handleDelete(id) {
+        if (id === "default") return;
+        const profile = profiles.find(p => p.id === id);
+        if (profile?.backendId) {
+            try {
+                await filtersApi.delete(profile.backendId);
+            } catch { /* ignore */ }
+        }
         const updated = profiles.filter(p => p.id !== id);
         setProfiles(updated);
-        saveProfiles(updated);
+        saveLocalProfiles(updated);
     }
 
     function handleLoad(profile) {

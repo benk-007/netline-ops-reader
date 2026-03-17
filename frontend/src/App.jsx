@@ -1,8 +1,21 @@
+/**
+ * Root Application Component — Netline Reader
+ *
+ * Handles:
+ *  - Authentication via Keycloak (with mock login fallback)
+ *  - Role-based page access (admin, staff_ops, chef_escale)
+ *  - Flight data state (default mock data + CSV/Excel import)
+ *  - Filter state, zoom, profiles, export modals
+ *  - Dark/light theme, UTC mode
+ */
 import "./App.css";
 import { useState, useEffect, useRef } from "react";
 import * as XLSX from "xlsx";
 
-/* Components */
+/* ── Auth ── */
+import { getUserInfo, logout as keycloakLogout, getKeycloak } from "./auth";
+
+/* ── Components ── */
 import GanttBottomPanel from "./components/BottomBar/GanttBottomPanel";
 import GanttTopbar from "./components/TopBar/GanttTopbar";
 import FlightGantt from "./components/Gantt/FlightGantt";
@@ -12,47 +25,62 @@ import ProfileManager from "./components/Profiles/ProfileManager";
 import ExportModal from "./components/Export/ExportModal";
 import FlightBoard from "./components/FlightBoard/FlightBoard";
 
-/* Pages */
+/* ── Pages ── */
 import SchedulePage from "./components/pages/SchedulePage";
 import ReportsPage from "./components/pages/ReportsPage";
 import AdminPage from "./components/pages/AdminPage";
 import LoginPage from "./components/Auth/LoginPage";
 
-/* Data */
+/* ── Data ── */
 import { legs as defaultLegs, Leg } from "./data/flightsData";
 
-/* ── Role-based access control ──────────────────────────────── */
+/* ── Role-based access control ──
+ * Maps each role to the pages it can see.
+ * This is the frontend guard — the backend enforces RBAC via JWT roles.
+ */
 const ROLE_PAGES = {
   admin:       ["gantt", "schedule", "reports", "admin"],
   staff_ops:   ["gantt", "schedule", "reports"],
   chef_escale: ["schedule", "reports"],
+  aol_agent:   ["gantt", "schedule"],
 };
 
 const ROLE_DEFAULT_PAGE = {
   admin:       "gantt",
   staff_ops:   "gantt",
   chef_escale: "schedule",
+  aol_agent:   "gantt",
 };
 
-/* ─────────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════ */
 
-function App() {
-  /* Flight data state — can be replaced via CSV upload in Admin */
+function App({ keycloakFailed }) {
+  /* ── Flight data state (can be replaced via CSV upload in Admin) ── */
   const [legsData, setLegsData] = useState(defaultLegs);
 
-  /* Auth state */
-  const [currentUser, setCurrentUser] = useState(null);
+  /* ── Auth state ── */
+  const [currentUser, setCurrentUser] = useState(() => {
+    // If Keycloak initialized successfully, extract user from token
+    if (!keycloakFailed) {
+      const user = getUserInfo();
+      if (user) return user;
+    }
+    return null;
+  });
 
-  /* Layout state */
+  /* ── Layout state ── */
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentPage, setCurrentPage] = useState("gantt");
+  const [currentPage, setCurrentPage] = useState(() => {
+    const user = !keycloakFailed ? getUserInfo() : null;
+    return user ? (ROLE_DEFAULT_PAGE[user.role] ?? "gantt") : "gantt";
+  });
 
-  /* UI state */
+  /* ── UI state ── */
   const [selectedLeg, setSelectedLeg] = useState(null);
   const [isDark, setIsDark] = useState(true);
   const [utcMode, setUtcMode] = useState(true);
 
-  /* Sync theme */
+  /* Sync theme with document */
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, [isDark]);
@@ -63,7 +91,7 @@ function App() {
   const [viewMode, setViewMode] = useState("gantt");
   const importRef = useRef(null);
 
-  /* ── Quick CSV/Excel import from Gantt page ──────────────── */
+  /* ── Date/time normalization helpers (for CSV/Excel import) ── */
   function normalizeDate(val) {
     if (val == null || val === '') return null;
     if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) return val.trim();
@@ -97,6 +125,7 @@ function App() {
     return String(val).trim() || null;
   }
 
+  /* ── CSV/Excel import from Gantt page ── */
   function processImportRows(headerRow, dataRows) {
     const colIdx = {};
     headerRow.forEach((h, i) => { colIdx[String(h).trim().toUpperCase()] = i; });
@@ -167,7 +196,7 @@ function App() {
     e.target.value = '';
   }
 
-  /* Filter state — all dropdowns are string[], [] = show all */
+  /* ── Filter state — all dropdowns are string[], [] = show all ── */
   const [filters, setFilters] = useState({
     fDate:    [],
     fService: [],
@@ -179,7 +208,6 @@ function App() {
 
   function changeFilter(update) {
     setFilters(prev => ({ ...prev, ...update }));
-    // Clear bottom panel when filter changes
     setSelectedLeg(null);
   }
 
@@ -189,21 +217,28 @@ function App() {
     if (typeof profile.zoom === "number") setZoom(profile.zoom);
   }
 
-  /* ── Auth handlers ──────────────────────────────────────── */
+  /* ── Auth handlers ── */
   function handleLogin(user) {
+    // Used only in mock login fallback mode
     setCurrentUser(user);
     setCurrentPage(ROLE_DEFAULT_PAGE[user.role]);
     setSelectedLeg(null);
   }
 
   function handleLogout() {
+    // If Keycloak is active, use its logout (redirects to Keycloak)
+    if (!keycloakFailed && getKeycloak().authenticated) {
+      keycloakLogout();
+      return;
+    }
+    // Mock fallback logout
     setCurrentUser(null);
     setCurrentPage("gantt");
     setSelectedLeg(null);
     setSidebarOpen(false);
   }
 
-  /* Navigate between pages (close bottom panel on nav) */
+  /* ── Navigation with role guard ── */
   function handleNavigate(page) {
     if (!currentUser) return;
     const allowed = ROLE_PAGES[currentUser.role] ?? [];
@@ -212,13 +247,13 @@ function App() {
     setSelectedLeg(null);
   }
 
-  /* Guard: make sure currentPage is always allowed for this role */
+  /* Ensure currentPage is always valid for the user's role */
   const allowedPages = currentUser ? (ROLE_PAGES[currentUser.role] ?? []) : [];
   const safePage = allowedPages.includes(currentPage)
     ? currentPage
     : (ROLE_DEFAULT_PAGE[currentUser?.role] ?? "gantt");
 
-  /* ── Show login screen when not authenticated ─────────── */
+  /* ── Show login screen when not authenticated ── */
   if (!currentUser) {
     return <LoginPage onLogin={handleLogin} />;
   }
@@ -226,7 +261,7 @@ function App() {
   return (
     <div className="app-root">
 
-      {/* ── Side Menu ──────────────────────────────── */}
+      {/* ── Side Menu ── */}
       <SideMenu
         expanded={sidebarOpen}
         onToggle={() => setSidebarOpen(o => !o)}
@@ -238,7 +273,7 @@ function App() {
         onLogout={handleLogout}
       />
 
-      {/* ── Main Content ───────────────────────────── */}
+      {/* ── Main Content ── */}
       <div className={`app-main ${sidebarOpen ? "sidebar-open" : ""}`}>
 
         {/* Top Bar */}
@@ -256,11 +291,8 @@ function App() {
           {/* ── GANTT PAGE ── */}
           {safePage === "gantt" && (
             <div className="gantt-area">
-
-              {/* Hidden file input for CSV/Excel import */}
               <input ref={importRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={handleFileImport} />
 
-              {/* Filter bar */}
               <GanttFilterBar
                 filters={filters}
                 onChange={changeFilter}
@@ -276,30 +308,15 @@ function App() {
                 onViewChange={setViewMode}
               />
 
-              {/* Timeline or Board */}
               <div className="timeline-container">
                 {viewMode === "gantt" ? (
-                  <FlightGantt
-                    legs={legsData}
-                    filters={filters}
-                    onSelectLeg={setSelectedLeg}
-                    zoom={zoom}
-                  />
+                  <FlightGantt legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} zoom={zoom} />
                 ) : (
-                  <FlightBoard
-                    legs={legsData}
-                    filters={filters}
-                    onSelectLeg={setSelectedLeg}
-                  />
+                  <FlightBoard legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} />
                 )}
               </div>
 
-              {/* Bottom details panel */}
-              <GanttBottomPanel
-                leg={selectedLeg}
-                onClose={() => setSelectedLeg(null)}
-                isDark={isDark}
-              />
+              <GanttBottomPanel leg={selectedLeg} onClose={() => setSelectedLeg(null)} isDark={isDark} />
             </div>
           )}
 
@@ -311,11 +328,10 @@ function App() {
 
           {/* ── ADMIN PAGE ── */}
           {safePage === "admin" && <AdminPage isDark={isDark} onLegsImported={setLegsData} />}
-
         </div>
       </div>
 
-      {/* ── Profile Manager Modal ──────────────────── */}
+      {/* ── Profile Manager Modal ── */}
       <ProfileManager
         isOpen={showProfiles}
         onClose={() => setShowProfiles(false)}
@@ -323,16 +339,16 @@ function App() {
         utcMode={utcMode}
         zoom={zoom}
         onLoadProfile={handleLoadProfile}
+        userId={currentUser?.id}
       />
 
-      {/* ── Export Modal ───────────────────────────── */}
+      {/* ── Export Modal ── */}
       <ExportModal
         isOpen={showExport}
         onClose={() => setShowExport(false)}
         legs={legsData}
         filters={filters}
       />
-
     </div>
   );
 }

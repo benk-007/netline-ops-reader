@@ -1,15 +1,25 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import './AdminPage.css';
 import SearchableSelect from '../Filters/SearchableSelect';
 import { legs, Leg } from '../../data/flightsData';
+import { usersApi } from '../../api';
 
 /* ── Auth roles matching the app auth system ── */
 const APP_ROLES = [
-    { key: "admin",       label: "Administrateur",  color: "#fca5a5", bg: "rgba(200,16,46,0.12)" },
-    { key: "staff_ops",   label: "Staff Ops",       color: "#93c5fd", bg: "rgba(37,99,235,0.12)" },
-    { key: "chef_escale", label: "Chef d'Escale",   color: "#6ee7b7", bg: "rgba(5,150,105,0.12)" },
+    { key: "admin",       label: "Administrateur",  color: "#fca5a5", bg: "rgba(200,16,46,0.12)", backendRole: "ADMIN" },
+    { key: "staff_ops",   label: "Staff Ops",       color: "#93c5fd", bg: "rgba(37,99,235,0.12)", backendRole: "OPERATIONAL_STAFF" },
+    { key: "chef_escale", label: "Chef d'Escale",   color: "#6ee7b7", bg: "rgba(5,150,105,0.12)", backendRole: "STATION_MANAGER" },
+    { key: "aol_agent",   label: "Agent AOL",       color: "#c4b5fd", bg: "rgba(124,58,237,0.12)", backendRole: "AOL_AGENT" },
 ];
+
+function frontendRole(backendRole) {
+    return APP_ROLES.find(r => r.backendRole === backendRole)?.key || "staff_ops";
+}
+
+function backendRole(frontendKey) {
+    return APP_ROLES.find(r => r.key === frontendKey)?.backendRole || "OPERATIONAL_STAFF";
+}
 
 /* ── Airport list from real legs data ── */
 const ALL_AIRPORTS = [...new Set([
@@ -46,27 +56,48 @@ function roleInfo(roleKey) {
     return APP_ROLES.find(r => r.key === roleKey) || APP_ROLES[1];
 }
 
-/* ── Initial mock users ── */
-const INIT_USERS = [
-    { id: 1, name: "Ali Idrissi",   username: "ali.idrissi",  role: "admin",       airports: [],                  status: "Active"   },
-    { id: 2, name: "Sara Bouzidi",  username: "sara.b",       role: "staff_ops",   airports: [],                  status: "Active"   },
-    { id: 3, name: "Mehdi Alami",   username: "mehdi.a",      role: "chef_escale", airports: ["CMN", "RAK"],      status: "Inactive" },
-];
-
 /* ══════════════════════════════════════════════════════════ */
 
 export default function AdminPage({ onLegsImported }) {
     const [activeTab, setActiveTab] = useState('users');
-    const [users, setUsers] = useState(INIT_USERS);
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+
+    /* ── Fetch users from backend ── */
+    const fetchUsers = useCallback(async () => {
+        try {
+            setLoading(true);
+            const data = await usersApi.getAll();
+            setUsers(data.map(u => ({
+                id: u.id,
+                name: u.fullName,
+                username: u.matricule,
+                role: frontendRole(u.role),
+                airports: [],
+                status: u.isActivated ? 'Active' : 'Inactive',
+            })));
+            setError('');
+        } catch (err) {
+            setError('Erreur de chargement des utilisateurs');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
     /* ── New / Edit user form ── */
     const [showForm, setShowForm]       = useState(false);
     const [editingId, setEditingId]     = useState(null);
     const [formName, setFormName]       = useState('');
     const [formUsername, setFormUsername] = useState('');
+    const [formPassword, setFormPassword] = useState('');
     const [formRole, setFormRole]       = useState('staff_ops');
     const [formAirports, setFormAirports] = useState([]);
     const [formStatus, setFormStatus]   = useState('Active');
+    const [formSaving, setFormSaving]   = useState(false);
 
     /* ── CSV import (users) ── */
     const csvInputRef = useRef(null);
@@ -87,6 +118,7 @@ export default function AdminPage({ onLegsImported }) {
         setEditingId(null);
         setFormName('');
         setFormUsername('');
+        setFormPassword('');
         setFormRole('staff_ops');
         setFormAirports([]);
         setFormStatus('Active');
@@ -97,54 +129,96 @@ export default function AdminPage({ onLegsImported }) {
         setEditingId(user.id);
         setFormName(user.name);
         setFormUsername(user.username);
+        setFormPassword('');
         setFormRole(user.role);
         setFormAirports(user.airports || []);
         setFormStatus(user.status);
         setShowForm(true);
     }
 
-    function handleFormSubmit(e) {
+    async function handleFormSubmit(e) {
         e.preventDefault();
         if (!formName.trim()) return;
-        if (editingId !== null) {
-            setUsers(prev => prev.map(u => u.id === editingId
-                ? { ...u, name: formName, username: formUsername, role: formRole, airports: formAirports, status: formStatus }
-                : u
-            ));
-        } else {
-            setUsers(prev => [...prev, {
-                id: Date.now(),
-                name: formName,
-                username: formUsername || formName.toLowerCase().replace(/\s+/g, '.'),
-                role: formRole,
-                airports: formAirports,
-                status: formStatus,
-            }]);
+        setFormSaving(true);
+
+        try {
+            if (editingId !== null) {
+                const payload = {
+                    fullName: formName,
+                    matricule: formUsername,
+                    role: backendRole(formRole),
+                    isActivated: formStatus === 'Active',
+                };
+                if (formPassword.trim()) payload.password = formPassword;
+                await usersApi.update(editingId, payload);
+            } else {
+                await usersApi.create({
+                    fullName: formName,
+                    matricule: formUsername || formName.toLowerCase().replace(/\s+/g, '.'),
+                    password: formPassword || 'changeme',
+                    role: backendRole(formRole),
+                    isActivated: formStatus === 'Active',
+                });
+            }
+            setShowForm(false);
+            await fetchUsers();
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setFormSaving(false);
         }
-        setShowForm(false);
+    }
+
+    /* ── Revoke / Activate user (toggle isActivated) ── */
+    async function handleToggleActivation(user) {
+        try {
+            const newStatus = user.status === 'Active' ? false : true;
+            await usersApi.update(user.id, { isActivated: newStatus });
+            await fetchUsers();
+        } catch (err) {
+            setError(err.message);
+        }
+    }
+
+    /* ── Delete user ── */
+    async function handleDeleteUser(user) {
+        try {
+            await usersApi.delete(user.id);
+            await fetchUsers();
+        } catch (err) {
+            setError(err.message);
+        }
     }
 
     /* ── CSV import ── */
-    function handleCsvImport(e) {
+    async function handleCsvImport(e) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (ev) => {
+        reader.onload = async (ev) => {
             const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
             if (lines.length < 2) { setCsvFeedback('Fichier vide.'); return; }
             const [header, ...rows] = lines;
             const cols = header.toLowerCase().split(',').map(s => s.trim());
-            const idx = { name: cols.indexOf('name'), username: cols.indexOf('username'), role: cols.indexOf('role'), status: cols.indexOf('status') };
+            const idx = { name: cols.indexOf('name'), username: cols.indexOf('username'), role: cols.indexOf('role'), status: cols.indexOf('status'), password: cols.indexOf('password') };
             let imported = 0;
-            const newUsers = rows.map(row => {
+            for (const row of rows) {
                 const cells = row.split(',').map(s => s.trim());
                 const name = idx.name >= 0 ? cells[idx.name] : '';
-                if (!name) return null;
+                if (!name) continue;
                 const roleKey = APP_ROLES.find(r => r.label.toLowerCase() === (cells[idx.role] || '').toLowerCase())?.key || 'staff_ops';
-                imported++;
-                return { id: Date.now() + Math.random(), name, username: cells[idx.username] || name.toLowerCase().replace(/\s+/g, '.'), role: roleKey, airports: [], status: cells[idx.status] === 'Inactive' ? 'Inactive' : 'Active' };
-            }).filter(Boolean);
-            setUsers(prev => [...prev, ...newUsers]);
+                try {
+                    await usersApi.create({
+                        fullName: name,
+                        matricule: (idx.username >= 0 ? cells[idx.username] : '') || name.toLowerCase().replace(/\s+/g, '.'),
+                        password: (idx.password >= 0 ? cells[idx.password] : '') || 'changeme',
+                        role: backendRole(roleKey),
+                        isActivated: (idx.status >= 0 ? cells[idx.status] : '') !== 'Inactive',
+                    });
+                    imported++;
+                } catch { /* skip duplicates */ }
+            }
+            await fetchUsers();
             setCsvFeedback(`${imported} utilisateur${imported > 1 ? 's' : ''} importé${imported > 1 ? 's' : ''}`);
             setTimeout(() => setCsvFeedback(''), 3500);
         };
@@ -153,67 +227,45 @@ export default function AdminPage({ onLegsImported }) {
     }
 
     /* ── Helpers: normalize Excel date/time values ── */
-    let _normDateLogCount = 0;
     function normalizeDate(val) {
         if (val == null || val === '') return null;
-        // Already a YYYY-MM-DD string
         if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) return val.trim();
-        // Log non-trivial values (first 5 only to avoid flooding)
-        if (_normDateLogCount < 5) {
-            console.log('[normalizeDate] non-trivial input:', typeof val, JSON.stringify(val));
-            _normDateLogCount++;
-        }
-        // JS Date object (XLSX may return these)
         if (val instanceof Date) {
             const y = val.getFullYear();
             const m = String(val.getMonth() + 1).padStart(2, '0');
             const d = String(val.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
-        // Excel serial number (days since 1900-01-01, with the 1900 leap year bug)
         const num = Number(val);
         if (!isNaN(num) && num > 40000 && num < 60000) {
-            const epoch = new Date(1899, 11, 30); // Excel epoch adjusted
+            const epoch = new Date(1899, 11, 30);
             const date = new Date(epoch.getTime() + num * 86400000);
             const y = date.getFullYear();
             const m = String(date.getMonth() + 1).padStart(2, '0');
             const d = String(date.getDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
-        // Try parsing other common formats (DD/MM/YYYY, MM/DD/YYYY, etc.)
         let str = String(val).trim();
-        // Strip trailing time portion (e.g. "24/01/2026  08:15:00" → "24/01/2026")
         str = str.replace(/\s+\d{1,2}:\d{2}(:\d{2})?.*$/, '').trim();
         const slashParts = str.split(/[\/\-\.]/);
         if (slashParts.length === 3) {
             let [a, b, c] = slashParts;
-            // If first part is 4 digits, it's YYYY-MM-DD or YYYY/MM/DD
             if (a.length === 4) return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`;
-            // If last part is 4 digits, try DD/MM/YYYY
             if (c.length === 4) return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
         }
         return str || null;
     }
 
-    let _normTimeLogCount = 0;
     function normalizeTime(val) {
         if (val == null || val === '') return null;
-        // Already HH:MM format
         if (typeof val === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(val.trim())) {
             return val.trim().slice(0, 5).padStart(5, '0');
         }
-        // Log non-trivial values (first 5 only)
-        if (_normTimeLogCount < 5) {
-            console.log('[normalizeTime] non-trivial input:', typeof val, JSON.stringify(val));
-            _normTimeLogCount++;
-        }
-        // JS Date object (XLSX sometimes converts time cells to Date)
         if (val instanceof Date) {
             const h = String(val.getHours()).padStart(2, '0');
             const m = String(val.getMinutes()).padStart(2, '0');
             return `${h}:${m}`;
         }
-        // Excel time fraction (0.0 - 1.0 representing fraction of day)
         const num = Number(val);
         if (!isNaN(num) && num >= 0 && num < 1) {
             const totalMinutes = Math.round(num * 24 * 60);
@@ -221,7 +273,6 @@ export default function AdminPage({ onLegsImported }) {
             const m = String(totalMinutes % 60).padStart(2, '0');
             return `${h}:${m}`;
         }
-        // Small numbers that might be hours (e.g. Excel stored "8:30" as 0.354)
         if (!isNaN(num) && num >= 1 && num < 24) {
             const h = Math.floor(num);
             const m = Math.round((num - h) * 60);
@@ -319,27 +370,6 @@ export default function AdminPage({ onLegsImported }) {
             } catch { skipped++; }
         }
 
-        // ── DEBUG: log imported legs ──
-        console.group('[AdminPage] Import results');
-        console.log('Total created:', newLegs.length, '| Skipped:', skipped);
-        if (newLegs.length > 0) {
-            const s = newLegs[0];
-            console.log('Sample imported leg:', {
-                id: s.id, fn: s.fn, date: s.date, depUtc: s.depUtc, arrUtc: s.arrUtc,
-                reg: s.reg, dep: s.dep, arr: s.arr, service: s.service, subtype: s.subtype,
-                DAY_OF_ORIGIN: s.DAY_OF_ORIGIN, DEP_TIME_SCHED: s.DEP_TIME_SCHED,
-                ARR_TIME_SCHED: s.ARR_TIME_SCHED, AC_REGISTRATION: s.AC_REGISTRATION,
-            });
-            const allDates = [...new Set(newLegs.map(l => l.date))];
-            console.log('All unique dates:', allDates);
-            const missingFields = newLegs.filter(l => !l.date || !l.depUtc || !l.arrUtc || !l.reg);
-            if (missingFields.length > 0) {
-                console.warn('Legs with missing critical fields:', missingFields.length);
-                console.warn('First bad leg:', missingFields[0]);
-            }
-        }
-        console.groupEnd();
-
         if (newLegs.length === 0) {
             setLegCsvFeedback('Aucun leg valide trouvé dans le fichier.');
             setTimeout(() => setLegCsvFeedback(''), 4000);
@@ -359,7 +389,6 @@ export default function AdminPage({ onLegsImported }) {
         const ext = file.name.split('.').pop().toLowerCase();
 
         if (ext === 'xlsx' || ext === 'xls') {
-            // ── Excel path ──
             const reader = new FileReader();
             reader.onload = (ev) => {
                 try {
@@ -376,14 +405,12 @@ export default function AdminPage({ onLegsImported }) {
             };
             reader.readAsArrayBuffer(file);
         } else {
-            // ── CSV path with auto-delimiter detection ──
             const reader = new FileReader();
             reader.onload = (ev) => {
                 const text = ev.target.result;
                 const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
                 if (lines.length < 2) { setLegCsvFeedback('Fichier vide ou invalide.'); return; }
 
-                // Auto-detect delimiter from header line
                 const headerLine = lines[0];
                 const commas = (headerLine.match(/,/g) || []).length;
                 const semis  = (headerLine.match(/;/g) || []).length;
@@ -469,6 +496,7 @@ export default function AdminPage({ onLegsImported }) {
                             </div>
                             <div className="section-header-actions">
                                 {csvFeedback && <span className="csv-feedback">{csvFeedback}</span>}
+                                {error && <span className="csv-feedback" style={{color: '#ef4444'}}>{error}</span>}
                                 <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvImport} />
                                 <button className="btn-secondary" onClick={() => csvInputRef.current?.click()}>↑ Import CSV</button>
                                 <button className="btn-primary" onClick={openCreateForm}>+ Nouvel utilisateur</button>
@@ -489,8 +517,12 @@ export default function AdminPage({ onLegsImported }) {
                                         <input type="text" value={formName} onChange={e => setFormName(e.target.value)} placeholder="ex. Ahmed Bertal" required />
                                     </div>
                                     <div className="form-group">
-                                        <label>Identifiant</label>
+                                        <label>Matricule</label>
                                         <input type="text" value={formUsername} onChange={e => setFormUsername(e.target.value)} placeholder="ex. ahmed.bertal" />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Mot de passe {editingId !== null && <span style={{fontSize:11,opacity:0.6}}>(laisser vide = inchangé)</span>}</label>
+                                        <input type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} placeholder={editingId !== null ? '••••••••' : 'Mot de passe'} required={editingId === null} />
                                     </div>
                                     <div className="form-group">
                                         <label>Rôle</label>
@@ -527,9 +559,9 @@ export default function AdminPage({ onLegsImported }) {
                                     <button
                                         type="submit"
                                         className="btn-submit"
-                                        disabled={formRole === 'chef_escale' && formAirports.length === 0}
+                                        disabled={formSaving || (formRole === 'chef_escale' && formAirports.length === 0)}
                                     >
-                                        {editingId !== null ? 'Enregistrer' : 'Créer'}
+                                        {formSaving ? 'Enregistrement...' : editingId !== null ? 'Enregistrer' : 'Créer'}
                                     </button>
                                 </div>
                             </form>
@@ -537,6 +569,9 @@ export default function AdminPage({ onLegsImported }) {
 
                         {/* User table */}
                         <div className="admin-table-container">
+                            {loading ? (
+                                <div style={{textAlign: 'center', padding: 40, opacity: 0.6}}>Chargement...</div>
+                            ) : (
                             <table className="admin-table">
                                 <thead>
                                     <tr>
@@ -581,17 +616,23 @@ export default function AdminPage({ onLegsImported }) {
                                                 <td>
                                                     <div className="action-btns">
                                                         <button className="btn-text" onClick={() => openEditForm(u)}>Modifier</button>
-                                                        <button className="btn-text text-danger" onClick={() => setUsers(users.filter(usr => usr.id !== u.id))}>Révoquer</button>
+                                                        <button
+                                                            className={`btn-text ${u.status === 'Active' ? 'text-danger' : 'text-success'}`}
+                                                            onClick={() => handleToggleActivation(u)}
+                                                        >
+                                                            {u.status === 'Active' ? 'Révoquer' : 'Activer'}
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
                                         );
                                     })}
-                                    {users.length === 0 && (
+                                    {users.length === 0 && !loading && (
                                         <tr><td colSpan="5" className="text-center text-muted">Aucun utilisateur.</td></tr>
                                     )}
                                 </tbody>
                             </table>
+                            )}
                         </div>
                     </div>
                 )}

@@ -1,0 +1,32 @@
+# ══════════════════════════════════════════════════════════════
+# Netline Reader Backend — Application Configuration
+# ══════════════════════════════════════════════════════════════
+
+spring:
+  # ── PostgreSQL DataSource ──
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/netline_reader}
+    username: ${SPRING_DATASOURCE_USERNAME:netline}
+    password: ${SPRING_DATASOURCE_PASSWORD:netline_secret}
+    driver-class-name: org.postgresql.Driver
+
+  # ── JPA / Hibernate ──
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  # ── OAuth2 Resource Server — Keycloak JWT validation ──
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:9090/realms/netline-reader}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:9090/realms/netline-reader/protocol/openid-connect/certs}
+
+server:
+  port: 8080

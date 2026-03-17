@@ -1,0 +1,77 @@
+{
+  "realm": "netline-reader",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "roles": {
+    "realm": [
+      { "name": "admin",       "description": "Full admin access — user management, all pages" },
+      { "name": "staff_ops",   "description": "Operational staff — gantt, schedule, reports" },
+      { "name": "chef_escale", "description": "Station manager — schedule, reports (station-scoped)" },
+      { "name": "aol_agent",   "description": "AOL agent — limited operational view" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "netline-frontend",
+      "name": "Netline Reader Frontend (SPA)",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:5173/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5173",
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true
+    },
+    {
+      "clientId": "netline-backend",
+      "name": "Netline Reader Backend (Resource Server)",
+      "enabled": true,
+      "bearerOnly": true,
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@ram.ma",
+      "firstName": "Admin",
+      "lastName": "System",
+      "credentials": [
+        { "type": "password", "value": "admin123", "temporary": false }
+      ],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "ops",
+      "enabled": true,
+      "email": "ops@ram.ma",
+      "firstName": "Staff",
+      "lastName": "Ops",
+      "credentials": [
+        { "type": "password", "value": "ops123", "temporary": false }
+      ],
+      "realmRoles": ["staff_ops"]
+    },
+    {
+      "username": "chef",
+      "enabled": true,
+      "email": "chef@ram.ma",
+      "firstName": "Chef",
+      "lastName": "Escale",
+      "credentials": [
+        { "type": "password", "value": "chef123", "temporary": false }
+      ],
+      "realmRoles": ["chef_escale"]
+    }
+  ]
+}
