@@ -2,6 +2,7 @@ package com.ram.netline_reader_backend.service.impl;
 
 import com.ram.netline_reader_backend.dto.UserRequestDTO;
 import com.ram.netline_reader_backend.dto.UserResponseDTO;
+import com.ram.netline_reader_backend.entity.Role;
 import com.ram.netline_reader_backend.entity.User;
 import com.ram.netline_reader_backend.exception.DuplicateResourceException;
 import com.ram.netline_reader_backend.exception.ResourceNotFoundException;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -98,5 +100,57 @@ public class UserServiceImpl implements UserService {
             throw new ResourceNotFoundException("User not found with id: " + id);
         }
         userRepository.deleteById(id);
+    }
+
+    @Override
+    public UserResponseDTO resolveFromKeycloak(String keycloakId, Map<String, Object> claims) {
+        User user = userRepository.findByKeycloakId(keycloakId)
+                .orElseGet(() -> autoProvision(keycloakId, claims));
+        return userMapper.toResponseDTO(user);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public User getUserByKeycloakId(String keycloakId) {
+        return userRepository.findByKeycloakId(keycloakId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "No user linked to Keycloak ID: " + keycloakId));
+    }
+
+    /**
+     * Auto-provision a DB user from Keycloak JWT claims on first login.
+     * Extracts preferred_username, name, and realm roles from the token.
+     */
+    private User autoProvision(String keycloakId, Map<String, Object> claims) {
+        String username = (String) claims.getOrDefault("preferred_username", "user");
+        String givenName = (String) claims.getOrDefault("given_name", "");
+        String familyName = (String) claims.getOrDefault("family_name", "");
+        String fullName = (givenName + " " + familyName).trim();
+        if (fullName.isEmpty()) fullName = username;
+
+        // Map Keycloak realm roles to the app Role enum
+        Role role = Role.OPERATIONAL_STAFF; // safe default
+        Object realmAccess = claims.get("realm_access");
+        if (realmAccess instanceof Map) {
+            @SuppressWarnings("unchecked")
+            List<String> roles = (List<String>) ((Map<String, Object>) realmAccess).get("roles");
+            if (roles != null) {
+                if (roles.contains("admin"))            role = Role.ADMIN;
+                else if (roles.contains("staff_ops"))   role = Role.OPERATIONAL_STAFF;
+                else if (roles.contains("chef_escale")) role = Role.STATION_MANAGER;
+                else if (roles.contains("aol_agent"))   role = Role.AOL_AGENT;
+            }
+        }
+
+        User user = User.builder()
+                .keycloakId(keycloakId)
+                .matricule(username)       // use Keycloak username as initial matricule
+                .fullName(fullName)
+                .password("KEYCLOAK_MANAGED") // no local password needed
+                .role(role)
+                .isActivated(true)
+                .build();
+
+        return userRepository.save(user);
     }
 }

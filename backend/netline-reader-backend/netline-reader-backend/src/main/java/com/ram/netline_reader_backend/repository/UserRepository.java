@@ -18,4 +18,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     /** Check if a user with the given matricule already exists. */
     boolean existsByMatricule(String matricule);
+
+    /** Find a user by their Keycloak subject UUID. */
+    Optional<User> findByKeycloakId(String keycloakId);
 }

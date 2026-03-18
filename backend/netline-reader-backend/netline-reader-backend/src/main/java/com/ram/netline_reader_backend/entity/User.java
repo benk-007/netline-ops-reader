@@ -30,6 +30,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Keycloak subject UUID — the stable bridge between Keycloak identity and this DB record. */
+    @Column(unique = true)
+    private String keycloakId;
+
     /** Unique employee identifier (matricule). */
     @Column(nullable = false, unique = true)
     private String matricule;

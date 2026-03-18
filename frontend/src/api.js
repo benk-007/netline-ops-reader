@@ -92,34 +92,44 @@ export const usersApi = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Saved Filters API  (any authenticated user)
+// Current User API  (identity resolution — Keycloak sub → DB user)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Resolves the authenticated Keycloak user to their DB record.
+ * Auto-provisions on first login.
+ */
+export const meApi = {
+  /** Get the current user's DB profile (resolved from JWT sub). */
+  get: () => request("/me"),
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Saved Filters API  (any authenticated user — scoped to JWT identity)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * CRUD operations for saved filter profiles.
- * Any authenticated user can manage their own profiles.
- * Backend requires a valid JWT (SecurityConfig: /api/saved-filters/** → authenticated).
+ * All endpoints are scoped to the authenticated user via JWT.
+ * No userId is needed — the backend extracts identity from the token.
  */
 export const filtersApi = {
-  /**
-   * Fetch all saved filter profiles for a given user.
-   * @param {number|string} userId - Database ID of the owner
-   */
-  getByUser: (userId)     => request(`/saved-filters/user/${userId}`),
+  /** Fetch all saved filter profiles for the authenticated user. */
+  getMine: () => request("/saved-filters/me"),
 
   /**
    * Create a new saved filter profile.
-   * @param {{ name: string, userId: number, depAirport?: string[], arrAirport?: string[], serviceType?: string[], aircraftType?: string[], flightNumber?: string[] }} data
+   * @param {{ name: string, depAirport?: string[], arrAirport?: string[], serviceType?: string[], aircraftType?: string[], flightNumber?: string[] }} data
    */
-  create:    (data)       => request("/saved-filters", { method: "POST", body: JSON.stringify(data) }),
+  create: (data) => request("/saved-filters", { method: "POST", body: JSON.stringify(data) }),
 
   /**
    * Update an existing saved filter profile.
    * @param {number} id
    * @param {object} data - Same shape as create payload
    */
-  update:    (id, data)   => request(`/saved-filters/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  update: (id, data) => request(`/saved-filters/${id}`, { method: "PUT", body: JSON.stringify(data) }),
 
   /** Delete a saved filter profile by ID. */
-  delete:    (id)         => request(`/saved-filters/${id}`, { method: "DELETE" }),
+  delete: (id) => request(`/saved-filters/${id}`, { method: "DELETE" }),
 };

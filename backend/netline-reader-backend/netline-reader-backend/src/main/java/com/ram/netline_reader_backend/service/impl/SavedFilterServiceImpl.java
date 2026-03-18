@@ -7,9 +7,10 @@ import com.ram.netline_reader_backend.entity.User;
 import com.ram.netline_reader_backend.exception.ResourceNotFoundException;
 import com.ram.netline_reader_backend.mapper.SavedFilterMapper;
 import com.ram.netline_reader_backend.repository.SavedFilterRepository;
-import com.ram.netline_reader_backend.repository.UserRepository;
 import com.ram.netline_reader_backend.service.SavedFilterService;
+import com.ram.netline_reader_backend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +19,8 @@ import java.util.stream.Collectors;
 
 /**
  * Implementation of {@link SavedFilterService}.
- * Validates user existence before creating filters to prevent orphan records.
+ * Every operation resolves the authenticated user via keycloakId and
+ * enforces that users can only access their own filters.
  */
 @Service
 @RequiredArgsConstructor
@@ -26,16 +28,12 @@ import java.util.stream.Collectors;
 public class SavedFilterServiceImpl implements SavedFilterService {
 
     private final SavedFilterRepository savedFilterRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
     private final SavedFilterMapper savedFilterMapper;
 
     @Override
-    public SavedFilterResponseDTO createSavedFilter(SavedFilterRequestDTO request) {
-        // Ensure the owning user exists before creating the filter
-        User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                    "User not found with id: " + request.getUserId()));
-
+    public SavedFilterResponseDTO createSavedFilter(String keycloakId, SavedFilterRequestDTO request) {
+        User user = userService.getUserByKeycloakId(keycloakId);
         SavedFilter filter = savedFilterMapper.toEntity(request, user);
         SavedFilter saved = savedFilterRepository.save(filter);
         return savedFilterMapper.toResponseDTO(saved);
@@ -43,33 +41,43 @@ public class SavedFilterServiceImpl implements SavedFilterService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<SavedFilterResponseDTO> getSavedFiltersByUserId(Long userId) {
-        if (!userRepository.existsById(userId)) {
-            throw new ResourceNotFoundException("User not found with id: " + userId);
-        }
-        return savedFilterRepository.findByUserId(userId).stream()
+    public List<SavedFilterResponseDTO> getSavedFiltersForKeycloakUser(String keycloakId) {
+        User user = userService.getUserByKeycloakId(keycloakId);
+        return savedFilterRepository.findByUserId(user.getId()).stream()
                 .map(savedFilterMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @Override
-    public SavedFilterResponseDTO updateSavedFilter(Long id, SavedFilterRequestDTO request) {
+    public SavedFilterResponseDTO updateSavedFilter(String keycloakId, Long id, SavedFilterRequestDTO request) {
+        User user = userService.getUserByKeycloakId(keycloakId);
         SavedFilter filter = savedFilterRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                     "Saved filter not found with id: " + id));
 
-        // Rebuild the entity with updated values, keeping the same user
-        SavedFilter updatedFilter = savedFilterMapper.toEntity(request, filter.getUser());
+        // Ownership check
+        if (!filter.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("You do not own this filter");
+        }
+
+        SavedFilter updatedFilter = savedFilterMapper.toEntity(request, user);
         updatedFilter.setId(id);
         SavedFilter saved = savedFilterRepository.save(updatedFilter);
         return savedFilterMapper.toResponseDTO(saved);
     }
 
     @Override
-    public void deleteSavedFilter(Long id) {
-        if (!savedFilterRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Saved filter not found with id: " + id);
+    public void deleteSavedFilter(String keycloakId, Long id) {
+        User user = userService.getUserByKeycloakId(keycloakId);
+        SavedFilter filter = savedFilterRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                    "Saved filter not found with id: " + id));
+
+        // Ownership check
+        if (!filter.getUser().getId().equals(user.getId())) {
+            throw new AccessDeniedException("You do not own this filter");
         }
+
         savedFilterRepository.deleteById(id);
     }
 }

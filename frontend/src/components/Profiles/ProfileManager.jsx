@@ -30,18 +30,20 @@ function generateId() {
     return `profile_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export default function ProfileManager({ isOpen, onClose, currentFilters, utcMode, zoom, onLoadProfile, userId }) {
+export default function ProfileManager({ isOpen, onClose, currentFilters, utcMode, zoom, onLoadProfile }) {
     const [profiles, setProfiles] = useState(loadLocalProfiles);
     const [newName, setNewName] = useState("");
     const [activeTab, setActiveTab] = useState("load");
     const [saved, setSaved] = useState(false);
     const [profileFilters, setProfileFilters] = useState({ ...currentFilters });
 
-    /* ── Load profiles from backend when user is logged in ── */
+    /* ── Edit mode state ── */
+    const [editingProfile, setEditingProfile] = useState(null); // profile being edited (null = create mode)
+
+    /* ── Load profiles from backend (identity resolved from JWT) ── */
     const fetchProfiles = useCallback(async () => {
-        if (!userId) return;
         try {
-            const data = await filtersApi.getByUser(userId);
+            const data = await filtersApi.getMine();
             const backendProfiles = data.map(f => ({
                 id: f.id,
                 backendId: f.id,
@@ -62,7 +64,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
         } catch {
             setProfiles(loadLocalProfiles());
         }
-    }, [userId]);
+    }, []);
 
     useEffect(() => {
         if (isOpen) {
@@ -70,11 +72,31 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
             setNewName("");
             setSaved(false);
             setProfileFilters({ ...currentFilters });
+            setEditingProfile(null);
         }
     }, [isOpen, currentFilters, fetchProfiles]);
 
     if (!isOpen) return null;
 
+    /* ── Enter edit mode for an existing profile ── */
+    function handleEdit(profile) {
+        setEditingProfile(profile);
+        setNewName(profile.name);
+        setProfileFilters({ ...profile.filters });
+        setSaved(false);
+        setActiveTab("save");
+    }
+
+    /* ── Cancel editing and go back to list ── */
+    function handleCancelEdit() {
+        setEditingProfile(null);
+        setNewName("");
+        setProfileFilters({ ...currentFilters });
+        setSaved(false);
+        setActiveTab("load");
+    }
+
+    /* ── Save (create new) ── */
     async function handleSave() {
         if (!newName.trim()) return;
 
@@ -87,23 +109,20 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
             savedAt: new Date().toISOString(),
         };
 
-        // Save to backend if userId is available
-        if (userId) {
-            try {
-                const created = await filtersApi.create({
-                    name: newName.trim(),
-                    userId,
-                    depAirport: profileFilters.fDep || [],
-                    arrAirport: profileFilters.fArr || [],
-                    serviceType: profileFilters.fService || [],
-                    aircraftType: profileFilters.fSubtype || [],
-                    flightNumber: profileFilters.fFlight ? [profileFilters.fFlight] : [],
-                });
-                profile.backendId = created.id;
-                profile.id = created.id;
-            } catch {
-                // Fall back to local storage
-            }
+        // Save to backend (identity resolved from JWT)
+        try {
+            const created = await filtersApi.create({
+                name: newName.trim(),
+                depAirport: profileFilters.fDep || [],
+                arrAirport: profileFilters.fArr || [],
+                serviceType: profileFilters.fService || [],
+                aircraftType: profileFilters.fSubtype || [],
+                flightNumber: profileFilters.fFlight ? [profileFilters.fFlight] : [],
+            });
+            profile.backendId = created.id;
+            profile.id = created.id;
+        } catch {
+            // Fall back to local storage
         }
 
         const updated = [...profiles, profile];
@@ -112,6 +131,49 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
         setNewName("");
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
+    }
+
+    /* ── Update existing profile ── */
+    async function handleUpdate() {
+        if (!newName.trim() || !editingProfile) return;
+
+        const payload = {
+            name: newName.trim(),
+            depAirport: profileFilters.fDep || [],
+            arrAirport: profileFilters.fArr || [],
+            serviceType: profileFilters.fService || [],
+            aircraftType: profileFilters.fSubtype || [],
+            flightNumber: profileFilters.fFlight ? [profileFilters.fFlight] : [],
+        };
+
+        // Update on backend if it's a backend profile
+        if (editingProfile.backendId) {
+            try {
+                await filtersApi.update(editingProfile.backendId, payload);
+            } catch { /* fallback to local */ }
+        }
+
+        // Update local state
+        const updatedProfiles = profiles.map(p => {
+            if (p.id === editingProfile.id) {
+                return {
+                    ...p,
+                    name: newName.trim(),
+                    filters: { ...profileFilters },
+                    savedAt: new Date().toISOString(),
+                };
+            }
+            return p;
+        });
+
+        setProfiles(updatedProfiles);
+        saveLocalProfiles(updatedProfiles);
+        setSaved(true);
+        setTimeout(() => {
+            setSaved(false);
+            setEditingProfile(null);
+            setActiveTab("load");
+        }, 1200);
     }
 
     async function handleDelete(id) {
@@ -125,12 +187,20 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
         const updated = profiles.filter(p => p.id !== id);
         setProfiles(updated);
         saveLocalProfiles(updated);
+        // If we were editing this profile, cancel edit
+        if (editingProfile?.id === id) {
+            setEditingProfile(null);
+            setNewName("");
+            setProfileFilters({ ...currentFilters });
+        }
     }
 
     function handleLoad(profile) {
         onLoadProfile(profile);
         onClose();
     }
+
+    const isEditing = editingProfile !== null;
 
     return (
         <div className="pm-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -155,11 +225,11 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
 
                 {/* Tabs */}
                 <div className="pm-tabs">
-                    <button className={`pm-tab ${activeTab === "load" ? "active" : ""}`} onClick={() => setActiveTab("load")}>
+                    <button className={`pm-tab ${activeTab === "load" ? "active" : ""}`} onClick={() => { setActiveTab("load"); setEditingProfile(null); }}>
                         Charger un profil
                     </button>
-                    <button className={`pm-tab ${activeTab === "save" ? "active" : ""}`} onClick={() => setActiveTab("save")}>
-                        Sauvegarder
+                    <button className={`pm-tab ${activeTab === "save" ? "active" : ""}`} onClick={() => { setActiveTab("save"); if (!isEditing) { setNewName(""); setProfileFilters({ ...currentFilters }); } }}>
+                        {isEditing ? "Modifier" : "Sauvegarder"}
                     </button>
                 </div>
 
@@ -202,11 +272,19 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                                 Charger
                                             </button>
                                             {profile.id !== "default" && (
-                                                <button className="pm-delete-btn" onClick={() => handleDelete(profile.id)} aria-label="Supprimer">
-                                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                        <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" />
-                                                    </svg>
-                                                </button>
+                                                <>
+                                                    <button className="pm-edit-btn" onClick={() => handleEdit(profile)} aria-label="Modifier">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                                        </svg>
+                                                    </button>
+                                                    <button className="pm-delete-btn" onClick={() => handleDelete(profile.id)} aria-label="Supprimer">
+                                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                            <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" />
+                                                        </svg>
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -216,10 +294,19 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                     </div>
                 )}
 
-                {/* Tab: Save */}
+                {/* Tab: Save / Edit */}
                 {activeTab === "save" && (
                     <div className="pm-body">
                         <div className="pm-save-section">
+
+                            {/* Edit mode banner */}
+                            {isEditing && (
+                                <div className="pm-edit-banner">
+                                    <span>Modification de : <strong>{editingProfile.name}</strong></span>
+                                    <button className="pm-edit-cancel" onClick={handleCancelEdit}>Annuler</button>
+                                </div>
+                            )}
+
                             <div className="pm-section-label">Nom du profil</div>
                             <div className="pm-save-input-row">
                                 <input
@@ -228,13 +315,17 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                     placeholder="ex: Vue CDG matin..."
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
-                                    onKeyDown={e => e.key === "Enter" && handleSave()}
+                                    onKeyDown={e => e.key === "Enter" && (isEditing ? handleUpdate() : handleSave())}
                                     maxLength={40}
                                 />
-                                <button className="pm-save-btn" onClick={handleSave} disabled={!newName.trim()}>
+                                <button
+                                    className={`pm-save-btn ${isEditing ? "pm-update-btn" : ""}`}
+                                    onClick={isEditing ? handleUpdate : handleSave}
+                                    disabled={!newName.trim()}
+                                >
                                     {saved ? (
-                                        <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> Sauvegardé</>
-                                    ) : "Sauvegarder"}
+                                        <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> {isEditing ? "Mis à jour" : "Sauvegardé"}</>
+                                    ) : (isEditing ? "Mettre à jour" : "Sauvegarder")}
                                 </button>
                             </div>
 

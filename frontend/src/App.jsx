@@ -14,6 +14,7 @@ import * as XLSX from "xlsx";
 
 /* ── Auth ── */
 import { getUserInfo, logout as keycloakLogout, getKeycloak } from "./auth";
+import { meApi } from "./api";
 
 /* ── Components ── */
 import GanttBottomPanel from "./components/BottomBar/GanttBottomPanel";
@@ -42,14 +43,14 @@ const ROLE_PAGES = {
   admin:       ["gantt", "schedule", "reports", "admin"],
   staff_ops:   ["gantt", "schedule", "reports"],
   chef_escale: ["schedule", "reports"],
-  aol_agent:   ["gantt", "schedule"],
+  aol_agent:   ["reports"],
 };
 
 const ROLE_DEFAULT_PAGE = {
   admin:       "gantt",
   staff_ops:   "gantt",
   chef_escale: "schedule",
-  aol_agent:   "gantt",
+  aol_agent:   "reports",
 };
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -84,6 +85,13 @@ function App({ keycloakFailed }) {
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, [isDark]);
+
+  /* Auto-provision DB user on first Keycloak login */
+  useEffect(() => {
+    if (currentUser && !keycloakFailed) {
+      meApi.get().catch(() => {}); // fire-and-forget — provisions the DB record
+    }
+  }, [currentUser, keycloakFailed]);
 
   const [zoom, setZoom] = useState(1);
   const [showProfiles, setShowProfiles] = useState(false);
@@ -339,7 +347,6 @@ function App({ keycloakFailed }) {
         utcMode={utcMode}
         zoom={zoom}
         onLoadProfile={handleLoadProfile}
-        userId={currentUser?.id}
       />
 
       {/* ── Export Modal ── */}

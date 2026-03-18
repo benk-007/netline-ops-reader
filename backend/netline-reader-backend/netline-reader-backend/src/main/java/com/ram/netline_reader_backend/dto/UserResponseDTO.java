@@ -18,6 +18,7 @@ import java.util.List;
 public class UserResponseDTO {
 
     private Long id;
+    private String keycloakId;
     private String matricule;
     private String fullName;
     private Role role;

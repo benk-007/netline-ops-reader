@@ -25,6 +25,7 @@ public class UserMapper {
     public UserResponseDTO toResponseDTO(User user) {
         return UserResponseDTO.builder()
                 .id(user.getId())
+                .keycloakId(user.getKeycloakId())
                 .matricule(user.getMatricule())
                 .fullName(user.getFullName())
                 .role(user.getRole())

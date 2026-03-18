@@ -216,6 +216,25 @@
     color: #fff;
 }
 
+.pm-edit-btn {
+    background: var(--filter-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 7px;
+    width: 28px;
+    height: 28px;
+    color: var(--color-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.pm-edit-btn:hover {
+    background: rgba(59, 130, 246, .18);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, .3);
+}
+
 .pm-delete-btn {
     background: var(--filter-bg);
     border: 1px solid var(--color-border);
@@ -286,6 +305,52 @@
 .pm-save-btn:hover {
     background: rgba(200, 16, 46, .35);
     color: #fff;
+}
+
+/* ───────────────── EDIT MODE ───────────────── */
+
+.pm-edit-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(59, 130, 246, .1);
+    border: 1px solid rgba(59, 130, 246, .25);
+    border-radius: 9px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #93c5fd;
+}
+
+.pm-edit-banner strong {
+    color: #60a5fa;
+}
+
+.pm-edit-cancel {
+    background: transparent;
+    border: 1px solid rgba(59, 130, 246, .3);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #93c5fd;
+    cursor: pointer;
+    transition: all .15s;
+}
+
+.pm-edit-cancel:hover {
+    background: rgba(59, 130, 246, .2);
+    color: #fff;
+}
+
+.pm-update-btn {
+    background: rgba(59, 130, 246, .18) !important;
+    border-color: rgba(59, 130, 246, .4) !important;
+    color: #93c5fd !important;
+}
+
+.pm-update-btn:hover {
+    background: rgba(59, 130, 246, .35) !important;
+    color: #fff !important;
 }
 
 /* ───────────────── FILTER EDITOR ───────────────── */

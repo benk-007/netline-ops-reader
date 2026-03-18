@@ -107,7 +107,11 @@ public class SecurityConfig {
                 // UserController provides a second enforcement layer.
                 .requestMatchers("/api/users/**").hasRole("admin")
 
+                // Current user identity resolution — any authenticated user.
+                .requestMatchers("/api/me").authenticated()
+
                 // Saved filter endpoints — any authenticated user.
+                // Ownership is enforced in the service layer via JWT sub.
                 .requestMatchers("/api/saved-filters/**").authenticated()
 
                 // All other API endpoints require authentication.

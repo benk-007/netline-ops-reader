@@ -5,12 +5,14 @@ const ROLE_PAGES = {
   admin:       ["gantt", "schedule", "reports", "admin"],
   staff_ops:   ["gantt", "schedule", "reports"],
   chef_escale: ["schedule", "reports"],
+  aol_agent:   ["reports"],
 };
 
 const ROLE_LABELS = {
   admin:       "Administrateur",
   staff_ops:   "Staff Ops",
   chef_escale: "Chef d'Escale",
+  aol_agent:   "Agent AOL",
 };
 
 /* ── Icons as inline SVGs to avoid icon library dependency ── */

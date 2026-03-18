@@ -1,7 +1,6 @@
 package com.ram.netline_reader_backend.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 import java.util.List;
@@ -19,9 +18,6 @@ public class SavedFilterRequestDTO {
 
     @NotBlank(message = "Filter name is required")
     private String name;
-
-    @NotNull(message = "User ID is required")
-    private Long userId;
 
     /** Departure airport IATA codes (optional). */
     private List<String> depAirport;

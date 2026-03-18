@@ -2,8 +2,10 @@ package com.ram.netline_reader_backend.service;
 
 import com.ram.netline_reader_backend.dto.UserRequestDTO;
 import com.ram.netline_reader_backend.dto.UserResponseDTO;
+import com.ram.netline_reader_backend.entity.User;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Service contract for user management operations.
@@ -25,4 +27,18 @@ public interface UserService {
 
     /** Permanently delete a user and their saved filters. */
     void deleteUser(Long id);
+
+    /**
+     * Resolve a Keycloak user to their DB record.
+     * If no user exists for this keycloakId (sub), auto-provision one.
+     *
+     * @param keycloakId the JWT "sub" claim (stable UUID)
+     * @param claims     the full JWT claims (for extracting name, username, roles)
+     */
+    UserResponseDTO resolveFromKeycloak(String keycloakId, Map<String, Object> claims);
+
+    /**
+     * Get the User entity for the given keycloakId (used internally by filter service).
+     */
+    User getUserByKeycloakId(String keycloakId);
 }
