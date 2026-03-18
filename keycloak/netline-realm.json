@@ -71,6 +71,7 @@
       ],
       "realmRoles": ["admin"]
     },
+
     {
       "username":  "ops",
       "enabled":   true,
