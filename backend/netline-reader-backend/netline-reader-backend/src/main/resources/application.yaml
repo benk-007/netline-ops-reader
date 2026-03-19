@@ -71,3 +71,15 @@ app:
     # Read by SecurityConfig.corsConfigurationSource().
     # Overridden by CORS_ALLOWED_ORIGINS in docker-compose.yml.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+  # ── Keycloak Admin API ─────────────────────────────────────
+  # Used by the backend to create/update/delete users in Keycloak
+  # when an admin manages users from the application interface.
+  keycloak:
+    server-url:    ${KEYCLOAK_ADMIN_URL:http://localhost:9090}
+    realm:         ${KEYCLOAK_REALM:netline-reader}
+    client-id:     ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
+    client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
+    # Service account credentials (a Keycloak user with the "manage-users" realm role)
+    admin-username: ${KEYCLOAK_ADMIN_USERNAME:admin}
+    admin-password: ${KEYCLOAK_ADMIN_PASSWORD:admin}

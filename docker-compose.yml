@@ -88,6 +88,13 @@ services:
       # Internal Docker hostname used by the backend to fetch JWKS public keys.
       KEYCLOAK_JWK_SET_URI: http://keycloak:9090/realms/netline-reader/protocol/openid-connect/certs
 
+      # ── Keycloak Admin API (used to create/update/delete users in Keycloak) ──
+      KEYCLOAK_ADMIN_URL:           http://keycloak:9090
+      KEYCLOAK_REALM:               netline-reader
+      KEYCLOAK_ADMIN_CLIENT_ID:     admin-cli
+      KEYCLOAK_ADMIN_USERNAME:      admin
+      KEYCLOAK_ADMIN_PASSWORD:      admin
+
       # ── CORS ──
       CORS_ALLOWED_ORIGINS: http://localhost:5173,http://localhost:3000
 

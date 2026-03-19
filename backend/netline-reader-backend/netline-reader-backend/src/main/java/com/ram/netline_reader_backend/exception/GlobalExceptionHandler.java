@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -56,6 +57,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /** 409 / 502 — Keycloak API errors (e.g. duplicate username). */
+    @ExceptionHandler(HttpClientErrorException.class)
+    public ResponseEntity<Map<String, Object>> handleKeycloakError(HttpClientErrorException ex) {
+        HttpStatus status = (HttpStatus) ex.getStatusCode();
+        String message = "Keycloak error: " + ex.getResponseBodyAsString();
+        if (status == HttpStatus.CONFLICT) {
+            return buildResponse(HttpStatus.CONFLICT, "User already exists in Keycloak");
+        }
+        return buildResponse(HttpStatus.BAD_GATEWAY, message);
+    }
+
+    /** 502 — generic runtime errors from Keycloak communication. */
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
+        if (ex.getMessage() != null && ex.getMessage().contains("Keycloak")) {
+            return buildResponse(HttpStatus.BAD_GATEWAY, ex.getMessage());
+        }
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
     /** Helper — builds a consistent error response body. */

@@ -5,25 +5,32 @@ import { SERVICE_COLORS, SUBTYPE_OPTIONS } from "../../constants/ganttConstants"
 import { legs, dates } from "../../data/flightsData";
 import SearchableSelect from "../Filters/SearchableSelect";
 import { filtersApi } from "../../api";
+import { getUserInfo } from "../../auth";
 
-const STORAGE_KEY = "ram_gantt_profiles";
+const STORAGE_KEY_PREFIX = "ram_gantt_profiles_";
 const allDeps     = ["Tous", ...[...new Set(legs.map(l => l.dep))].sort()];
 const allArrs     = ["Tous", ...[...new Set(legs.map(l => l.arr))].sort()];
 const allServices = ["Tous", ...Object.keys(SERVICE_COLORS)];
 const allDates    = ["Tous", ...dates];
 const allSubtypes = ["Tous", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types")];
 
+/* ── User-scoped localStorage key ── */
+function storageKey() {
+    const user = getUserInfo();
+    return STORAGE_KEY_PREFIX + (user?.id || "anonymous");
+}
+
 /* ── Local fallback if backend is unavailable ── */
 function loadLocalProfiles() {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(storageKey());
         if (raw) return JSON.parse(raw);
     } catch (_) { }
     return [{ ...DEFAULT_PROFILE }];
 }
 
 function saveLocalProfiles(profiles) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(profiles));
+    localStorage.setItem(storageKey(), JSON.stringify(profiles));
 }
 
 function generateId() {
