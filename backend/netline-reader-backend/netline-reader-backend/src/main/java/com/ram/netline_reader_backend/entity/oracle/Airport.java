@@ -1,0 +1,60 @@
+package com.ram.netline_reader_backend.entity.oracle;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+/**
+ * Airport reference data — used for departure and arrival lookups.
+ *
+ * ┌─────────────────────────────────────────────────────────────────────┐
+ * │  DATA SOURCE: Oracle materialized view — READ-ONLY                 │
+ * └─────────────────────────────────────────────────────────────────────┘
+ *
+ * The primary key is the 3-letter IATA code (e.g. "CMN" for Casablanca,
+ * "CDG" for Paris Charles de Gaulle, "JFK" for New York).
+ *
+ * Relationship with Leg:
+ *   - A leg has one departure airport and one arrival airport.
+ *   - An airport can be the departure or arrival for many legs.
+ *
+ * The actualDepStation / actualArrStation fields capture the station
+ * as reported by operations (may differ from scheduled if diverted).
+ */
+@Entity
+@Table(name = "MV_AIRPORT")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Airport {
+
+    /** 3-letter IATA airport code — natural primary key. */
+    @Id
+    @Column(name = "IATA_CODE")
+    private String iataCode;
+
+    /** Full airport name (e.g. "Mohammed V International Airport"). */
+    @Column(name = "FULL_NAME")
+    private String fullName;
+
+    /** IANA time zone identifier (e.g. "Africa/Casablanca", "Europe/Paris"). */
+    @Column(name = "TIME_ZONE")
+    private String timeZone;
+
+    /** Geographic latitude in decimal degrees. */
+    @Column(name = "LATITUDE")
+    private Double latitude;
+
+    /** Geographic longitude in decimal degrees. */
+    @Column(name = "LONGITUDE")
+    private Double longitude;
+
+    /** Actual departure station code as reported by operations. */
+    @Column(name = "ACTUAL_DEP_STATION")
+    private String actualDepStation;
+
+    /** Actual arrival station code as reported by operations. */
+    @Column(name = "ACTUAL_ARR_STATION")
+    private String actualArrStation;
+}

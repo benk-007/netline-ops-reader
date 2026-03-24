@@ -1,85 +1,77 @@
 # ══════════════════════════════════════════════════════════════
 # Netline Reader Backend — Application Configuration
 #
-# All sensitive values are driven by environment variables so
-# the same image works in any environment without rebuilding.
+# ┌─────────────────────────────────────────────────────────────┐
+# │  MULTI-DATABASE ARCHITECTURE                                │
+# │                                                              │
+# │  1. PostgreSQL (primary) — users, saved filters (read/write)│
+# │  2. Oracle (secondary)   — leg materialized views (read-only)│
+# │                                                              │
+# │  Both datasources are configured manually in the config/    │
+# │  package (PostgresDataSourceConfig + OracleDataSourceConfig) │
+# │  because Spring Boot's auto-config only supports one DB.    │
+# └─────────────────────────────────────────────────────────────┘
 #
-# Environment variables (set in docker-compose.yml for Docker;
-# override locally via IDE run config or a .env file):
+# Environment variables (set in docker-compose.yml or IDE run config):
 #
-#   SPRING_DATASOURCE_URL       — JDBC connection string for PostgreSQL
-#   SPRING_DATASOURCE_USERNAME  — database username
-#   SPRING_DATASOURCE_PASSWORD  — database password
+#   SPRING_DATASOURCE_URL       — PostgreSQL JDBC connection string
+#   SPRING_DATASOURCE_USERNAME  — PostgreSQL username
+#   SPRING_DATASOURCE_PASSWORD  — PostgreSQL password
+#   ORACLE_DATASOURCE_URL       — Oracle JDBC connection string
+#   ORACLE_DATASOURCE_USERNAME  — Oracle read-only username
+#   ORACLE_DATASOURCE_PASSWORD  — Oracle read-only password
 #   KEYCLOAK_ISSUER_URI         — Keycloak realm public URL
-#                                 ⚠ Must match the "iss" claim in JWTs.
-#                                 Tokens carry the URL the *browser* used
-#                                 to log in (e.g. http://localhost:9090/…).
-#   KEYCLOAK_JWK_SET_URI        — URL Spring uses to fetch Keycloak's public
-#                                 keys at startup. In Docker this is the
-#                                 internal hostname (http://keycloak:9090/…).
-#   CORS_ALLOWED_ORIGINS        — comma-separated browser origins allowed to
-#                                 call the API (no spaces around commas)
+#   KEYCLOAK_JWK_SET_URI        — Keycloak JWKS endpoint
+#   CORS_ALLOWED_ORIGINS        — comma-separated browser origins
 # ══════════════════════════════════════════════════════════════
 
 spring:
 
-  # ── PostgreSQL DataSource ──────────────────────────────────
-  datasource:
-    url:               ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/netline_reader}
-    username:          ${SPRING_DATASOURCE_USERNAME:netline}
-    password:          ${SPRING_DATASOURCE_PASSWORD:netline_secret}
-    driver-class-name: org.postgresql.Driver
-
-  # ── JPA / Hibernate ────────────────────────────────────────
+  # ── JPA global settings ──────────────────────────────────────
   jpa:
-    hibernate:
-      # "update" auto-creates/migrates tables to match JPA entities on startup.
-      # Consider switching to "validate" + Flyway for production deployments.
-      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
 
   # ── OAuth2 Resource Server — Keycloak JWT validation ───────
   security:
     oauth2:
       resourceserver:
         jwt:
-          # Must match the "iss" claim in every JWT.
-          # Keycloak sets the issuer to the URL the browser used to log in.
-          # Example: browser → http://localhost:9090 → iss=http://localhost:9090/realms/netline-reader
-          # ⚠ Do NOT set this to the internal Docker hostname (keycloak:9090)
-          #   or all token validations will fail with "Invalid issuer".
           issuer-uri:  ${KEYCLOAK_ISSUER_URI:http://localhost:9090/realms/netline-reader}
-
-          # URL used by Spring to download Keycloak's JWKS (public keys).
-          # In Docker, the backend container cannot reach "localhost:9090"
-          # (that would be itself), so it uses the internal service name.
-          # When both issuer-uri and jwk-set-uri are configured, Spring uses
-          # jwk-set-uri for key fetching and issuer-uri only for iss validation.
           jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:9090/realms/netline-reader/protocol/openid-connect/certs}
 
 server:
   port: 8080
 
-# ── Application-level settings ─────────────────────────────
+# ── Application-level settings ────────────────────────────────
 app:
+
+  # ── PostgreSQL connection (primary — read/write) ─────────────
+  datasource:
+    postgres:
+      url:               ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/netline_reader}
+      username:          ${SPRING_DATASOURCE_USERNAME:netline}
+      password:          ${SPRING_DATASOURCE_PASSWORD:netline_secret}
+      driver-class-name: org.postgresql.Driver
+
+    # ── Oracle connection (secondary — read-only) ──────────────
+    # Points to the Oracle DB hosting Netline OPS materialized views.
+    oracle:
+      url:               ${ORACLE_DATASOURCE_URL:jdbc:oracle:thin:@//localhost:1521/NETLINEDB}
+      username:          ${ORACLE_DATASOURCE_USERNAME:netline_read}
+      password:          ${ORACLE_DATASOURCE_PASSWORD:netline_read_secret}
+      driver-class-name: oracle.jdbc.OracleDriver
+
   cors:
-    # Comma-separated list of browser origins allowed to call the API.
-    # Read by SecurityConfig.corsConfigurationSource().
-    # Overridden by CORS_ALLOWED_ORIGINS in docker-compose.yml.
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}
 
   # ── Keycloak Admin API ─────────────────────────────────────
-  # Used by the backend to create/update/delete users in Keycloak
-  # when an admin manages users from the application interface.
   keycloak:
     server-url:    ${KEYCLOAK_ADMIN_URL:http://localhost:9090}
     realm:         ${KEYCLOAK_REALM:netline-reader}
     client-id:     ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
     client-secret: ${KEYCLOAK_ADMIN_CLIENT_SECRET:}
-    # Service account credentials (a Keycloak user with the "manage-users" realm role)
     admin-username: ${KEYCLOAK_ADMIN_USERNAME:admin}
     admin-password: ${KEYCLOAK_ADMIN_PASSWORD:admin}

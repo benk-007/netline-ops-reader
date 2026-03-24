@@ -114,6 +114,10 @@ public class SecurityConfig {
                 // Ownership is enforced in the service layer via JWT sub.
                 .requestMatchers("/api/saved-filters/**").authenticated()
 
+                // Leg endpoints — read-only flight data from Oracle.
+                // Any authenticated user can view flight legs.
+                .requestMatchers("/api/legs/**").authenticated()
+
                 // All other API endpoints require authentication.
                 .anyRequest().authenticated()
             )
