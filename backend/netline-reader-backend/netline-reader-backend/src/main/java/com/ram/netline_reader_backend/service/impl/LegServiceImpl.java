@@ -9,15 +9,25 @@ import com.ram.netline_reader_backend.service.LegService;
 
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ram.netline_reader_backend.entity.oracle.Aircraft;
+import com.ram.netline_reader_backend.entity.oracle.Airport;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 
 /**
  * Implementation of {@link LegService} — reads flight data from Oracle.
@@ -38,11 +48,15 @@ import jakarta.persistence.criteria.Join;
  */
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "app.oracle.enabled", havingValue = "true")
 @Transactional(value = "oracleTransactionManager", readOnly = true)
 public class LegServiceImpl implements LegService {
 
     private final LegRepository legRepository;
     private final LegMapper legMapper;
+
+    @PersistenceContext(unitName = "oracleEntityManagerFactory")
+    private EntityManager entityManager;
 
     @Override
     public LegResponseDTO getLegByLegNo(Long legNo) {
@@ -158,7 +172,7 @@ public class LegServiceImpl implements LegService {
     List<Leg> results = entityManager.createQuery(cq).getResultList();
 
     return results.stream()
-            .map(legMapper::legResponseDTO)
+            .map(legMapper::toResponseDTO)
             .collect(Collectors.toList());
 }
 

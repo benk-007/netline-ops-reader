@@ -103,5 +103,5 @@ export const DEFAULT_PROFILE = {
     fSubtype: [],   // [] = all subtypes
   },
   utcMode: true,
-  zoom: 1,
+  dayCount: 1,
 };

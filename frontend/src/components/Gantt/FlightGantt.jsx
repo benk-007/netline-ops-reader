@@ -162,13 +162,45 @@ const LEGEND_ENTRIES = [
   { label: "Annulé",      color: "#374151" },
 ];
 
-const MIN_TIME = new Date("2026-03-04T00:00:00").getTime();
-const MAX_TIME = new Date("2026-03-07T00:00:00").getTime();
+/** Compute the visible date window from dayCount + referenceDate.
+ *  - 1 day: just referenceDate
+ *  - 2 days: referenceDate - 1 .. referenceDate
+ *  - 3 days: referenceDate - 1 .. referenceDate + 1
+ */
+function computeWindow(referenceDate, dayCount) {
+  const ref = new Date(referenceDate + "T00:00:00");
+  let startDay, endDay;
+  if (dayCount === 1) {
+    startDay = new Date(ref);
+    endDay = new Date(ref);
+  } else if (dayCount === 2) {
+    startDay = new Date(ref);
+    startDay.setDate(startDay.getDate() - 1);
+    endDay = new Date(ref);
+  } else {
+    startDay = new Date(ref);
+    startDay.setDate(startDay.getDate() - 1);
+    endDay = new Date(ref);
+    endDay.setDate(endDay.getDate() + 1);
+  }
+  const windowStart = new Date(startDay);
+  windowStart.setHours(0, 0, 0, 0);
+  const windowEnd = new Date(endDay);
+  windowEnd.setHours(23, 59, 59, 999);
+  // min/max: allow 1 day padding for scrolling
+  const minTime = new Date(windowStart);
+  minTime.setDate(minTime.getDate() - 1);
+  const maxTime = new Date(windowEnd);
+  maxTime.setDate(maxTime.getDate() + 1);
+  return {
+    start: windowStart,
+    end: windowEnd,
+    min: minTime,
+    max: maxTime,
+  };
+}
 
-/* Default window: 17h (05:30 → 22:30 on 2026-03-05) */
-const BASE_WINDOW_MS = 17 * 3600 * 1000;
-
-export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom = 1 }) {
+export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCount = 1, referenceDate }) {
   const container = useRef(null);
   const timelineRef = useRef(null);
   const filteredRef = useRef([]);
@@ -187,10 +219,14 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom 
     return () => window.removeEventListener("mousemove", handleMove);
   }, []);
 
-  /* ── Build / rebuild timeline when legs or filters change ── */
+  /* ── Build / rebuild timeline when legs, filters, dayCount, or referenceDate change ── */
   useEffect(() => {
     const { groups, items, filtered } = applyFilters(allLegs, filters || {});
     filteredRef.current = filtered;
+
+    const win = computeWindow(referenceDate, dayCount);
+    const TIME_STEPS = { 1: 1, 2: 2, 3: 3 };
+    const timeStep = TIME_STEPS[dayCount] || 1;
 
     const options = {
       stack: true,
@@ -200,11 +236,11 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom 
       verticalScroll: true,
       moveable: true,
       orientation: "top",
-      start: "2026-03-05T05:30:00",
-      end: "2026-03-05T22:30:00",
-      min: new Date(MIN_TIME),
-      max: new Date(MAX_TIME),
-      timeAxis: { scale: "hour", step: 1 },
+      start: win.start,
+      end: win.end,
+      min: win.min,
+      max: win.max,
+      timeAxis: { scale: "hour", step: timeStep },
       margin: { item: { horizontal: -10, vertical: 3 }, axis: 4 },
       showCurrentTime: true,
     };
@@ -212,22 +248,25 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom 
     const timeline = new Timeline(container.current, items, groups, options);
     timelineRef.current = timeline;
 
+    const minTime = win.min.getTime();
+    const maxTime = win.max.getTime();
+
     const updateScrollbar = () => {
       if (!timelineRef.current || !scrollContainerRef.current || !scrollContentRef.current) return;
       if (isSyncingTimelineRef.current) return;
 
       isSyncingScrollbarRef.current = true;
 
-      const win = timelineRef.current.getWindow();
-      const start = win.start.getTime();
-      const end = win.end.getTime();
+      const curWin = timelineRef.current.getWindow();
+      const start = curWin.start.getTime();
+      const end = curWin.end.getTime();
       const visibleRange = end - start;
-      const totalRange = MAX_TIME - MIN_TIME;
+      const totalRange = maxTime - minTime;
 
       const widthPct = Math.max(100, (totalRange / visibleRange) * 100);
       scrollContentRef.current.style.width = widthPct + "%";
 
-      const scrolledTime = start - MIN_TIME;
+      const scrolledTime = start - minTime;
       const scrollableTime = totalRange - visibleRange;
 
       if (scrollableTime > 0) {
@@ -266,26 +305,17 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom 
       timeline.destroy();
       timelineRef.current = null;
     };
-  }, [allLegs, filters]);
-
-  /* ── Zoom prop → setWindow on the timeline ──────────────── */
-  useEffect(() => {
-    if (!timelineRef.current) return;
-    const windowMs = BASE_WINDOW_MS / zoom;
-    const win = timelineRef.current.getWindow();
-    const center = (win.start.getTime() + win.end.getTime()) / 2;
-    timelineRef.current.setWindow(
-      Math.max(MIN_TIME, center - windowMs / 2),
-      Math.min(MAX_TIME, center + windowMs / 2),
-      { animation: { duration: 300, easingFunction: "easeInOutQuad" } }
-    );
-  }, [zoom]);
+  }, [allLegs, filters, dayCount, referenceDate]);
 
   const handleScroll = () => {
     if (!timelineRef.current || !scrollContainerRef.current) return;
     if (isSyncingScrollbarRef.current) return;
 
     isSyncingTimelineRef.current = true;
+
+    const curWin = computeWindow(referenceDate, dayCount);
+    const minTime = curWin.min.getTime();
+    const maxTime = curWin.max.getTime();
 
     const maxScrollLeft = scrollContainerRef.current.scrollWidth - scrollContainerRef.current.clientWidth;
     if (maxScrollLeft > 0) {
@@ -294,9 +324,9 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, zoom 
       const start = currentWindow.start.getTime();
       const end = currentWindow.end.getTime();
       const visibleRange = end - start;
-      const totalRange = MAX_TIME - MIN_TIME;
+      const totalRange = maxTime - minTime;
       const scrollableTime = totalRange - visibleRange;
-      const newStart = MIN_TIME + scrollRatio * scrollableTime;
+      const newStart = minTime + scrollRatio * scrollableTime;
       const newEnd = newStart + visibleRange;
       timelineRef.current.setWindow(newStart, newEnd, { animation: false });
     }

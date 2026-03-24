@@ -37,7 +37,7 @@ function generateId() {
     return `profile_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export default function ProfileManager({ isOpen, onClose, currentFilters, utcMode, zoom, onLoadProfile }) {
+export default function ProfileManager({ isOpen, onClose, currentFilters, utcMode, dayCount, onLoadProfile }) {
     const [profiles, setProfiles] = useState(loadLocalProfiles);
     const [newName, setNewName] = useState("");
     const [activeTab, setActiveTab] = useState("load");
@@ -112,7 +112,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
             name: newName.trim(),
             filters: { ...profileFilters },
             utcMode,
-            zoom,
+            dayCount,
             savedAt: new Date().toISOString(),
         };
 

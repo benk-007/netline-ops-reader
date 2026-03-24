@@ -93,7 +93,25 @@ function App({ keycloakFailed }) {
     }
   }, [currentUser, keycloakFailed]);
 
-  const [zoom, setZoom] = useState(1);
+  /* ── Day navigation state for Gantt ── */
+  const [dayCount, setDayCount] = useState(1);       // 1, 2, or 3 days visible
+  const [referenceDate, setReferenceDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  });
+
+  function shiftDays(offset) {
+    setReferenceDate(prev => {
+      const d = new Date(prev + "T00:00:00");
+      d.setDate(d.getDate() + offset);
+      return d.toISOString().slice(0, 10);
+    });
+  }
+
+  function resetToToday() {
+    setReferenceDate(new Date().toISOString().slice(0, 10));
+  }
+
   const [showProfiles, setShowProfiles] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [viewMode, setViewMode] = useState("gantt");
@@ -222,7 +240,7 @@ function App({ keycloakFailed }) {
   function handleLoadProfile(profile) {
     if (profile.filters) setFilters(profile.filters);
     if (typeof profile.utcMode === "boolean") setUtcMode(profile.utcMode);
-    if (typeof profile.zoom === "number") setZoom(profile.zoom);
+    if (typeof profile.dayCount === "number") setDayCount(profile.dayCount);
   }
 
   /* ── Auth handlers ── */
@@ -304,10 +322,11 @@ function App({ keycloakFailed }) {
               <GanttFilterBar
                 filters={filters}
                 onChange={changeFilter}
-                zoom={zoom}
-                onZoomIn={() => setZoom(z => Math.min(5, z + 0.2))}
-                onZoomOut={() => setZoom(z => Math.max(0.4, z - 0.2))}
-                onZoomReset={() => setZoom(1)}
+                dayCount={dayCount}
+                onDayCountChange={setDayCount}
+                referenceDate={referenceDate}
+                onShiftDays={shiftDays}
+                onResetToToday={resetToToday}
                 onOpenProfiles={() => setShowProfiles(true)}
                 onOpenExport={() => setShowExport(true)}
                 onImport={() => importRef.current?.click()}
@@ -318,7 +337,7 @@ function App({ keycloakFailed }) {
 
               <div className="timeline-container">
                 {viewMode === "gantt" ? (
-                  <FlightGantt legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} zoom={zoom} />
+                  <FlightGantt legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} dayCount={dayCount} referenceDate={referenceDate} />
                 ) : (
                   <FlightBoard legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} />
                 )}
@@ -345,7 +364,7 @@ function App({ keycloakFailed }) {
         onClose={() => setShowProfiles(false)}
         currentFilters={filters}
         utcMode={utcMode}
-        zoom={zoom}
+        dayCount={dayCount}
         onLoadProfile={handleLoadProfile}
       />
 

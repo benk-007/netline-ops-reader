@@ -121,4 +121,20 @@ public class LegController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(legService.getLegsByAircraftAndDate(registration, date));
     }
+
+    /**
+     * Dynamic search with multiple optional filters — powers the Gantt filter bar.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<List<LegResponseDTO>> searchLegs(
+            @RequestParam(required = false) String flightNumber,
+            @RequestParam(required = false) String departureAirport,
+            @RequestParam(required = false) String arrivalAirport,
+            @RequestParam(required = false) String aircraftRegistration,
+            @RequestParam(required = false) String legService,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(this.legService.searchLegs(
+                flightNumber, departureAirport, arrivalAirport,
+                aircraftRegistration, legService, date));
+    }
 }

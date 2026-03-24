@@ -81,4 +81,14 @@ public interface LegService {
      * @return all legs operated by that aircraft
      */
     List<LegResponseDTO> getLegsByAircraftAndDate(String registration, LocalDate date);
+
+    /**
+     * Dynamic search with multiple optional filters — powers the Gantt filter bar.
+     */
+    List<LegResponseDTO> searchLegs(String flightNumber,
+                                     String departureAirport,
+                                     String arrivalAirport,
+                                     String aircraftRegistration,
+                                     String legService,
+                                     LocalDate date);
 }
