@@ -6,13 +6,18 @@ import com.ram.netline_reader_backend.exception.ResourceNotFoundException;
 import com.ram.netline_reader_backend.mapper.LegMapper;
 import com.ram.netline_reader_backend.repository.oracle.LegRepository;
 import com.ram.netline_reader_backend.service.LegService;
+
 import lombok.RequiredArgsConstructor;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Join;
 
 /**
  * Implementation of {@link LegService} — reads flight data from Oracle.
@@ -87,5 +92,75 @@ public class LegServiceImpl implements LegService {
         return legRepository.findByAircraftAndDate(registration, date).stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+
     }
+
+    // dynamic search engine for our Gantt chart it supports multiple optional filters
+    @Override
+    public List<LegResponseDTO> searchLegs(String flightNumber,
+                                       String departureAirport,
+                                       String arrivalAirport,
+                                       String aircraftRegistration,
+                                       String legService,
+                                       LocalDate date) {
+
+    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+    CriteriaQuery<Leg> cq = cb.createQuery(Leg.class);
+    Root<Leg> leg = cq.from(Leg.class);
+
+    List<Predicate> predicates = new ArrayList<>();
+
+    if (flightNumber != null && !flightNumber.isEmpty()) {
+        predicates.add(cb.equal(
+                cb.upper(leg.get("flightNumber")),
+                flightNumber.toUpperCase()
+        ));
+    }
+
+    if (departureAirport != null && !departureAirport.isEmpty()) {
+        Join<Leg, Airport> depAirport = leg.join("departureAirport");
+        predicates.add(cb.equal(
+                cb.upper(depAirport.get("iataCode")),
+                departureAirport.toUpperCase()
+        ));
+    }
+
+    if (arrivalAirport != null && !arrivalAirport.isEmpty()) {
+        Join<Leg, Airport> arrAirport = leg.join("arrivalAirport");
+        predicates.add(cb.equal(
+                cb.upper(arrAirport.get("iataCode")),
+                arrivalAirport.toUpperCase()
+        ));
+    }
+
+    if (aircraftRegistration != null && !aircraftRegistration.isEmpty()) {
+        Join<Leg, Aircraft> aircraftJoin = leg.join("aircraft");
+        predicates.add(cb.equal(
+                cb.upper(aircraftJoin.get("registration")),
+                aircraftRegistration.toUpperCase()
+        ));
+    }
+
+    if (date != null) {
+        predicates.add(cb.equal(leg.get("operationalDate"), date));
+    }
+
+    if (legService != null && !legService.isEmpty()) {
+        predicates.add(cb.equal(
+                cb.upper(leg.get("legType")),
+                legService.toUpperCase()
+        ));
+    }
+
+    cq.where(predicates.toArray(new Predicate[0]));
+    cq.distinct(true);
+    // TODO : pagination
+    List<Leg> results = entityManager.createQuery(cq).getResultList();
+
+    return results.stream()
+            .map(legMapper::legResponseDTO)
+            .collect(Collectors.toList());
+}
+
+
 }

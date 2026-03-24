@@ -168,7 +168,7 @@ export default function GanttFilterBar({
           placeholder="Rechercher aeroport..."
           multi
         />
-      </div>
+      </div> 
 
       <div className="filter-sep" />
 

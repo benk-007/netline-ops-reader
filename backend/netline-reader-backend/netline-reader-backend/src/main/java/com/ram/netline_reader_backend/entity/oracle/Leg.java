@@ -1,11 +1,23 @@
 package com.ram.netline_reader_backend.entity.oracle;
 
-import jakarta.persistence.*;
-import lombok.*;
-
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Represents a single flight leg — the core entity of the flight operations view.
@@ -37,6 +49,7 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 public class Leg {
+    static final int CRITICAL_DELAY_THRESHOLD = 15;
 
     /** Unique leg number — primary key in the Oracle view. */
     @Id
@@ -141,9 +154,9 @@ public class Leg {
      * Checks whether this leg has a critical delay (>= 15 minutes).
      * The 15-minute threshold is an IATA standard for "delayed" flights.
      *
-     * @return true if total delay is 15 minutes or more
+     * @return true if total delay is x minutes or more
      */
     public boolean isCriticalDelay() {
-        return getDelayDuration() >= 15;
+        return getDelayDuration() >= CRITICAL_DELAY_THRESHOLD;
     }
 }
