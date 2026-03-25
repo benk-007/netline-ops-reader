@@ -164,8 +164,8 @@ const LEGEND_ENTRIES = [
 
 /** Compute the visible date window from dayCount + referenceDate.
  *  - 1 day: just referenceDate (00:00 → 23:59)
- *  - 2 days: referenceDate - 1 .. referenceDate
- *  - 3 days: referenceDate - 1 .. referenceDate + 1
+ *  - 2 days: referenceDate .. referenceDate + 1  (today + tomorrow)
+ *  - 3 days: referenceDate - 1 .. referenceDate + 1  (yesterday + today + tomorrow)
  *
  *  Scroll arrows shift referenceDate by ±1 day, translating the entire window.
  */
@@ -176,10 +176,12 @@ function computeWindow(referenceDate, dayCount) {
     startDay = new Date(ref);
     endDay = new Date(ref);
   } else if (dayCount === 2) {
+    // today + tomorrow
     startDay = new Date(ref);
-    startDay.setDate(startDay.getDate() - 1);
     endDay = new Date(ref);
+    endDay.setDate(endDay.getDate() + 1);
   } else {
+    // yesterday + today + tomorrow
     startDay = new Date(ref);
     startDay.setDate(startDay.getDate() - 1);
     endDay = new Date(ref);
@@ -189,12 +191,9 @@ function computeWindow(referenceDate, dayCount) {
   windowStart.setHours(0, 0, 0, 0);
   const windowEnd = new Date(endDay);
   windowEnd.setHours(23, 59, 59, 999);
-  // Lock min/max to the exact window — navigation is button-driven only
   return {
     start: windowStart,
     end: windowEnd,
-    min: windowStart,
-    max: windowEnd,
   };
 }
 
@@ -212,10 +211,13 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     return () => window.removeEventListener("mousemove", handleMove);
   }, []);
 
-  /* ── Build / rebuild timeline when legs, filters, dayCount, or referenceDate change ── */
+  const itemsRef = useRef(null);
+
+  /* ── Build / rebuild timeline only when DATA or FILTERS change ── */
   useEffect(() => {
     const { groups, items, filtered } = applyFilters(allLegs, filters || {});
     filteredRef.current = filtered;
+    itemsRef.current = items;
 
     const win = computeWindow(referenceDate, dayCount);
     const TIME_STEPS = { 1: 1, 2: 2, 3: 3 };
@@ -231,8 +233,6 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
       orientation: "top",
       start: win.start,
       end: win.end,
-      min: win.min,
-      max: win.max,
       timeAxis: { scale: "hour", step: timeStep },
       margin: { item: { horizontal: -10, vertical: 3 }, axis: 4 },
       showCurrentTime: true,
@@ -262,7 +262,18 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
       timeline.destroy();
       timelineRef.current = null;
     };
-  }, [allLegs, filters, dayCount, referenceDate]);
+  }, [allLegs, filters]);
+
+  /* ── Smoothly move the visible window when navigating days ── */
+  useEffect(() => {
+    if (!timelineRef.current) return;
+    const win = computeWindow(referenceDate, dayCount);
+    const TIME_STEPS = { 1: 1, 2: 2, 3: 3 };
+    const timeStep = TIME_STEPS[dayCount] || 1;
+
+    timelineRef.current.setOptions({ timeAxis: { scale: "hour", step: timeStep } });
+    timelineRef.current.setWindow(win.start, win.end, { animation: { duration: 300, easingFunction: "easeInOutQuad" } });
+  }, [dayCount, referenceDate]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
