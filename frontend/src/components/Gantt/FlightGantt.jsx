@@ -163,9 +163,11 @@ const LEGEND_ENTRIES = [
 ];
 
 /** Compute the visible date window from dayCount + referenceDate.
- *  - 1 day: just referenceDate
+ *  - 1 day: just referenceDate (00:00 → 23:59)
  *  - 2 days: referenceDate - 1 .. referenceDate
  *  - 3 days: referenceDate - 1 .. referenceDate + 1
+ *
+ *  Scroll arrows shift referenceDate by ±1 day, translating the entire window.
  */
 function computeWindow(referenceDate, dayCount) {
   const ref = new Date(referenceDate + "T00:00:00");
@@ -187,16 +189,12 @@ function computeWindow(referenceDate, dayCount) {
   windowStart.setHours(0, 0, 0, 0);
   const windowEnd = new Date(endDay);
   windowEnd.setHours(23, 59, 59, 999);
-  // min/max: allow 1 day padding for scrolling
-  const minTime = new Date(windowStart);
-  minTime.setDate(minTime.getDate() - 1);
-  const maxTime = new Date(windowEnd);
-  maxTime.setDate(maxTime.getDate() + 1);
+  // Lock min/max to the exact window — navigation is button-driven only
   return {
     start: windowStart,
     end: windowEnd,
-    min: minTime,
-    max: maxTime,
+    min: windowStart,
+    max: windowEnd,
   };
 }
 
@@ -204,11 +202,6 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
   const container = useRef(null);
   const timelineRef = useRef(null);
   const filteredRef = useRef([]);
-
-  const scrollContainerRef = useRef(null);
-  const scrollContentRef = useRef(null);
-  const isSyncingScrollbarRef = useRef(false);
-  const isSyncingTimelineRef = useRef(false);
 
   const [hoveredLeg, setHoveredLeg] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -231,10 +224,10 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     const options = {
       stack: true,
       editable: false,
-      zoomable: true,
+      zoomable: false,
       horizontalScroll: false,
       verticalScroll: true,
-      moveable: true,
+      moveable: false,
       orientation: "top",
       start: win.start,
       end: win.end,
@@ -247,42 +240,6 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
 
     const timeline = new Timeline(container.current, items, groups, options);
     timelineRef.current = timeline;
-
-    const minTime = win.min.getTime();
-    const maxTime = win.max.getTime();
-
-    const updateScrollbar = () => {
-      if (!timelineRef.current || !scrollContainerRef.current || !scrollContentRef.current) return;
-      if (isSyncingTimelineRef.current) return;
-
-      isSyncingScrollbarRef.current = true;
-
-      const curWin = timelineRef.current.getWindow();
-      const start = curWin.start.getTime();
-      const end = curWin.end.getTime();
-      const visibleRange = end - start;
-      const totalRange = maxTime - minTime;
-
-      const widthPct = Math.max(100, (totalRange / visibleRange) * 100);
-      scrollContentRef.current.style.width = widthPct + "%";
-
-      const scrolledTime = start - minTime;
-      const scrollableTime = totalRange - visibleRange;
-
-      if (scrollableTime > 0) {
-        const scrollRatio = scrolledTime / scrollableTime;
-        const maxScrollLeft = scrollContainerRef.current.scrollWidth - scrollContainerRef.current.clientWidth;
-        scrollContainerRef.current.scrollLeft = scrollRatio * maxScrollLeft;
-      } else {
-        scrollContainerRef.current.scrollLeft = 0;
-      }
-
-      requestAnimationFrame(() => { isSyncingScrollbarRef.current = false; });
-    };
-
-    timeline.on("rangechange", updateScrollbar);
-    timeline.on("rangechanged", updateScrollbar);
-    setTimeout(updateScrollbar, 50);
 
     timeline.on("itemover", (props) => {
       const item = items.get(props.item);
@@ -307,55 +264,10 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     };
   }, [allLegs, filters, dayCount, referenceDate]);
 
-  const handleScroll = () => {
-    if (!timelineRef.current || !scrollContainerRef.current) return;
-    if (isSyncingScrollbarRef.current) return;
-
-    isSyncingTimelineRef.current = true;
-
-    const curWin = computeWindow(referenceDate, dayCount);
-    const minTime = curWin.min.getTime();
-    const maxTime = curWin.max.getTime();
-
-    const maxScrollLeft = scrollContainerRef.current.scrollWidth - scrollContainerRef.current.clientWidth;
-    if (maxScrollLeft > 0) {
-      const scrollRatio = scrollContainerRef.current.scrollLeft / maxScrollLeft;
-      const currentWindow = timelineRef.current.getWindow();
-      const start = currentWindow.start.getTime();
-      const end = currentWindow.end.getTime();
-      const visibleRange = end - start;
-      const totalRange = maxTime - minTime;
-      const scrollableTime = totalRange - visibleRange;
-      const newStart = minTime + scrollRatio * scrollableTime;
-      const newEnd = newStart + visibleRange;
-      timelineRef.current.setWindow(newStart, newEnd, { animation: false });
-    }
-
-    requestAnimationFrame(() => { isSyncingTimelineRef.current = false; });
-  };
-
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ flex: 1, position: "relative", minHeight: 0, display: "flex", flexDirection: "column" }}>
         <div ref={container} className="gantt-wrapper" style={{ flex: 1, width: "100%" }} />
-
-        <div
-          ref={scrollContainerRef}
-          onScroll={handleScroll}
-          className="custom-gantt-scrollbar"
-          style={{
-            overflowX: "auto",
-            overflowY: "hidden",
-            width: "100%",
-            height: "14px",
-            background: "var(--gantt-bg)",
-            borderTop: "1px solid var(--color-border)",
-            borderBottom: "1px solid var(--color-border-2)",
-            flexShrink: 0,
-          }}
-        >
-          <div ref={scrollContentRef} style={{ height: "1px", width: "100%" }} />
-        </div>
 
         {hoveredLeg && (
           <div

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { SERVICE_COLORS, SUBTYPE_OPTIONS } from "../../constants/ganttConstants";
 import SearchableSelect from "./SearchableSelect";
 import "./GanttFilterBar.css";
@@ -84,7 +84,32 @@ export default function GanttFilterBar({
   viewMode = "gantt",
   onViewChange,
 }) {
-  const { fDate, fService, fDep, fArr, fFlight, fSubtype } = filters;
+  /* ── Pending (local) filter state — only applied on "Appliquer" click ── */
+  const [pending, setPending] = useState(filters);
+
+  // Sync pending when parent filters change (e.g. profile load, clear from outside)
+  useEffect(() => {
+    setPending(filters);
+  }, [filters]);
+
+  const { fDate, fService, fDep, fArr, fFlight, fSubtype } = pending;
+
+  function changePending(update) {
+    setPending(prev => ({ ...prev, ...update }));
+  }
+
+  function handleApply() {
+    onChange(pending);
+  }
+
+  function clearAll() {
+    const empty = { fDate: [], fService: [], fDep: [], fArr: [], fFlight: "", fSubtype: [] };
+    setPending(empty);
+    onChange(empty);
+  }
+
+  // Detect unapplied changes
+  const hasPendingChanges = JSON.stringify(pending) !== JSON.stringify(filters);
 
   // Build dynamic option lists from current legs data
   const allDeps     = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.dep).filter(Boolean))].sort()], [legs]);
@@ -102,10 +127,6 @@ export default function GanttFilterBar({
     fFlight !== "",
     toArr(fSubtype).length > 0,
   ].filter(Boolean).length;
-
-  function clearAll() {
-    onChange({ fDate: [], fService: [], fDep: [], fArr: [], fFlight: "", fSubtype: [] });
-  }
 
   return (
     <div className="filter-bar">
@@ -149,7 +170,7 @@ export default function GanttFilterBar({
         <SearchableSelect
           options={allDates}
           value={toArr(fDate)}
-          onChange={v => onChange({ fDate: v })}
+          onChange={v => changePending({ fDate: v })}
           placeholder="Rechercher date..."
           multi
         />
@@ -166,7 +187,7 @@ export default function GanttFilterBar({
         <SearchableSelect
           options={allDeps}
           value={toArr(fDep)}
-          onChange={v => onChange({ fDep: v })}
+          onChange={v => changePending({ fDep: v })}
           placeholder="Rechercher aeroport..."
           multi
         />
@@ -181,7 +202,7 @@ export default function GanttFilterBar({
         <SearchableSelect
           options={allArrs}
           value={toArr(fArr)}
-          onChange={v => onChange({ fArr: v })}
+          onChange={v => changePending({ fArr: v })}
           placeholder="Rechercher aeroport..."
           multi
         />
@@ -198,7 +219,7 @@ export default function GanttFilterBar({
         <SearchableSelect
           options={allServices}
           value={toArr(fService)}
-          onChange={v => onChange({ fService: v })}
+          onChange={v => changePending({ fService: v })}
           placeholder="Rechercher service..."
           multi
         />
@@ -213,7 +234,7 @@ export default function GanttFilterBar({
         <SearchableSelect
           options={allSubtypes}
           value={toArr(fSubtype)}
-          onChange={v => onChange({ fSubtype: v })}
+          onChange={v => changePending({ fSubtype: v })}
           placeholder="Rechercher type..."
           multi
         />
@@ -237,14 +258,28 @@ export default function GanttFilterBar({
             type="text"
             placeholder="AT101..."
             value={fFlight}
-            onChange={e => onChange({ fFlight: e.target.value })}
+            onChange={e => changePending({ fFlight: e.target.value })}
             aria-label="Rechercher par numero de vol"
           />
           {fFlight && (
-            <button className="filter-clear-btn" onClick={() => onChange({ fFlight: "" })} type="button" aria-label="Effacer">x</button>
+            <button className="filter-clear-btn" onClick={() => changePending({ fFlight: "" })} type="button" aria-label="Effacer">x</button>
           )}
         </div>
       </div>
+
+      {/* ── Apply button ── */}
+      <button
+        className={`filter-apply-btn ${hasPendingChanges ? "filter-apply-btn--active" : ""}`}
+        onClick={handleApply}
+        type="button"
+        title="Appliquer les filtres"
+        disabled={!hasPendingChanges}
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+        <span>Appliquer</span>
+      </button>
 
       {/* ── Active filter badge ── */}
       {activeCount > 0 && (

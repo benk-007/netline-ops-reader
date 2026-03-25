@@ -1,10 +1,14 @@
 package com.ram.netline_reader_backend.dto;
 
-import lombok.*;
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Response payload for a flight leg with all its nested data.
@@ -34,7 +38,7 @@ public class LegResponseDTO {
     // ── Computed fields from Leg methods ──────────────────────────
     /** Total delay in minutes (sum of all delay codes). */
     private Integer delayDuration;
-    /** True if total delay >= 15 minutes (IATA critical threshold). */
+    /** True if total delay >= threshhold minutes (IATA critical threshold). */
     private Boolean criticalDelay;
 
     // ── Nested DTOs ──────────────────────────────────────────────

@@ -232,8 +232,8 @@ function App({ keycloakFailed }) {
     fSubtype: [],
   });
 
-  function changeFilter(update) {
-    setFilters(prev => ({ ...prev, ...update }));
+  function changeFilter(newFilters) {
+    setFilters(newFilters);
     setSelectedLeg(null);
   }
 
