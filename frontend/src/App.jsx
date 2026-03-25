@@ -96,20 +96,30 @@ function App({ keycloakFailed }) {
   /* ── Day navigation state for Gantt ── */
   const [dayCount, setDayCount] = useState(1);       // 1, 2, or 3 days visible
   const [referenceDate, setReferenceDate] = useState(() => {
-    const today = new Date();
-    return today.toISOString().slice(0, 10); // "YYYY-MM-DD"
+    const t = new Date();
+    const yyyy = t.getFullYear();
+    const mm   = String(t.getMonth() + 1).padStart(2, "0");
+    const dd   = String(t.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
   });
 
   function shiftDays(offset) {
-    setReferenceDate(prev => {
-      const d = new Date(prev + "T00:00:00");
-      d.setDate(d.getDate() + offset);
-      return d.toISOString().slice(0, 10);
-    });
+    const d = new Date(referenceDate + "T00:00:00");
+    d.setDate(d.getDate() + offset);
+    // Format as YYYY-MM-DD using local values (NOT toISOString which converts to UTC)
+    const yyyy = d.getFullYear();
+    const mm   = String(d.getMonth() + 1).padStart(2, "0");
+    const dd   = String(d.getDate()).padStart(2, "0");
+    const next = `${yyyy}-${mm}-${dd}`;
+    setReferenceDate(next);
   }
 
   function resetToToday() {
-    setReferenceDate(new Date().toISOString().slice(0, 10));
+    const t = new Date();
+    const yyyy = t.getFullYear();
+    const mm   = String(t.getMonth() + 1).padStart(2, "0");
+    const dd   = String(t.getDate()).padStart(2, "0");
+    setReferenceDate(`${yyyy}-${mm}-${dd}`);
   }
 
   const [showProfiles, setShowProfiles] = useState(false);

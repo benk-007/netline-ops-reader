@@ -212,6 +212,8 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
   }, []);
 
   const itemsRef = useRef(null);
+  const dayCountRef = useRef(dayCount);
+  const refDateRef = useRef(referenceDate);
 
   /* ── Build / rebuild timeline only when DATA or FILTERS change ── */
   useEffect(() => {
@@ -219,9 +221,9 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     filteredRef.current = filtered;
     itemsRef.current = items;
 
-    const win = computeWindow(referenceDate, dayCount);
+    const win = computeWindow(refDateRef.current, dayCountRef.current);
     const TIME_STEPS = { 1: 1, 2: 2, 3: 3 };
-    const timeStep = TIME_STEPS[dayCount] || 1;
+    const timeStep = TIME_STEPS[dayCountRef.current] || 1;
 
     const options = {
       stack: true,
@@ -266,7 +268,10 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
 
   /* ── Smoothly move the visible window when navigating days ── */
   useEffect(() => {
+    dayCountRef.current = dayCount;
+    refDateRef.current = referenceDate;
     if (!timelineRef.current) return;
+
     const win = computeWindow(referenceDate, dayCount);
     const TIME_STEPS = { 1: 1, 2: 2, 3: 3 };
     const timeStep = TIME_STEPS[dayCount] || 1;
