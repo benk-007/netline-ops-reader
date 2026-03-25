@@ -1,12 +1,14 @@
 package com.ram.netline_reader_backend.mapper;
 
+import java.util.Collections;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
 import com.ram.netline_reader_backend.dto.SavedFilterRequestDTO;
 import com.ram.netline_reader_backend.dto.SavedFilterResponseDTO;
 import com.ram.netline_reader_backend.entity.SavedFilter;
 import com.ram.netline_reader_backend.entity.User;
-import org.springframework.stereotype.Component;
-
-import java.util.Collections;
 
 /**
  * Maps between {@link SavedFilter} entities and DTOs.
@@ -19,11 +21,11 @@ public class SavedFilterMapper {
         return SavedFilterResponseDTO.builder()
                 .id(filter.getId())
                 .name(filter.getName())
-                .depAirport(filter.getDepAirport())
-                .arrAirport(filter.getArrAirport())
-                .serviceType(filter.getServiceType())
-                .aircraftType(filter.getAircraftType())
-                .flightNumber(filter.getFlightNumber())
+                .depAirport(safeList(filter.getDepAirport()))
+                .arrAirport(safeList(filter.getArrAirport()))
+                .serviceType(safeList(filter.getServiceType()))
+                .aircraftType(safeList(filter.getAircraftType()))
+                .flightNumber(safeList(filter.getFlightNumber()))
                 .build();
     }
 
@@ -39,4 +41,7 @@ public class SavedFilterMapper {
                 .user(user)
                 .build();
     }
+    private List<String> safeList(List<String> list) {
+    return list != null ? List.copyOf(list) : Collections.emptyList();
+}
 }
