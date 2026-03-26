@@ -102,6 +102,10 @@ public class SecurityConfig {
                 // Browsers send these before cross-origin requests.
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                // Actuator endpoints (health, metrics, prometheus) — no auth required.
+                // Prometheus scrapes /actuator/prometheus from inside the Docker network.
+                .requestMatchers("/actuator/**").permitAll()
+
                 // User management endpoints — admin role required.
                 // Method-level @PreAuthorize("hasRole('admin')") on
                 // UserController provides a second enforcement layer.
