@@ -99,12 +99,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
 
                 // Allow pre-flight CORS OPTIONS requests without authentication.
-                // Browsers send these before cross-origin requests.
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                 // Actuator endpoints (health, metrics, prometheus) — no auth required.
-                // Prometheus scrapes /actuator/prometheus from inside the Docker network.
                 .requestMatchers("/actuator/**").permitAll()
+
+                // Dev-only test endpoints — no auth, no Keycloak needed.
+                // DevLegsController is @Profile("dev") so these paths only exist in dev.
+                .requestMatchers("/dev/**").permitAll()
 
                 // User management endpoints — admin role required.
                 // Method-level @PreAuthorize("hasRole('admin')") on
@@ -117,6 +119,11 @@ public class SecurityConfig {
                 // Saved filter endpoints — any authenticated user.
                 // Ownership is enforced in the service layer via JWT sub.
                 .requestMatchers("/api/saved-filters/**").authenticated()
+
+                // SSE refresh notification stream — carries only { timestamp, changedCount, hasChanges },
+                // no leg data. Permitted without auth so EventSource (which cannot send custom
+                // Authorization headers) can connect from the browser.
+                .requestMatchers("/api/legs/events").permitAll()
 
                 // Leg endpoints — read-only flight data from Oracle.
                 // Any authenticated user can view flight legs.

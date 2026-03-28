@@ -20,7 +20,6 @@ import java.util.Map;
 /**
  * PostgreSQL datasource configuration — the PRIMARY database.
  *
- * ┌─────────────────────────────────────────────────────────────────────┐
  * │  WHY MANUAL CONFIGURATION?                                         │
  * │                                                                     │
  * │  Our app uses TWO databases (PostgreSQL + Oracle). Spring Boot's   │
@@ -31,7 +30,7 @@ import java.util.Map;
  * │  This config is @Primary, so any code that injects DataSource,     │
  * │  EntityManager, or TransactionManager without a qualifier gets     │
  * │  PostgreSQL by default. Existing code works unchanged.             │
- * └─────────────────────────────────────────────────────────────────────┘
+ * 
  *
  * Managed entities (read/write):
  *   - User, SavedFilter, Role (enum), Permission (enum)
@@ -83,7 +82,10 @@ public class PostgresDataSourceConfig {
         // IMPORTANT: packagesToScan does NOT scan sub-packages by default in
         // LocalContainerEntityManagerFactoryBean — it uses exact package matching.
         // So "entity" here will NOT include "entity.oracle".
-        em.setPackagesToScan("com.ram.netline_reader_backend.entity");
+        em.setPackagesToScan(
+                "com.ram.netline_reader_backend.entity",
+                "com.ram.netline_reader_backend.entity.fake"
+        );
         em.setPersistenceUnitName("postgres");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

@@ -133,3 +133,77 @@ export const filtersApi = {
   /** Delete a saved filter profile by ID. */
   delete: (id) => request(`/saved-filters/${id}`, { method: "DELETE" }),
 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Legs API  (all authenticated users — station-scoped for chef_escale)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Read-only flight leg queries — backed by the Oracle MV (prod) or
+ * the fake PostgreSQL MV (dev).  Station-scope filtering for the
+ * chef_escale role is applied transparently on the backend.
+ */
+export const legsApi = {
+  /**
+   * All legs for a specific date — the primary Gantt/Dashboard query.
+   * @param {string} date ISO date string, e.g. "2026-03-28"
+   */
+  getByDate: (date) => request(`/legs?date=${date}`),
+
+  /**
+   * All legs within an inclusive date range.
+   * @param {string} start ISO date string
+   * @param {string} end   ISO date string
+   */
+  getByDateRange: (start, end) => request(`/legs/range?start=${start}&end=${end}`),
+
+  /**
+   * Single leg with full detail (times, load, delays, airports, aircraft).
+   * @param {number} legNo
+   */
+  getByLegNo: (legNo) => request(`/legs/${legNo}`),
+
+  /**
+   * Dynamic multi-field search — all params optional.
+   * @param {object} params - { flightNumber?, departureAirport?, arrivalAirport?, aircraftRegistration?, legService?, date? }
+   */
+  search: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v != null && v !== "")
+    ).toString();
+    return request(`/legs/search${qs ? `?${qs}` : ""}`);
+  },
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SSE — live MV refresh notifications
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Subscribe to MV refresh events from the backend.
+ *
+ * Opens an SSE connection to GET /api/legs/events.
+ * The backend pushes a "mv-refresh" event whenever the fake (or real) MV
+ * data changes so the frontend can re-fetch without polling.
+ *
+ * @param {function} onRefresh  - Called with { timestamp, changedCount, hasChanges }
+ * @param {function} [onError]  - Optional error handler
+ * @returns {EventSource}       - Call .close() to unsubscribe
+ */
+export function subscribeToLegEvents(onRefresh, onError) {
+  const es = new EventSource("/api/legs/events");
+
+  es.addEventListener("mv-refresh", (e) => {
+    try {
+      onRefresh(JSON.parse(e.data));
+    } catch {
+      // ignore malformed payloads
+    }
+  });
+
+  if (onError) {
+    es.onerror = onError;
+  }
+
+  return es;
+}

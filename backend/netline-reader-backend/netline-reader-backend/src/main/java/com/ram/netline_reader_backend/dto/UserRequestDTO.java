@@ -37,4 +37,10 @@ public class UserRequestDTO {
 
     /** Account activation status — false = revoked. */
     private Boolean isActivated;
+
+    /**
+     * IATA airport code (e.g. "CMN") this station manager oversees.
+     * Required when role is STATION_MANAGER — used to scope leg data visibility.
+     */
+    private String assignedAirport;
 }

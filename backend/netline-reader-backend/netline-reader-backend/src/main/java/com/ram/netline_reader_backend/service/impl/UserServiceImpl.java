@@ -84,7 +84,14 @@ public class UserServiceImpl implements UserService {
         user.setPassword(KEYCLOAK_MANAGED_PASSWORD);
         User saved = userRepository.save(user);
 
-        log.info("Created user matricule='{}' keycloakId={}", request.getMatricule(), keycloakId);
+        if (Role.STATION_MANAGER == request.getRole()
+                && (request.getAssignedAirport() == null || request.getAssignedAirport().isBlank())) {
+            log.warn("Station manager matricule='{}' created without an assignedAirport — leg visibility will be unrestricted",
+                    request.getMatricule());
+        }
+
+        log.info("Created user matricule='{}' role={} keycloakId={}",
+                request.getMatricule(), request.getRole(), keycloakId);
         return userMapper.toResponseDTO(saved);
     }
 

@@ -2,10 +2,13 @@ package com.ram.netline_reader_backend.controller;
 
 import com.ram.netline_reader_backend.dto.LegResponseDTO;
 import com.ram.netline_reader_backend.service.LegService;
+import com.ram.netline_reader_backend.service.MvRefreshSseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +37,7 @@ import java.util.List;
 public class LegController {
 
     private final LegService legService;
+    private final MvRefreshSseService mvRefreshSseService;
 
     /**
      * Get a single leg with full details (times, load, delays, airports, aircraft).
@@ -120,6 +124,19 @@ public class LegController {
             @RequestParam String registration,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         return ResponseEntity.ok(legService.getLegsByAircraftAndDate(registration, date));
+    }
+
+    /**
+     * SSE stream — pushed to the browser whenever the MV data changes.
+     * Connect once on page load; the frontend listens for "mv-refresh" events
+     * to know when to re-fetch legs.
+     *
+     * Event name: {@code mv-refresh}
+     * Payload:    {@code { timestamp, changedCount, hasChanges }}
+     */
+    @GetMapping(value = "/events", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter subscribeToMvRefreshEvents() {
+        return mvRefreshSseService.subscribe();
     }
 
     /**

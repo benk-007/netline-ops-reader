@@ -4,6 +4,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Entry point for the Netline Reader Backend.
@@ -11,16 +13,17 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
  * DataSource and JPA auto-configuration are EXCLUDED because this app
  * uses two databases (PostgreSQL + Oracle). Both are configured manually:
  *   - {@link config.PostgresDataSourceConfig} — primary, read/write
- *   - {@link config.OracleDataSourceConfig}   — secondary, read-only
+ *   - {@link config.OracleDataSourceConfig}   — secondary, read-only (prod only)
  *
- * All other auto-configuration (Security, OAuth2, Web) remains active.
+ * {@code @EnableScheduling} — activates the fake MV refresh job in dev.
+ * {@code @EnableCaching}    — activates @Cacheable on LegServiceImpl.
  */
 @SpringBootApplication(exclude = {
-        // We configure DataSources manually for multi-database support.
-        // See PostgresDataSourceConfig and OracleDataSourceConfig.
         DataSourceAutoConfiguration.class,
         HibernateJpaAutoConfiguration.class
 })
+@EnableScheduling
+@EnableCaching
 public class Application {
 
     public static void main(String[] args) {

@@ -9,12 +9,12 @@
  *  - Dark/light theme, UTC mode
  */
 import "./App.css";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import * as XLSX from "xlsx";
 
 /* ── Auth ── */
 import { getUserInfo, logout as keycloakLogout, getKeycloak } from "./auth";
-import { meApi } from "./api";
+import { meApi, legsApi, subscribeToLegEvents } from "./api";
 
 /* ── Components ── */
 import GanttBottomPanel from "./components/BottomBar/GanttBottomPanel";
@@ -33,7 +33,71 @@ import AdminPage from "./components/pages/AdminPage";
 import LoginPage from "./components/Auth/LoginPage";
 
 /* ── Data ── */
-import { legs as defaultLegs, Leg } from "./data/flightsData";
+import { Leg } from "./data/flightsData";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DTO → Leg adapter
+// Converts a LegResponseDTO (backend JSON) to a Leg instance so that all
+// existing components (FlightGantt, FlightBoard, GanttFilterBar…) continue
+// to work without modification.
+// ─────────────────────────────────────────────────────────────────────────────
+function dtoToLeg(dto) {
+  const ft     = dto.flightTime      ?? {};
+  const ac     = dto.aircraft        ?? {};
+  const dep    = dto.departureAirport ?? {};
+  const arr    = dto.arrivalAirport   ?? {};
+  const delays = dto.delays           ?? [];
+  // Extract "HH:MM" from "YYYY-MM-DDTHH:MM:SS" ISO strings
+  const t = (iso) => iso ? iso.slice(11, 16) : null;
+
+  return new Leg({
+    LEG_NO:          dto.legNo,
+    FN_CARRIER:      dto.carrierCode ?? "",
+    FN_NUMBER:       dto.flightNumber?.slice((dto.carrierCode ?? "").length) ?? "",
+    DAY_OF_ORIGIN:   dto.operationalDate,
+    AC_SUBTYPE:      ac.subType       ?? "Unknown",
+    AC_REGISTRATION: ac.registration  ?? "N/A",
+    DEP_AP_SCHED:    dep.iataCode     ?? "???",
+    ARR_AP_SCHED:    arr.iataCode     ?? "???",
+    LEG_STATE:       dto.legState     ?? "Scheduled",
+    LEG_TYPE:        dto.legType      ?? "J",
+    DEP_TIME_SCHED:  t(ft.std),
+    ARR_TIME_SCHED:  t(ft.sta),
+    OFF_BLOCK_TIME:  t(ft.offBlock),
+    AIRBORNE_TIME:   t(ft.airborne),
+    LANDING_TIME:    t(ft.landing),
+    ON_BLOCK_TIME:   t(ft.onBlock),
+    DELAY_CODE_01:   delays[0]?.code     ?? null,
+    DELAY_TIME_01:   delays[0]?.duration ?? 0,
+    DELAY_CODE_02:   delays[1]?.code     ?? null,
+    DELAY_TIME_02:   delays[1]?.duration ?? 0,
+    DELAY_CODE_03:   delays[2]?.code     ?? null,
+    DELAY_TIME_03:   delays[2]?.duration ?? 0,
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Date window helper
+// Returns the ISO date range [start, end] that matches the Gantt display window.
+// ─────────────────────────────────────────────────────────────────────────────
+function windowDates(refDate, dayCount) {
+  const fmt = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
+  const ref = new Date(refDate + "T00:00:00");
+  if (dayCount === 1) return { start: refDate, end: refDate };
+  if (dayCount === 2) {
+    const end = new Date(ref); end.setDate(end.getDate() + 1);
+    return { start: refDate, end: fmt(end) };
+  }
+  // 3 days: yesterday + today + tomorrow
+  const start = new Date(ref); start.setDate(start.getDate() - 1);
+  const end   = new Date(ref); end.setDate(end.getDate() + 1);
+  return { start: fmt(start), end: fmt(end) };
+}
 
 /* ── Role-based access control ──
  * Maps each role to the pages it can see.
@@ -56,8 +120,8 @@ const ROLE_DEFAULT_PAGE = {
 /* ═══════════════════════════════════════════════════════════ */
 
 function App({ keycloakFailed }) {
-  /* ── Flight data state (can be replaced via CSV upload in Admin) ── */
-  const [legsData, setLegsData] = useState(defaultLegs);
+  /* ── Flight data state — loaded from backend, refreshed via SSE ── */
+  const [legsData, setLegsData] = useState([]);
 
   /* ── Auth state ── */
   const [currentUser, setCurrentUser] = useState(() => {
@@ -121,6 +185,41 @@ function App({ keycloakFailed }) {
     const dd   = String(t.getDate()).padStart(2, "0");
     setReferenceDate(`${yyyy}-${mm}-${dd}`);
   }
+
+  /* ── Backend leg fetching ──────────────────────────────────────────────── */
+
+  /**
+   * Fetch the date window from the backend and populate legsData.
+   * Called on mount, whenever referenceDate/dayCount change, and on SSE refresh.
+   */
+  const fetchLegsForWindow = useCallback(async (refDate, count) => {
+    const { start, end } = windowDates(refDate, count);
+    try {
+      const data = start === end
+        ? await legsApi.getByDate(start)
+        : await legsApi.getByDateRange(start, end);
+      setLegsData(data.map(dtoToLeg));
+    } catch (err) {
+      console.error("[Netline] Failed to load legs:", err);
+    }
+  }, []);
+
+  /* Initial load + re-fetch when the visible window moves */
+  useEffect(() => {
+    fetchLegsForWindow(referenceDate, dayCount);
+  }, [referenceDate, dayCount, fetchLegsForWindow]);
+
+  /* SSE — re-fetch silently whenever the fake MV data changes */
+  useEffect(() => {
+    const es = subscribeToLegEvents((event) => {
+      if (event.hasChanges) {
+        fetchLegsForWindow(referenceDate, dayCount);
+      }
+    });
+    return () => es.close();
+  }, [referenceDate, dayCount, fetchLegsForWindow]);
+
+  /* ── ─────────────────────────────────────────────────────────────────── */
 
   const [showProfiles, setShowProfiles] = useState(false);
   const [showExport, setShowExport] = useState(false);
@@ -242,15 +341,50 @@ function App({ keycloakFailed }) {
     fSubtype: [],
   });
 
-  function changeFilter(newFilters) {
+  async function changeFilter(newFilters) {
     setFilters(newFilters);
     setSelectedLeg(null);
+
+    const { fFlight, fDep, fArr, fService, fDate, fSubtype } = newFilters;
+    const toArr = v => Array.isArray(v) ? v : [];
+
+    // Build backend search params from the filter state.
+    // fSubtype has no backend equivalent — it is handled by FlightGantt client-side.
+    const params = {};
+    if (fFlight)            params.flightNumber       = fFlight;
+    if (toArr(fDep)[0])     params.departureAirport   = toArr(fDep)[0];
+    if (toArr(fArr)[0])     params.arrivalAirport     = toArr(fArr)[0];
+    if (toArr(fService)[0]) params.legService         = toArr(fService)[0];
+    // Use the first selected date, or the current reference date as fallback
+    params.date = toArr(fDate)[0] ?? referenceDate;
+
+    const hasSearchParam = Object.keys(params).length > 1 // more than just date
+      || fFlight
+      || toArr(fDep).length > 0
+      || toArr(fArr).length > 0
+      || toArr(fService).length > 0
+      || toArr(fDate).length > 0;
+
+    if (hasSearchParam) {
+      // Let the backend do the heavy lifting — update legsData with search results
+      try {
+        const data = await legsApi.search(params);
+        setLegsData(data.map(dtoToLeg));
+      } catch (err) {
+        console.error("[Netline] Search failed:", err);
+      }
+    } else {
+      // No backend-filterable params (only fSubtype or all clear) — reload window
+      fetchLegsForWindow(referenceDate, dayCount);
+    }
   }
 
   function handleLoadProfile(profile) {
     if (profile.filters) setFilters(profile.filters);
     if (typeof profile.utcMode === "boolean") setUtcMode(profile.utcMode);
     if (typeof profile.dayCount === "number") setDayCount(profile.dayCount);
+    // Re-apply the loaded profile's filters against the backend
+    if (profile.filters) changeFilter(profile.filters);
   }
 
   /* ── Auth handlers ── */

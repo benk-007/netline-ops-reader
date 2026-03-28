@@ -21,7 +21,7 @@ public class UserMapper {
         this.savedFilterMapper = savedFilterMapper;
     }
 
-    /** Converts a User entity to the API response DTO (excludes password). */
+    /** Converts a User entity to the API response DTO (password excluded). */
     public UserResponseDTO toResponseDTO(User user) {
         return UserResponseDTO.builder()
                 .id(user.getId())
@@ -30,6 +30,7 @@ public class UserMapper {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .isActivated(user.getIsActivated())
+                .assignedAirport(user.getAssignedAirport())
                 .permissions(user.getPermissions())
                 .savedFilters(user.getSavedFilters() != null
                         ? user.getSavedFilters().stream()
@@ -39,7 +40,7 @@ public class UserMapper {
                 .build();
     }
 
-    /** Creates a new User entity from a creation request DTO. */
+    /** Creates a new User entity from a creation request. */
     public User toEntity(UserRequestDTO dto) {
         return User.builder()
                 .matricule(dto.getMatricule())
@@ -47,14 +48,14 @@ public class UserMapper {
                 .password(dto.getPassword())
                 .role(dto.getRole())
                 .isActivated(dto.getIsActivated() == null || dto.getIsActivated())
+                .assignedAirport(upperOrNull(dto.getAssignedAirport()))
                 .permissions(dto.getPermissions() != null ? dto.getPermissions() : Collections.emptyList())
                 .build();
     }
 
     /**
-     * Applies partial updates from the DTO to an existing User entity.
-     * Only non-null fields are updated — this allows callers to send
-     * just the fields they want to change (e.g. only toggle isActivated).
+     * Applies partial updates — only non-null / non-blank fields are written.
+     * This gives PATCH semantics through a PUT endpoint.
      */
     public void updateEntity(User user, UserRequestDTO dto) {
         if (dto.getMatricule() != null && !dto.getMatricule().isBlank()) {
@@ -75,5 +76,13 @@ public class UserMapper {
         if (dto.getPermissions() != null) {
             user.setPermissions(dto.getPermissions());
         }
+        // Explicit null clears the assignment (manager reassigned to no station)
+        if (dto.getAssignedAirport() != null) {
+            user.setAssignedAirport(upperOrNull(dto.getAssignedAirport()));
+        }
+    }
+
+    private static String upperOrNull(String code) {
+        return (code != null && !code.isBlank()) ? code.trim().toUpperCase() : null;
     }
 }

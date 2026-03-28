@@ -25,4 +25,7 @@ public class UserResponseDTO {
     private Boolean isActivated;
     private List<Permission> permissions;
     private List<SavedFilterResponseDTO> savedFilters;
+
+    /** IATA code of the airport this station manager oversees. Null for other roles. */
+    private String assignedAirport;
 }

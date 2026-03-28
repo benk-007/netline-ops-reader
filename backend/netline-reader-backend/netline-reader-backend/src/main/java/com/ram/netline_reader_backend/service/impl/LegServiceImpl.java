@@ -1,180 +1,196 @@
 package com.ram.netline_reader_backend.service.impl;
 
 import com.ram.netline_reader_backend.dto.LegResponseDTO;
-import com.ram.netline_reader_backend.entity.oracle.Leg;
+import com.ram.netline_reader_backend.entity.User;
+import com.ram.netline_reader_backend.event.MvRefreshEvent;
 import com.ram.netline_reader_backend.exception.ResourceNotFoundException;
-import com.ram.netline_reader_backend.mapper.LegMapper;
-import com.ram.netline_reader_backend.repository.oracle.LegRepository;
+import com.ram.netline_reader_backend.provider.LegDataProvider;
 import com.ram.netline_reader_backend.service.LegService;
-
+import com.ram.netline_reader_backend.service.UserService;
 import lombok.RequiredArgsConstructor;
-
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.context.event.EventListener;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import com.ram.netline_reader_backend.entity.oracle.Aircraft;
-import com.ram.netline_reader_backend.entity.oracle.Airport;
-
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.criteria.CriteriaBuilder;
-import jakarta.persistence.criteria.CriteriaQuery;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.Predicate;
-import jakarta.persistence.criteria.Root;
-
 /**
- * Implementation of {@link LegService} — reads flight data from Oracle.
+ * Single implementation of {@link LegService} — profile-agnostic.
  *
- * ┌─────────────────────────────────────────────────────────────────────┐
- * │  ALL METHODS ARE READ-ONLY.                                        │
- * │  We use the "oracleTransactionManager" to ensure queries go to     │
- * │  the Oracle datasource, not PostgreSQL.                            │
- * │  readOnly=true tells the JDBC driver to optimize for SELECT.       │
- * └─────────────────────────────────────────────────────────────────────┘
+ * Data access is delegated to {@link LegDataProvider}, which is swapped
+ * by Spring based on the active profile:
+ *   dev  → {@code FakeLegDataProvider} (PostgreSQL fake MV)
+ *   prod → {@code OracleLegDataProvider} (real Oracle MV)
  *
- * Entity graphs / fetch joins:
- *   Leg relationships (FlightTime, FlightLoad, Delay, Airport, Aircraft)
- *   are LAZY by default. When we map a Leg to a DTO, the mapper accesses
- *   all relationships — triggering lazy-loading within the same transaction.
- *   If performance becomes an issue, consider adding @EntityGraph or
- *   JPQL fetch joins to load everything in a single query.
+ * Two cross-cutting concerns are handled here:
+ *
+ * 1. Caching — all query results are cached. Caches are evicted automatically
+ *    when a {@link MvRefreshEvent} is published (MV data changed).
+ *
+ * 2. Station scope — if the authenticated caller has the {@code chef_escale} role,
+ *    results are filtered to legs where dep or arr matches their {@code assignedAirport}.
+ *    This enforcement happens at the service layer so it applies to every query method.
  */
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "app.oracle.enabled", havingValue = "true")
-@Transactional(value = "oracleTransactionManager", readOnly = true)
+@Slf4j
 public class LegServiceImpl implements LegService {
 
-    private final LegRepository legRepository;
-    private final LegMapper legMapper;
+    private static final String ROLE_CHEF_ESCALE = "ROLE_chef_escale";
 
-    @PersistenceContext(unitName = "oracleEntityManagerFactory")
-    private EntityManager entityManager;
+    private final LegDataProvider legDataProvider;
+    private final UserService userService;
+
+    // ── Queries (results cached and station-scoped) ─────────────────────
 
     @Override
+    @Cacheable(value = "legs", key = "#legNo")
     public LegResponseDTO getLegByLegNo(Long legNo) {
-        Leg leg = legRepository.findById(legNo)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Leg not found with legNo: " + legNo));
-        return legMapper.toResponseDTO(leg);
+        LegResponseDTO leg = legDataProvider.findByLegNo(legNo)
+                .orElseThrow(() -> new ResourceNotFoundException("Leg not found: " + legNo));
+
+        // Station managers must not access legs outside their station
+        if (!passesStationScope(leg)) {
+            throw new ResourceNotFoundException("Leg not found: " + legNo);
+        }
+        return leg;
     }
 
     @Override
+    @Cacheable(value = "legsByDate", key = "#date")
     public List<LegResponseDTO> getLegsByDate(LocalDate date) {
-        return legRepository.findByOperationalDate(date).stream()
-                .map(legMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return applyStationScope(legDataProvider.findByDate(date));
     }
 
     @Override
+    @Cacheable(value = "legsByDateRange", key = "#startDate + '-' + #endDate")
     public List<LegResponseDTO> getLegsByDateRange(LocalDate startDate, LocalDate endDate) {
-        return legRepository.findByOperationalDateBetween(startDate, endDate).stream()
-                .map(legMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return applyStationScope(legDataProvider.findByDateRange(startDate, endDate));
     }
 
     @Override
+    @Cacheable(value = "legsByFlight", key = "#flightNumber + '-' + #date")
     public List<LegResponseDTO> getLegsByFlightNumberAndDate(String flightNumber, LocalDate date) {
-        return legRepository.findByFlightNumberAndOperationalDate(flightNumber, date).stream()
-                .map(legMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return applyStationScope(legDataProvider.findByFlightNumberAndDate(flightNumber, date));
     }
 
     @Override
+    @Cacheable(value = "legsByDeparture", key = "#iataCode + '-' + #date")
     public List<LegResponseDTO> getLegsByDepartureAirportAndDate(String iataCode, LocalDate date) {
-        return legRepository.findByDepartureAirportAndDate(iataCode, date).stream()
-                .map(legMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return applyStationScope(legDataProvider.findByDepartureAirportAndDate(iataCode, date));
     }
 
     @Override
+    @Cacheable(value = "legsByArrival", key = "#iataCode + '-' + #date")
     public List<LegResponseDTO> getLegsByArrivalAirportAndDate(String iataCode, LocalDate date) {
-        return legRepository.findByArrivalAirportAndDate(iataCode, date).stream()
-                .map(legMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        return applyStationScope(legDataProvider.findByArrivalAirportAndDate(iataCode, date));
     }
 
     @Override
+    @Cacheable(value = "legsByAircraft", key = "#registration + '-' + #date")
     public List<LegResponseDTO> getLegsByAircraftAndDate(String registration, LocalDate date) {
-        return legRepository.findByAircraftAndDate(registration, date).stream()
-                .map(legMapper::toResponseDTO)
-                .collect(Collectors.toList());
-
+        return applyStationScope(legDataProvider.findByAircraftAndDate(registration, date));
     }
 
-    // dynamic search engine for our Gantt chart it supports multiple optional filters
     @Override
-    public List<LegResponseDTO> searchLegs(String flightNumber,
-                                       String departureAirport,
-                                       String arrivalAirport,
-                                       String aircraftRegistration,
-                                       String legService,
-                                       LocalDate date) {
-
-    CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-    CriteriaQuery<Leg> cq = cb.createQuery(Leg.class);
-    Root<Leg> leg = cq.from(Leg.class);
-
-    List<Predicate> predicates = new ArrayList<>();
-
-    if (flightNumber != null && !flightNumber.isEmpty()) {
-        predicates.add(cb.equal(
-                cb.upper(leg.get("flightNumber")),
-                flightNumber.toUpperCase()
-        ));
+    @Cacheable(value = "legsSearch",
+               key = "(#flightNumber ?: '') + '-' + (#departureAirport ?: '') + '-' + " +
+                     "(#arrivalAirport ?: '') + '-' + (#aircraftRegistration ?: '') + '-' + " +
+                     "(#legService ?: '') + '-' + (#date ?: '')")
+    public List<LegResponseDTO> searchLegs(String flightNumber, String departureAirport,
+                                            String arrivalAirport, String aircraftRegistration,
+                                            String legService, LocalDate date) {
+        return applyStationScope(legDataProvider.search(
+                flightNumber, departureAirport, arrivalAirport,
+                aircraftRegistration, legService, date));
     }
 
-    if (departureAirport != null && !departureAirport.isEmpty()) {
-        Join<Leg, Airport> depAirport = leg.join("departureAirport");
-        predicates.add(cb.equal(
-                cb.upper(depAirport.get("iataCode")),
-                departureAirport.toUpperCase()
-        ));
+    // ── Cache eviction on MV refresh ─────────────────────────────────────
+
+    @EventListener
+    @Caching(evict = {
+            @CacheEvict(value = "legs",             allEntries = true),
+            @CacheEvict(value = "legsByDate",        allEntries = true),
+            @CacheEvict(value = "legsByDateRange",   allEntries = true),
+            @CacheEvict(value = "legsByFlight",      allEntries = true),
+            @CacheEvict(value = "legsByDeparture",   allEntries = true),
+            @CacheEvict(value = "legsByArrival",     allEntries = true),
+            @CacheEvict(value = "legsByAircraft",    allEntries = true),
+            @CacheEvict(value = "legsSearch",        allEntries = true)
+    })
+    public void onMvRefresh(MvRefreshEvent event) {
+        log.info("[Cache] Evicted all leg caches after MV refresh ({} records changed)",
+                event.getChangedCount());
     }
 
-    if (arrivalAirport != null && !arrivalAirport.isEmpty()) {
-        Join<Leg, Airport> arrAirport = leg.join("arrivalAirport");
-        predicates.add(cb.equal(
-                cb.upper(arrAirport.get("iataCode")),
-                arrivalAirport.toUpperCase()
-        ));
+    // ── Station-scope filtering ───────────────────────────────────────────
+
+    /**
+     * Filters a list of legs to those touching the caller's assigned airport.
+     * Returns the list unchanged if the caller is not a station manager
+     * or if no assigned airport is configured.
+     */
+    private List<LegResponseDTO> applyStationScope(List<LegResponseDTO> legs) {
+        return resolveStationAirport()
+                .map(airport -> legs.stream()
+                        .filter(l -> airportMatches(l, airport))
+                        .collect(Collectors.toList()))
+                .orElse(legs);
     }
 
-    if (aircraftRegistration != null && !aircraftRegistration.isEmpty()) {
-        Join<Leg, Aircraft> aircraftJoin = leg.join("aircraft");
-        predicates.add(cb.equal(
-                cb.upper(aircraftJoin.get("registration")),
-                aircraftRegistration.toUpperCase()
-        ));
+    /**
+     * Checks a single leg against the station scope.
+     * Used for the single-leg lookup where filtering-by-list is not possible.
+     */
+    private boolean passesStationScope(LegResponseDTO leg) {
+        return resolveStationAirport()
+                .map(airport -> airportMatches(leg, airport))
+                .orElse(true);
     }
 
-    if (date != null) {
-        predicates.add(cb.equal(leg.get("operationalDate"), date));
+    /**
+     * Resolves the station airport for the current authenticated user.
+     * Returns empty if:
+     *   - the caller is not a station manager
+     *   - the user has no assignedAirport configured
+     */
+    private Optional<String> resolveStationAirport() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return Optional.empty();
+
+        boolean isStationManager = auth.getAuthorities().stream()
+                .anyMatch(a -> ROLE_CHEF_ESCALE.equals(a.getAuthority()));
+        if (!isStationManager) return Optional.empty();
+
+        try {
+            User user = userService.getUserByKeycloakId(auth.getName());
+            String airport = user.getAssignedAirport();
+            if (airport == null || airport.isBlank()) {
+                log.warn("[StationScope] Station manager keycloakId={} has no assignedAirport — returning all legs",
+                        auth.getName());
+                return Optional.empty();
+            }
+            return Optional.of(airport.toUpperCase());
+        } catch (Exception e) {
+            log.warn("[StationScope] Could not resolve station manager user — returning all legs: {}", e.getMessage());
+            return Optional.empty();
+        }
     }
 
-    if (legService != null && !legService.isEmpty()) {
-        predicates.add(cb.equal(
-                cb.upper(leg.get("legType")),
-                legService.toUpperCase()
-        ));
+    private static boolean airportMatches(LegResponseDTO leg, String airport) {
+        return airport.equals(iataOf(leg.getDepartureAirport()))
+            || airport.equals(iataOf(leg.getArrivalAirport()));
     }
 
-    cq.where(predicates.toArray(new Predicate[0]));
-    cq.distinct(true);
-    // TODO : pagination
-    List<Leg> results = entityManager.createQuery(cq).getResultList();
-
-    return results.stream()
-            .map(legMapper::toResponseDTO)
-            .collect(Collectors.toList());
-}
-
-
+    private static String iataOf(LegResponseDTO.AirportDTO a) {
+        return (a != null && a.getIataCode() != null) ? a.getIataCode().toUpperCase() : "";
+    }
 }

@@ -56,6 +56,15 @@ public class User {
     @Builder.Default
     private Boolean isActivated = true;
 
+    /**
+     * IATA airport code this user is responsible for (e.g. "CMN", "RAK").
+     * Mandatory for STATION_MANAGER role — all leg queries are scoped to legs
+     * where dep == assignedAirport OR arr == assignedAirport.
+     * Null for all other roles.
+     */
+    @Column(name = "assigned_airport", length = 3)
+    private String assignedAirport;
+
     /** Fine-grained permissions (eagerly loaded for auth checks). */
     @ElementCollection(targetClass = Permission.class, fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Log4j2 configuration for Netline Reader Backend.
+  Spring Boot auto-detects this file when it is named log4j2-spring.xml,
+  which allows the use of <SpringProfile> elements below.
+
+  Profile behaviour:
+    dev  → colored console output, DEBUG level for our packages
+    prod → JSON structured log (Loki/Grafana compatible), INFO level
+-->
+<Configuration status="WARN" monitorInterval="60">
+
+    <Properties>
+        <Property name="APP_PACKAGE">com.ram.netline_reader_backend</Property>
+        <!-- Pattern used in dev: timestamp | thread | level | logger (short) | message -->
+        <Property name="DEV_PATTERN">%d{HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red blink, ERROR=red, WARN=yellow bold, INFO=cyan, DEBUG=green, TRACE=white} [%15.15t] %cyan{%-40.40c{1.}} %msg%n%throwable</Property>
+        <!-- Pattern used in prod: machine-readable one-liner -->
+        <Property name="PROD_PATTERN">%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %-5level [%t] %logger{36} - %msg%n</Property>
+        <Property name="LOG_DIR">logs</Property>
+    </Properties>
+
+    <Appenders>
+
+        <!-- ── Console (dev) — colored, human-readable ────────────── -->
+        <Console name="ConsoleAppender" target="SYSTEM_OUT">
+            <SpringProfile name="dev">
+                <PatternLayout pattern="${DEV_PATTERN}" disableAnsi="false"/>
+            </SpringProfile>
+            <SpringProfile name="prod">
+                <PatternLayout pattern="${PROD_PATTERN}"/>
+            </SpringProfile>
+        </Console>
+
+        <!-- ── Rolling file (prod) — daily rotation, 30-day retention ─ -->
+        <RollingFile name="FileAppender"
+                     fileName="${LOG_DIR}/netline-reader.log"
+                     filePattern="${LOG_DIR}/netline-reader-%d{yyyy-MM-dd}-%i.log.gz"
+                     immediateFlush="false">
+            <PatternLayout pattern="${PROD_PATTERN}"/>
+            <Policies>
+                <!-- Roll over at midnight and when file exceeds 20 MB -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="20MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30"/>
+        </RollingFile>
+
+    </Appenders>
+
+    <Loggers>
+
+        <!-- ── Application code ──────────────────────────────────── -->
+        <SpringProfile name="dev">
+            <!-- Debug our own packages in dev; show fake MV job activity -->
+            <Logger name="${APP_PACKAGE}" level="DEBUG" additivity="false">
+                <AppenderRef ref="ConsoleAppender"/>
+            </Logger>
+            <!-- Keep Hibernate SQL noise at WARN in dev (SQL is shown via show-sql anyway) -->
+            <Logger name="org.hibernate.SQL"           level="WARN" additivity="false">
+                <AppenderRef ref="ConsoleAppender"/>
+            </Logger>
+            <Logger name="org.hibernate.orm.jdbc.bind" level="WARN" additivity="false">
+                <AppenderRef ref="ConsoleAppender"/>
+            </Logger>
+        </SpringProfile>
+
+        <SpringProfile name="prod">
+            <Logger name="${APP_PACKAGE}" level="INFO" additivity="false">
+                <AppenderRef ref="ConsoleAppender"/>
+                <AppenderRef ref="FileAppender"/>
+            </Logger>
+        </SpringProfile>
+
+        <!-- ── Security — INFO to track auth issues without flooding logs ── -->
+        <Logger name="org.springframework.security" level="INFO" additivity="false">
+            <AppenderRef ref="ConsoleAppender"/>
+        </Logger>
+
+        <!-- ── Root — suppress framework noise ──────────────────────── -->
+        <Root level="WARN">
+            <AppenderRef ref="ConsoleAppender"/>
+        </Root>
+
+    </Loggers>
+
+</Configuration>

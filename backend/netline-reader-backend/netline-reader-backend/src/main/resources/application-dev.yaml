@@ -1,0 +1,41 @@
+# ══════════════════════════════════════════════════════════════
+# Profile: DEV
+#
+# Activated by: SPRING_PROFILES_ACTIVE=dev (default)
+#
+# Key differences from prod:
+#   - Oracle is NOT used — LegDataProvider is FakeLegDataProvider
+#   - leg_mv PostgreSQL table simulates the Oracle Materialized View
+#   - FakeMvRefreshJob seeds realistic RAM flight data on startup
+#     and refreshes every 3 minutes (configurable via fake-mv.refresh-cron)
+#   - SSE events broadcast MV changes to connected frontend clients
+#   - Hibernate DDL auto=update → leg_mv table is auto-created
+#   - SQL logging enabled for debugging
+# ══════════════════════════════════════════════════════════════
+
+spring:
+  jpa:
+    properties:
+      hibernate:
+        hbm2ddl:
+          auto: update   # auto-creates/updates leg_mv and leg_mv_delay tables
+
+app:
+  # ── Fake MV refresh schedule ─────────────────────────────────
+  # Cron expression: every 3 minutes.
+  # Set to "-" to disable (useful for debugging to freeze data).
+  fake-mv:
+    refresh-cron: "0 */3 * * * *"
+
+  # ── PostgreSQL (primary + fake MV) ──────────────────────────
+  datasource:
+    postgres:
+      jdbc-url:          ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/netline_reader}
+      username:          ${SPRING_DATASOURCE_USERNAME:netline}
+      password:          ${SPRING_DATASOURCE_PASSWORD:netline_secret}
+      driver-class-name: org.postgresql.Driver
+
+logging:
+  level:
+    com.ram.netline_reader_backend.provider.fake: DEBUG
+    com.ram.netline_reader_backend.service:       INFO

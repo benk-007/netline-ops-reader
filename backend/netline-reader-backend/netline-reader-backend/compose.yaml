@@ -1,9 +1,55 @@
+# ══════════════════════════════════════════════════════════════
+# Local dev services — used when running the Spring Boot app
+# from your IDE or with `mvn spring-boot:run`.
+#
+# Spring Boot DevTools starts this file automatically on app launch.
+#
+# Starts: postgres + keycloak   (no backend, no frontend here)
+#
+# Keycloak admin console : http://localhost:9090  (admin / admin)
+# Test users             : admin / ops / chef / aol  (see realm JSON)
+# ══════════════════════════════════════════════════════════════
+
 services:
+
+  # ── PostgreSQL — primary DB (users, saved filters, fake leg MV) ──
   postgres:
     image: postgres:16-alpine
+    container_name: netline_postgres_dev
     environment:
-      - POSTGRES_DB=netline_reader
-      - POSTGRES_PASSWORD=netline_secret
-      - POSTGRES_USER=netline
+      POSTGRES_DB:       netline_reader
+      POSTGRES_USER:     netline
+      POSTGRES_PASSWORD: netline_secret
     ports:
-      - '5432:5432'
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U netline -d netline_reader"]
+      interval: 10s
+      timeout:  5s
+      retries:  5
+
+  # ── Keycloak — identity provider (JWT issuer + user management) ──
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: netline_keycloak_dev
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN:          admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT:            9090
+    ports:
+      - "9090:9090"
+    volumes:
+      # Path relative to this compose.yaml → root /keycloak/netline-realm.json
+      - ../../../../keycloak/netline-realm.json:/opt/keycloak/data/import/netline-realm.json:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/9090 && echo -e 'GET /realms/netline-reader HTTP/1.1\\r\\nHost: localhost:9090\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | grep -q '200'"]
+      interval:     10s
+      timeout:       5s
+      retries:      15
+      start_period: 40s
+
+volumes:
+  postgres_dev_data:
