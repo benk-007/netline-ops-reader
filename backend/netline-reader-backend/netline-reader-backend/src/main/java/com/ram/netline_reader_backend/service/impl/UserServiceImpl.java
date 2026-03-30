@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -66,13 +67,13 @@ public class UserServiceImpl implements UserService {
         }
 
         // ── Split fullName into first / last for Keycloak ─────────
-        String[] nameParts = splitName(request.getFullName());
+        String[] fullNameParts = splitFullName(request.getFullName());
 
         // ── 1. Create user in Keycloak (username = matricule) ─────
         String keycloakId = keycloakAdminService.createUser(
                 request.getMatricule(),           // username
-                nameParts[0],                     // firstName
-                nameParts[1],                     // lastName
+                fullNameParts[0],                 // firstName
+                fullNameParts[1],                 // lastName
                 request.getPassword(),
                 request.getRole(),
                 request.getIsActivated() == null || request.getIsActivated()
@@ -123,12 +124,12 @@ public class UserServiceImpl implements UserService {
         // ── Sync to Keycloak if the user is linked ───────────────
         if (user.getKeycloakId() != null) {
             String fullName = request.getFullName() != null ? request.getFullName() : user.getFullName();
-            String[] nameParts = splitName(fullName);
+            String[] fullNameParts = splitFullName(fullName);
 
             keycloakAdminService.updateUser(
                     user.getKeycloakId(),
-                    nameParts[0],                                                  // firstName
-                    nameParts[1],                                                  // lastName
+                    fullNameParts[0],                                              // firstName
+                    fullNameParts[1],                                              // lastName
                     request.getPassword(),                                         // null = no change
                     request.getRole() != null ? request.getRole() : user.getRole(),
                     request.getIsActivated() != null ? request.getIsActivated() : user.getIsActivated()
@@ -246,6 +247,7 @@ public class UserServiceImpl implements UserService {
                 .password(KEYCLOAK_MANAGED_PASSWORD)
                 .role(role)
                 .isActivated(true)
+                .assignedAirports(Collections.emptyList())
                 .build();
 
         return userRepository.save(user);
@@ -255,9 +257,9 @@ public class UserServiceImpl implements UserService {
      * Splits "John Doe" into ["John", "Doe"].
      * If only one word, lastName is empty.
      */
-    private String[] splitName(String fullName) {
+    private String[] splitFullName(String fullName) {
         if (fullName == null || fullName.isBlank()) return new String[]{"", ""};
-        String[] parts = fullName.trim().split("\\s+", 2);
-        return new String[]{parts[0], parts.length > 1 ? parts[1] : ""};
+        String[] fullNameParts = fullName.trim().split("\\s+", 2);
+        return new String[]{fullNameParts[0], fullNameParts.length > 1 ? fullNameParts[1] : ""};
     }
 }

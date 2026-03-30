@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { legs } from "../../data/flightsData";
+import { useClock } from "../../hooks/useClock";
 
 /*
 ===========================================================
@@ -67,17 +68,6 @@ CREATE FLIGHT DATASET FROM LEG OBJECTS
 const flights = legs.map(mapLegToFlight);
 
 
-/*
-===========================================================
-DELAY CODES
-===========================================================
-*/
-const delayCodes = {
-    "15": "Embarquement tardif passagers",
-    "71": "Technique avion — Maintenance",
-    "89": "Météo — Conditions défavorables",
-    "93": "Restrictions ATC",
-};
 
 /*
 ===========================================================
@@ -112,19 +102,9 @@ MAIN APP
 */
 export default function App() {
 
-    const [selected, setSelected] = useState(null);
+    const [_selected, setSelected] = useState(null);
     const [filter, setFilter] = useState("Tous");
-    const [time, setTime] = useState(new Date());
-
-    /*
-    ===============================================
-    LIVE CLOCK
-    ===============================================
-    */
-    useEffect(() => {
-        const tick = setInterval(() => setTime(new Date()), 1000);
-        return () => clearInterval(tick);
-    }, []);
+    const time = useClock();
 
     /*
     ===============================================

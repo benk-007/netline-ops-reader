@@ -13,8 +13,23 @@ import { initKeycloak } from "./auth";
 
 const root = createRoot(document.getElementById("root"));
 
-// Try to initialize Keycloak; render the app regardless of the outcome
-initKeycloak()
+const renderMockFallback = () => {
+  console.warn("[Auth] Keycloak unavailable — using mock login");
+  root.render(
+    <StrictMode>
+      <App keycloakFailed />
+    </StrictMode>
+  );
+};
+
+// Race Keycloak init against a 4-second timeout so that when Keycloak is
+// not running (e.g. local dev without Docker) the mock login appears
+// immediately instead of the browser hanging on a redirect.
+const keycloakTimeout = new Promise((_, reject) =>
+  setTimeout(() => reject(new Error("keycloak-timeout")), 4000)
+);
+
+Promise.race([initKeycloak(), keycloakTimeout])
   .then(() => {
     root.render(
       <StrictMode>
@@ -22,12 +37,4 @@ initKeycloak()
       </StrictMode>
     );
   })
-  .catch(() => {
-    // Keycloak unavailable — render with mock auth fallback
-    console.warn("[Auth] Keycloak unavailable — using mock login");
-    root.render(
-      <StrictMode>
-        <App keycloakFailed />
-      </StrictMode>
-    );
-  });
+  .catch(renderMockFallback);

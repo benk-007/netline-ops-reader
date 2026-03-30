@@ -4,6 +4,8 @@ import './AdminPage.css';
 import SearchableSelect from '../Filters/SearchableSelect';
 import { legs, Leg } from '../../data/flightsData';
 import { usersApi } from '../../api';
+import { normalizeDate, normalizeTime } from '../../utils/dateUtils';
+// import { downloadCsv, buildUsersXlsx } from '../../utils/exportUtils'; // re-enable when user export is re-activated
 
 /* ── Auth roles matching the app auth system ── */
 const APP_ROLES = [
@@ -74,7 +76,7 @@ export default function AdminPage({ onLegsImported }) {
                 name: u.fullName,
                 username: u.matricule,
                 role: frontendRole(u.role),
-                airports: [],
+                airports: u.assignedAirports || [],
                 status: u.isActivated ? 'Active' : 'Inactive',
             })));
             setError('');
@@ -98,6 +100,10 @@ export default function AdminPage({ onLegsImported }) {
     const [formAirports, setFormAirports] = useState([]);
     const [formStatus, setFormStatus]   = useState('Active');
     const [formSaving, setFormSaving]   = useState(false);
+
+    /* ── User export — disabled until re-activated ──
+    const [showExportMenu, setShowExportMenu] = useState(false);
+    ── */
 
     /* ── CSV import (users) ── */
     const csvInputRef = useRef(null);
@@ -131,7 +137,7 @@ export default function AdminPage({ onLegsImported }) {
         setFormUsername(user.username);
         setFormPassword('');
         setFormRole(user.role);
-        setFormAirports(user.airports || []);
+        setFormAirports(user.airports || user.assignedAirports || []);
         setFormStatus(user.status);
         setShowForm(true);
     }
@@ -148,6 +154,7 @@ export default function AdminPage({ onLegsImported }) {
                     matricule: formUsername,
                     role: backendRole(formRole),
                     isActivated: formStatus === 'Active',
+                    assignedAirports: formAirports,
                 };
                 if (formPassword.trim()) payload.password = formPassword;
                 await usersApi.update(editingId, payload);
@@ -158,6 +165,7 @@ export default function AdminPage({ onLegsImported }) {
                     password: formPassword || 'changeme',
                     role: backendRole(formRole),
                     isActivated: formStatus === 'Active',
+                    assignedAirports: formAirports,
                 });
             }
             setShowForm(false);
@@ -181,7 +189,7 @@ export default function AdminPage({ onLegsImported }) {
     }
 
     /* ── Delete user ── */
-    async function handleDeleteUser(user) {
+    async function _handleDeleteUser(user) {
         try {
             await usersApi.delete(user.id);
             await fetchUsers();
@@ -190,30 +198,47 @@ export default function AdminPage({ onLegsImported }) {
         }
     }
 
-    /* ── CSV import ── */
+    /* ── User export handlers — disabled until re-activated ──────────────
+    function handleExportUsersCsv() {
+        const today = new Date().toLocaleDateString('en-CA');
+        const headers = ['Full Name', 'Matricule', 'Role', 'Status'];
+        const rows = users.map(u => [
+            u.name,
+            u.username,
+            APP_ROLES.find(r => r.key === u.role)?.label || u.role,
+            u.status,
+        ]);
+        downloadCsv(headers, rows, `ram_users_${today}.csv`, ';');
+        setShowExportMenu(false);
+    }
+
+    function handleExportUsersXlsx() {
+        buildUsersXlsx(users, APP_ROLES);
+        setShowExportMenu(false);
+    }
+    ─────────────────────────────────────────────────────────────────────── */
+
+    /* ── CSV / Excel import (users) ── */
     async function handleCsvImport(e) {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
-            if (lines.length < 2) { setCsvFeedback('Fichier vide.'); return; }
-            const [header, ...rows] = lines;
-            const cols = header.toLowerCase().split(',').map(s => s.trim());
+        e.target.value = '';
+
+        async function importRows(headerRow, dataRows) {
+            const cols = headerRow.map(s => String(s).toLowerCase().trim());
             const idx = { name: cols.indexOf('name'), username: cols.indexOf('username'), role: cols.indexOf('role'), status: cols.indexOf('status'), password: cols.indexOf('password') };
             let imported = 0;
-            for (const row of rows) {
-                const cells = row.split(',').map(s => s.trim());
-                const name = idx.name >= 0 ? cells[idx.name] : '';
+            for (const cells of dataRows) {
+                const name = idx.name >= 0 ? String(cells[idx.name] || '').trim() : '';
                 if (!name) continue;
-                const roleKey = APP_ROLES.find(r => r.label.toLowerCase() === (cells[idx.role] || '').toLowerCase())?.key || 'staff_ops';
+                const roleKey = APP_ROLES.find(r => r.label.toLowerCase() === (String(cells[idx.role] || '')).toLowerCase())?.key || 'staff_ops';
                 try {
                     await usersApi.create({
                         fullName: name,
-                        matricule: (idx.username >= 0 ? cells[idx.username] : '') || name.toLowerCase().replace(/\s+/g, '.'),
-                        password: (idx.password >= 0 ? cells[idx.password] : '') || 'changeme',
+                        matricule: (idx.username >= 0 ? String(cells[idx.username] || '').trim() : '') || name.toLowerCase().replace(/\s+/g, '.'),
+                        password: (idx.password >= 0 ? String(cells[idx.password] || '').trim() : '') || 'changeme',
                         role: backendRole(roleKey),
-                        isActivated: (idx.status >= 0 ? cells[idx.status] : '') !== 'Inactive',
+                        isActivated: (idx.status >= 0 ? String(cells[idx.status] || '') : '') !== 'Inactive',
                     });
                     imported++;
                 } catch { /* skip duplicates */ }
@@ -221,64 +246,33 @@ export default function AdminPage({ onLegsImported }) {
             await fetchUsers();
             setCsvFeedback(`${imported} utilisateur${imported > 1 ? 's' : ''} importé${imported > 1 ? 's' : ''}`);
             setTimeout(() => setCsvFeedback(''), 3500);
-        };
-        reader.readAsText(file);
-        e.target.value = '';
-    }
+        }
 
-    /* ── Helpers: normalize Excel date/time values ── */
-    function normalizeDate(val) {
-        if (val == null || val === '') return null;
-        if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) return val.trim();
-        if (val instanceof Date) {
-            const y = val.getFullYear();
-            const m = String(val.getMonth() + 1).padStart(2, '0');
-            const d = String(val.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'xlsx' || ext === 'xls') {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const allRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                    if (allRows.length < 2) { setCsvFeedback('Fichier vide.'); return; }
+                    await importRows(allRows[0], allRows.slice(1));
+                } catch { setCsvFeedback('Erreur lecture fichier Excel.'); }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+                if (lines.length < 2) { setCsvFeedback('Fichier vide.'); return; }
+                const [header, ...rows] = lines;
+                const headerRow = header.split(',').map(s => s.trim());
+                const dataRows = rows.map(row => row.split(',').map(s => s.trim()));
+                await importRows(headerRow, dataRows);
+            };
+            reader.readAsText(file);
         }
-        const num = Number(val);
-        if (!isNaN(num) && num > 40000 && num < 60000) {
-            const epoch = new Date(1899, 11, 30);
-            const date = new Date(epoch.getTime() + num * 86400000);
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return `${y}-${m}-${d}`;
-        }
-        let str = String(val).trim();
-        str = str.replace(/\s+\d{1,2}:\d{2}(:\d{2})?.*$/, '').trim();
-        const slashParts = str.split(/[\/\-\.]/);
-        if (slashParts.length === 3) {
-            let [a, b, c] = slashParts;
-            if (a.length === 4) return `${a}-${b.padStart(2, '0')}-${c.padStart(2, '0')}`;
-            if (c.length === 4) return `${c}-${b.padStart(2, '0')}-${a.padStart(2, '0')}`;
-        }
-        return str || null;
-    }
-
-    function normalizeTime(val) {
-        if (val == null || val === '') return null;
-        if (typeof val === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(val.trim())) {
-            return val.trim().slice(0, 5).padStart(5, '0');
-        }
-        if (val instanceof Date) {
-            const h = String(val.getHours()).padStart(2, '0');
-            const m = String(val.getMinutes()).padStart(2, '0');
-            return `${h}:${m}`;
-        }
-        const num = Number(val);
-        if (!isNaN(num) && num >= 0 && num < 1) {
-            const totalMinutes = Math.round(num * 24 * 60);
-            const h = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0');
-            const m = String(totalMinutes % 60).padStart(2, '0');
-            return `${h}:${m}`;
-        }
-        if (!isNaN(num) && num >= 1 && num < 24) {
-            const h = Math.floor(num);
-            const m = Math.round((num - h) * 60);
-            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-        }
-        return String(val).trim() || null;
     }
 
     /* ── Shared: convert rows (array of arrays) to Leg objects ── */
@@ -398,7 +392,7 @@ export default function AdminPage({ onLegsImported }) {
                     if (rows.length < 2) { setLegCsvFeedback('Fichier vide ou invalide.'); return; }
                     const [headerRow, ...dataRows] = rows;
                     processRows(headerRow, dataRows);
-                } catch (err) {
+                } catch {
                     setLegCsvFeedback('Erreur de lecture du fichier Excel.');
                     setTimeout(() => setLegCsvFeedback(''), 4000);
                 }
@@ -497,8 +491,19 @@ export default function AdminPage({ onLegsImported }) {
                             <div className="section-header-actions">
                                 {csvFeedback && <span className="csv-feedback">{csvFeedback}</span>}
                                 {error && <span className="csv-feedback" style={{color: '#ef4444'}}>{error}</span>}
-                                <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvImport} />
+                                <input ref={csvInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={handleCsvImport} />
                                 <button className="btn-secondary" onClick={() => csvInputRef.current?.click()}>↑ Import CSV</button>
+                                {/* Export utilisateurs — disabled until re-activated
+                                <div style={{ position: 'relative' }}>
+                                    <button className="btn-secondary" onClick={() => setShowExportMenu(v => !v)}>↓ Export utilisateurs</button>
+                                    {showExportMenu && (
+                                        <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: 'var(--surface, #1e293b)', border: '1px solid var(--border, rgba(255,255,255,0.1))', borderRadius: 6, zIndex: 200, minWidth: 160 }}>
+                                            <button className="btn-secondary" style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 0 }} onClick={handleExportUsersCsv}>CSV (.csv)</button>
+                                            <button className="btn-secondary" style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 0 }} onClick={handleExportUsersXlsx}>Excel (.xlsx)</button>
+                                        </div>
+                                    )}
+                                </div>
+                                */}
                                 <button className="btn-primary" onClick={openCreateForm}>+ Nouvel utilisateur</button>
                             </div>
                         </div>

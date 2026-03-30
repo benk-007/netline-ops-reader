@@ -74,20 +74,19 @@ export default function GanttFilterBar({
   onChange,
   dayCount = 1,
   onDayCountChange,
-  referenceDate,
   onShiftDays,
   onResetToToday,
   onOpenProfiles,
   onOpenExport,
-  onImport,
+  // onImport,  // re-enable when Gantt import is re-activated
   legs = [],
   viewMode = "gantt",
   onViewChange,
+  hideFilters = false,
 }) {
   /* ── Pending (local) filter state — only applied on "Appliquer" click ── */
   const [pending, setPending] = useState(filters);
 
-  // Sync pending when parent filters change (e.g. profile load, clear from outside)
   useEffect(() => {
     setPending(filters);
   }, [filters]);
@@ -108,10 +107,8 @@ export default function GanttFilterBar({
     onChange(empty);
   }
 
-  // Detect unapplied changes
   const hasPendingChanges = JSON.stringify(pending) !== JSON.stringify(filters);
 
-  // Build dynamic option lists from current legs data
   const allDeps     = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.dep).filter(Boolean))].sort()], [legs]);
   const allArrs     = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.arr).filter(Boolean))].sort()], [legs]);
   const allServices = useMemo(() => ["Tous", ...Object.keys(SERVICE_COLORS)], []);
@@ -151,143 +148,145 @@ export default function GanttFilterBar({
         </button>
       </div>
 
-      <div className="filter-sep" />
+      {/* ── Filters — hidden for chef_escale (station view already pre-filtered) ── */}
+      {!hideFilters && (<>
+        <div className="filter-sep" />
 
-      {/* Filter icon label */}
-      <div className="filter-bar-label">
-        <FilterIcon />
-        <span>Filtres</span>
-      </div>
-
-      <div className="filter-sep" />
-
-      {/* ── Date ── */}
-      <div className="filter-chip" data-type="date">
-        <span className="filter-chip-label">
-          <span className="filter-chip-dot" />
-          Date
-        </span>
-        <SearchableSelect
-          options={allDates}
-          value={toArr(fDate)}
-          onChange={v => changePending({ fDate: v })}
-          placeholder="Rechercher date..."
-          multi
-        />
-      </div>
-
-      <div className="filter-sep" />
-
-      {/* ── DEP ── */}
-      <div className="filter-chip" data-type="dep">
-        <span className="filter-chip-label">
-          <span className="filter-chip-dot" />
-          Depart
-        </span>
-        <SearchableSelect
-          options={allDeps}
-          value={toArr(fDep)}
-          onChange={v => changePending({ fDep: v })}
-          placeholder="Rechercher aeroport..."
-          multi
-        />
-      </div>
-
-      {/* ── ARR ── */}
-      <div className="filter-chip" data-type="arr">
-        <span className="filter-chip-label">
-          <span className="filter-chip-dot" />
-          Arrivee
-        </span>
-        <SearchableSelect
-          options={allArrs}
-          value={toArr(fArr)}
-          onChange={v => changePending({ fArr: v })}
-          placeholder="Rechercher aeroport..."
-          multi
-        />
-      </div> 
-
-      <div className="filter-sep" />
-
-      {/* ── Service ── */}
-      <div className="filter-chip" data-type="service">
-        <span className="filter-chip-label">
-          <span className="filter-chip-dot" />
-          Service
-        </span>
-        <SearchableSelect
-          options={allServices}
-          value={toArr(fService)}
-          onChange={v => changePending({ fService: v })}
-          placeholder="Rechercher service..."
-          multi
-        />
-      </div>
-
-      {/* ── Subtype ── */}
-      <div className="filter-chip" data-type="type">
-        <span className="filter-chip-label">
-          <span className="filter-chip-dot" />
-          Type avion
-        </span>
-        <SearchableSelect
-          options={allSubtypes}
-          value={toArr(fSubtype)}
-          onChange={v => changePending({ fSubtype: v })}
-          placeholder="Rechercher type..."
-          multi
-        />
-      </div>
-
-      <div className="filter-sep" />
-
-      {/* ── Flight search ── */}
-      <div className="filter-chip" data-type="flight">
-        <span className="filter-chip-label">
-          <span className="filter-chip-dot" />
-          Vol N
-        </span>
-        <div className="filter-search-wrap">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--color-dim)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            id="filter-flight-input"
-            className="filter-input"
-            type="text"
-            placeholder="AT101..."
-            value={fFlight}
-            onChange={e => changePending({ fFlight: e.target.value })}
-            aria-label="Rechercher par numero de vol"
-          />
-          {fFlight && (
-            <button className="filter-clear-btn" onClick={() => changePending({ fFlight: "" })} type="button" aria-label="Effacer">x</button>
-          )}
+        <div className="filter-bar-label">
+          <FilterIcon />
+          <span>Filtres</span>
         </div>
-      </div>
 
-      {/* ── Apply button ── */}
-      <button
-        className={`filter-apply-btn ${hasPendingChanges ? "filter-apply-btn--active" : ""}`}
-        onClick={handleApply}
-        type="button"
-        title="Appliquer les filtres"
-        disabled={!hasPendingChanges}
-      >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-        <span>Appliquer</span>
-      </button>
+        <div className="filter-sep" />
 
-      {/* ── Active filter badge ── */}
-      {activeCount > 0 && (
-        <button className="filter-active-badge" onClick={clearAll} title="Effacer tous les filtres" type="button">
-          {activeCount} filtre{activeCount > 1 ? "s" : ""}
-          <span className="filter-clear-all">x</span>
+        {/* ── Date ── */}
+        <div className="filter-chip" data-type="date">
+          <span className="filter-chip-label">
+            <span className="filter-chip-dot" />
+            Date
+          </span>
+          <SearchableSelect
+            options={allDates}
+            value={toArr(fDate)}
+            onChange={v => changePending({ fDate: v })}
+            placeholder="Rechercher date..."
+            multi
+          />
+        </div>
+
+        <div className="filter-sep" />
+
+        {/* ── DEP ── */}
+        <div className="filter-chip" data-type="dep">
+          <span className="filter-chip-label">
+            <span className="filter-chip-dot" />
+            Depart
+          </span>
+          <SearchableSelect
+            options={allDeps}
+            value={toArr(fDep)}
+            onChange={v => changePending({ fDep: v })}
+            placeholder="Rechercher aeroport..."
+            multi
+          />
+        </div>
+
+        {/* ── ARR ── */}
+        <div className="filter-chip" data-type="arr">
+          <span className="filter-chip-label">
+            <span className="filter-chip-dot" />
+            Arrivee
+          </span>
+          <SearchableSelect
+            options={allArrs}
+            value={toArr(fArr)}
+            onChange={v => changePending({ fArr: v })}
+            placeholder="Rechercher aeroport..."
+            multi
+          />
+        </div>
+
+        <div className="filter-sep" />
+
+        {/* ── Service ── */}
+        <div className="filter-chip" data-type="service">
+          <span className="filter-chip-label">
+            <span className="filter-chip-dot" />
+            Service
+          </span>
+          <SearchableSelect
+            options={allServices}
+            value={toArr(fService)}
+            onChange={v => changePending({ fService: v })}
+            placeholder="Rechercher service..."
+            multi
+          />
+        </div>
+
+        {/* ── Subtype ── */}
+        <div className="filter-chip" data-type="type">
+          <span className="filter-chip-label">
+            <span className="filter-chip-dot" />
+            Type avion
+          </span>
+          <SearchableSelect
+            options={allSubtypes}
+            value={toArr(fSubtype)}
+            onChange={v => changePending({ fSubtype: v })}
+            placeholder="Rechercher type..."
+            multi
+          />
+        </div>
+
+        <div className="filter-sep" />
+
+        {/* ── Flight search ── */}
+        <div className="filter-chip" data-type="flight">
+          <span className="filter-chip-label">
+            <span className="filter-chip-dot" />
+            Vol N
+          </span>
+          <div className="filter-search-wrap">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--color-dim)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              id="filter-flight-input"
+              className="filter-input"
+              type="text"
+              placeholder="AT101..."
+              value={fFlight}
+              onChange={e => changePending({ fFlight: e.target.value })}
+              aria-label="Rechercher par numero de vol"
+            />
+            {fFlight && (
+              <button className="filter-clear-btn" onClick={() => changePending({ fFlight: "" })} type="button" aria-label="Effacer">x</button>
+            )}
+          </div>
+        </div>
+
+        {/* ── Apply button ── */}
+        <button
+          className={`filter-apply-btn ${hasPendingChanges ? "filter-apply-btn--active" : ""}`}
+          onClick={handleApply}
+          type="button"
+          title="Appliquer les filtres"
+          disabled={!hasPendingChanges}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>Appliquer</span>
         </button>
-      )}
+
+        {/* ── Active filter badge ── */}
+        {activeCount > 0 && (
+          <button className="filter-active-badge" onClick={clearAll} title="Effacer tous les filtres" type="button">
+            {activeCount} filtre{activeCount > 1 ? "s" : ""}
+            <span className="filter-clear-all">x</span>
+          </button>
+        )}
+      </>)}
 
       {/* ── Right: Day Navigation + Actions ── */}
       <div className="filter-right">
@@ -321,7 +320,7 @@ export default function GanttFilterBar({
 
         {/* Action buttons */}
         <div className="filter-actions">
-          {/* Charger button — commented out for now
+          {/* Charger (import CSV/Excel) — disabled until re-activated
           <button className="import-btn" onClick={onImport} type="button" title="Charger un fichier CSV / Excel">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />

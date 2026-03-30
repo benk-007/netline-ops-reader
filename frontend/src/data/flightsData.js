@@ -103,276 +103,273 @@ export class Leg {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MOCK LEGS — representative RAM network data
-   ~85 legs on today + extra samples on j-2, j-1, j+1, j+2.
-   All service types represented: PAX, J, F, P, O, S, VJ, Charter, Cargo, Ferry, Maintenance
+   GENERATED MOCK FLEET DATA — 40 aircraft, 12 days
    ═══════════════════════════════════════════════════════════════ */
 
-/** Returns "YYYY-MM-DD" for today + offset days */
+/** Returns "YYYY-MM-DD" for today + offset days (local time) */
 function dayOffset(n) {
   const d = new Date();
   d.setDate(d.getDate() + n);
-  return d.toISOString().slice(0, 10);
+  return d.toLocaleDateString('en-CA');
 }
 
-const D    = dayOffset(0);   // today
-const DM1  = dayOffset(-1);  // yesterday
-const DM2  = dayOffset(-2);  // 2 days ago
-const DP1  = dayOffset(1);   // tomorrow
-const DP2  = dayOffset(2);   // day after tomorrow
-
-const L = (no, fn, reg, sub, dep, arr, dt, at, st, svc, extra = {}) => {
-  const { _day, ...rest } = extra;
-  return new Leg({ LEG_NO: no, FN_CARRIER: "AT", FN_NUMBER: fn, AC_REGISTRATION: reg, AC_SUBTYPE: sub,
-    DEP_AP_SCHED: dep, ARR_AP_SCHED: arr, DEP_TIME_SCHED: dt, ARR_TIME_SCHED: at,
-    LEG_STATE: st, LEG_TYPE: svc, DAY_OF_ORIGIN: _day || D, ...rest });
-};
-
-/** Shorthand with explicit day override */
-const Ld = (day, no, fn, reg, sub, dep, arr, dt, at, st, svc, extra = {}) =>
-  L(no, fn, reg, sub, dep, arr, dt, at, st, svc, { _day: day, ...extra });
-
-export const legs = [
-  /* ── CN-RHA  B737-800 — Europe (J) ───────────────── */
-  L("L001","200","CN-RHA","B737-800","CMN","ORY","06:00","09:30","Arrived","J",{OFF_BLOCK_TIME:"06:02",AIRBORNE_TIME:"06:14",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:35"}),
-  L("L002","201","CN-RHA","B737-800","ORY","CMN","11:30","15:00","Airborne","J",{OFF_BLOCK_TIME:"11:33",AIRBORNE_TIME:"11:45"}),
-  L("L003","202","CN-RHA","B737-800","CMN","LYS","17:00","20:30","Scheduled","J"),
-  L("L004","203","CN-RHA","B737-800","LYS","CMN","21:30","23:50","Scheduled","J"),
-
-  /* ── CN-RHB  B737-800 — Spain (PAX) ─────────────── */
-  L("L005","300","CN-RHB","B737-800","CMN","BCN","07:00","09:40","Arrived","PAX",{OFF_BLOCK_TIME:"07:03",AIRBORNE_TIME:"07:15",LANDING_TIME:"09:38",ON_BLOCK_TIME:"09:44"}),
-  L("L006","301","CN-RHB","B737-800","BCN","CMN","11:00","13:40","Scheduled","PAX"),
-  L("L007","302","CN-RHB","B737-800","CMN","MAD","15:30","17:10","Scheduled","PAX"),
-  L("L008","303","CN-RHB","B737-800","MAD","CMN","18:30","20:10","Scheduled","PAX"),
-
-  /* ── CN-RHC  B737-800 — Italy (PAX) ─────────────── */
-  L("L009","400","CN-RHC","B737-800","CMN","FCO","08:00","11:40","Arrived","PAX",{OFF_BLOCK_TIME:"08:02",AIRBORNE_TIME:"08:14",LANDING_TIME:"11:38",ON_BLOCK_TIME:"11:45"}),
-  L("L010","401","CN-RHC","B737-800","FCO","CMN","13:30","17:10","Scheduled","PAX"),
-  L("L011","402","CN-RHC","B737-800","CMN","MXP","18:30","22:00","Scheduled","PAX"),
-
-  /* ── CN-RHD  B737-800 — Belgium (J) ─────────────── */
-  L("L012","410","CN-RHD","B737-800","CMN","BRU","06:30","10:00","Arrived","J",{OFF_BLOCK_TIME:"06:32",AIRBORNE_TIME:"06:44",LANDING_TIME:"09:58",ON_BLOCK_TIME:"10:05"}),
-  L("L013","411","CN-RHD","B737-800","BRU","CMN","12:00","15:20","Delayed","J",{DELAY_CODE_01:"93",DELAY_TIME_01:40}),
-  L("L014","412","CN-RHD","B737-800","CMN","AMS","17:30","21:00","Scheduled","J"),
-
-  /* ── CN-RHE  B737-800 — UK (PAX) ────────────────── */
-  L("L015","500","CN-RHE","B737-800","CMN","LHR","07:30","11:00","Arrived","PAX",{OFF_BLOCK_TIME:"07:32",AIRBORNE_TIME:"07:45",LANDING_TIME:"10:58",ON_BLOCK_TIME:"11:05"}),
-  L("L016","501","CN-RHE","B737-800","LHR","CMN","13:00","16:30","Boarding","PAX"),
-  L("L017","502","CN-RHE","B737-800","CMN","MAN","18:00","21:30","Scheduled","PAX"),
-
-  /* ── CN-RHF  B737-800 — Germany (PAX) ───────────── */
-  L("L018","510","CN-RHF","B737-800","CMN","FRA","06:00","09:30","Arrived","PAX",{OFF_BLOCK_TIME:"06:03",AIRBORNE_TIME:"06:15",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:34"}),
-  L("L019","511","CN-RHF","B737-800","FRA","CMN","11:30","15:00","Scheduled","PAX"),
-  L("L020","512","CN-RHF","B737-800","CMN","MUC","16:30","20:00","Scheduled","PAX"),
-  L("L021","513","CN-RHF","B737-800","MUC","CMN","21:00","23:30","Scheduled","PAX"),
-
-  /* ── CN-RHG  B737-800 — Domestic (PAX) — Cancelled ─ */
-  L("L022","600","CN-RHG","B737-800","CMN","AGA","08:00","09:00","Cancelled","PAX"),
-  L("L023","601","CN-RHG","B737-800","AGA","CMN","10:30","11:30","Cancelled","PAX"),
-
-  /* ── CN-RHH  B737-800 — Maghreb (PAX) ──────────── */
-  L("L024","610","CN-RHH","B737-800","CMN","TUN","07:00","09:10","Arrived","PAX",{OFF_BLOCK_TIME:"07:04",AIRBORNE_TIME:"07:16",LANDING_TIME:"09:08",ON_BLOCK_TIME:"09:14"}),
-  L("L025","611","CN-RHH","B737-800","TUN","CMN","10:30","12:40","Delayed","PAX",{DELAY_CODE_01:"15",DELAY_TIME_01:25}),
-  L("L026","612","CN-RHH","B737-800","CMN","ALG","15:00","16:50","Scheduled","PAX"),
-  L("L027","613","CN-RHH","B737-800","ALG","CMN","18:00","19:50","Scheduled","PAX"),
-
-  /* ── CN-RHI  B737-800 — Domestic shuttle (PAX) ──── */
-  L("L028","620","CN-RHI","B737-800","CMN","RAK","07:30","08:30","Arrived","PAX",{OFF_BLOCK_TIME:"07:33",AIRBORNE_TIME:"07:43",LANDING_TIME:"08:28",ON_BLOCK_TIME:"08:33"}),
-  L("L029","621","CN-RHI","B737-800","RAK","CMN","09:30","10:30","Arrived","PAX",{OFF_BLOCK_TIME:"09:32",AIRBORNE_TIME:"09:42",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:34"}),
-  L("L030","622","CN-RHI","B737-800","CMN","FES","12:00","12:50","Boarding","PAX"),
-  L("L031","623","CN-RHI","B737-800","FES","CMN","14:00","14:50","Scheduled","PAX"),
-  L("L032","624","CN-RHI","B737-800","CMN","OUD","16:00","17:10","Scheduled","PAX"),
-  L("L033","625","CN-RHI","B737-800","OUD","CMN","18:30","19:40","Scheduled","PAX"),
-
-  /* ── CN-RHJ  B737-800 — Freight (F) ─────────────── */
-  L("L034","880","CN-RHJ","B737-800","CMN","ACC","03:00","07:30","Arrived","F",{OFF_BLOCK_TIME:"03:04",AIRBORNE_TIME:"03:16",LANDING_TIME:"07:28",ON_BLOCK_TIME:"07:35"}),
-  L("L035","881","CN-RHJ","B737-800","ACC","CMN","10:00","14:30","Airborne","F",{OFF_BLOCK_TIME:"10:05",AIRBORNE_TIME:"10:18"}),
-  L("L036","882","CN-RHJ","B737-800","CMN","LOS","17:00","21:00","Scheduled","F"),
-
-  /* ── CN-ROA  B787-9 — Longhaul JFK (PAX) ────────── */
-  L("L037","100","CN-ROA","B787-9","CMN","JFK","01:15","09:40","Arrived","PAX",{OFF_BLOCK_TIME:"01:18",AIRBORNE_TIME:"01:30",LANDING_TIME:"09:38",ON_BLOCK_TIME:"09:45"}),
-  L("L038","101","CN-ROA","B787-9","JFK","CMN","14:30","04:20","Scheduled","PAX"),
-
-  /* ── CN-ROB  B787-9 — Longhaul MTL (PAX) ────────── */
-  L("L039","110","CN-ROB","B787-9","CMN","YUL","02:00","10:30","Arrived","PAX",{OFF_BLOCK_TIME:"02:03",AIRBORNE_TIME:"02:15",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:35"}),
-  L("L040","111","CN-ROB","B787-9","YUL","CMN","15:00","04:00","Scheduled","PAX"),
-
-  /* ── CN-ROC  B787-8 — CDG (J) ───────────────────── */
-  L("L041","120","CN-ROC","B787-8","CMN","CDG","06:00","09:30","Arrived","J",{OFF_BLOCK_TIME:"06:02",AIRBORNE_TIME:"06:14",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:35"}),
-  L("L042","121","CN-ROC","B787-8","CDG","CMN","11:45","15:15","Airborne","J",{OFF_BLOCK_TIME:"11:48",AIRBORNE_TIME:"12:00"}),
-  L("L043","122","CN-ROC","B787-8","CMN","CDG","18:00","21:30","Scheduled","J"),
-
-  /* ── CN-ROD  B787-9 — Charter IST ───────────────── */
-  L("L044","700","CN-ROD","B787-9","CMN","IST","08:00","12:30","Airborne","Charter",{OFF_BLOCK_TIME:"08:04",AIRBORNE_TIME:"08:16"}),
-  L("L045","701","CN-ROD","B787-9","IST","CMN","15:00","19:30","Scheduled","Charter"),
-
-  /* ── CN-ROE  B737-800 — Cargo CMN-CAI ───────────── */
-  L("L046","890","CN-ROE","B737-800","CMN","CAI","04:00","09:00","Arrived","Cargo",{OFF_BLOCK_TIME:"04:03",AIRBORNE_TIME:"04:15",LANDING_TIME:"08:58",ON_BLOCK_TIME:"09:05"}),
-  L("L047","891","CN-ROE","B737-800","CAI","CMN","12:00","17:00","Scheduled","Cargo"),
-
-  /* ── CN-RGA  ATR72-600 — Regional RAK (PAX) ─────── */
-  L("L048","630","CN-RGA","ATR72-600","CMN","RAK","08:00","09:00","Arrived","PAX",{OFF_BLOCK_TIME:"08:02",AIRBORNE_TIME:"08:12",LANDING_TIME:"08:58",ON_BLOCK_TIME:"09:04"}),
-  L("L049","631","CN-RGA","ATR72-600","RAK","CMN","10:00","11:00","Arrived","PAX",{OFF_BLOCK_TIME:"10:03",AIRBORNE_TIME:"10:13",LANDING_TIME:"10:58",ON_BLOCK_TIME:"11:04"}),
-  L("L050","632","CN-RGA","ATR72-600","CMN","NDR","13:00","14:10","Scheduled","PAX"),
-  L("L051","633","CN-RGA","ATR72-600","NDR","CMN","15:30","16:40","Scheduled","PAX"),
-
-  /* ── CN-RGB  ATR72-600 — Regional FES/TNG (PAX) ─── */
-  L("L052","640","CN-RGB","ATR72-600","CMN","FES","07:30","08:20","Arrived","PAX",{OFF_BLOCK_TIME:"07:32",AIRBORNE_TIME:"07:42",LANDING_TIME:"08:18",ON_BLOCK_TIME:"08:24"}),
-  L("L053","641","CN-RGB","ATR72-600","FES","TNG","09:00","09:50","Arrived","PAX",{OFF_BLOCK_TIME:"09:02",AIRBORNE_TIME:"09:12",LANDING_TIME:"09:48",ON_BLOCK_TIME:"09:54"}),
-  L("L054","642","CN-RGB","ATR72-600","TNG","CMN","11:00","12:00","Delayed","PAX",{DELAY_CODE_01:"89",DELAY_TIME_01:15}),
-  L("L055","643","CN-RGB","ATR72-600","CMN","OZZ","14:00","15:30","Scheduled","PAX"),
-  L("L056","644","CN-RGB","ATR72-600","OZZ","CMN","17:00","18:30","Scheduled","PAX"),
-
-  /* ── CN-RGC  B737-800 — Positioning (P) ─────────── */
-  L("L057","001","CN-RGC","B737-800","CMN","MRS","05:00","08:20","Arrived","P",{OFF_BLOCK_TIME:"05:03",AIRBORNE_TIME:"05:15",LANDING_TIME:"08:18",ON_BLOCK_TIME:"08:25"}),
-  L("L058","002","CN-RGC","B737-800","MRS","CMN","14:00","17:20","Scheduled","P"),
-
-  /* ── CN-RGD  B737-800 — Other/Charter (O) ───────── */
-  L("L059","950","CN-RGD","B737-800","CMN","SSH","07:00","12:30","Airborne","O",{OFF_BLOCK_TIME:"07:05",AIRBORNE_TIME:"07:18"}),
-  L("L060","951","CN-RGD","B737-800","SSH","CMN","16:00","21:30","Scheduled","O"),
-
-  /* ── CN-RGE  ATR72-600 — Special (S) ────────────── */
-  L("L061","005","CN-RGE","ATR72-600","CMN","ERH","09:00","10:30","Arrived","S",{OFF_BLOCK_TIME:"09:02",AIRBORNE_TIME:"09:12",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:34"}),
-  L("L062","006","CN-RGE","ATR72-600","ERH","CMN","12:00","13:30","Scheduled","S"),
-
-  /* ── CN-RGF  B787-8 — VJ (vol journée) ─────────── */
-  L("L063","960","CN-RGF","B787-8","CMN","DOH","03:00","10:30","Arrived","VJ",{OFF_BLOCK_TIME:"03:04",AIRBORNE_TIME:"03:16",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:35"}),
-  L("L064","961","CN-RGF","B787-8","DOH","CMN","14:00","21:30","Scheduled","VJ"),
-
-  /* ── CN-RGG  B737-800 — Ferry + Maintenance ─────── */
-  L("L065","098","CN-RGG","B737-800","CMN","TNG","06:30","07:15","Arrived","Ferry",{OFF_BLOCK_TIME:"06:32",AIRBORNE_TIME:"06:42",LANDING_TIME:"07:13",ON_BLOCK_TIME:"07:18"}),
-  L("L066","099","CN-RGG","B737-800","TNG","CMN","13:00","13:45","Scheduled","Maintenance"),
-
-  /* ── CN-RGH  B737-800 — Swiss/Portugal (PAX) ────── */
-  L("L067","520","CN-RGH","B737-800","CMN","GVA","08:30","12:00","Arrived","PAX",{OFF_BLOCK_TIME:"08:33",AIRBORNE_TIME:"08:45",LANDING_TIME:"11:58",ON_BLOCK_TIME:"12:05"}),
-  L("L068","521","CN-RGH","B737-800","GVA","CMN","14:00","17:30","Scheduled","PAX"),
-  L("L069","522","CN-RGH","B737-800","CMN","LIS","19:00","21:00","Scheduled","PAX"),
-  L("L070","523","CN-RGH","B737-800","LIS","CMN","22:00","23:50","Scheduled","PAX"),
-
-  /* ── CN-RGI  B737-800 — West Africa (PAX) ───────── */
-  L("L071","530","CN-RGI","B737-800","CMN","DKR","09:00","13:30","Delayed","PAX",{DELAY_CODE_01:"71",DELAY_TIME_01:35,OFF_BLOCK_TIME:"09:35",AIRBORNE_TIME:"09:48"}),
-  L("L072","531","CN-RGI","B737-800","DKR","CMN","16:00","20:30","Scheduled","PAX"),
-
-  /* ── CN-RGJ  B787-9 — Longhaul BKK (PAX) ────────── */
-  L("L073","140","CN-RGJ","B787-9","CMN","DOH","02:00","09:00","Arrived","PAX",{OFF_BLOCK_TIME:"02:03",AIRBORNE_TIME:"02:15",LANDING_TIME:"08:58",ON_BLOCK_TIME:"09:05"}),
-  L("L074","141","CN-RGJ","B787-9","DOH","CMN","13:00","20:00","Scheduled","PAX"),
-
-  /* ── CN-RGK  B737-800 — Turkey (J) ──────────────── */
-  L("L075","540","CN-RGK","B737-800","CMN","IST","06:00","10:30","Arrived","J",{OFF_BLOCK_TIME:"06:03",AIRBORNE_TIME:"06:15",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:35"}),
-  L("L076","541","CN-RGK","B737-800","IST","CMN","13:00","17:30","Scheduled","J"),
-
-  /* ── CN-RGL  B737-800 — Netherlands (PAX) ───────── */
-  L("L077","550","CN-RGL","B737-800","CMN","AMS","07:00","10:30","Arrived","PAX",{OFF_BLOCK_TIME:"07:02",AIRBORNE_TIME:"07:14",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:34"}),
-  L("L078","551","CN-RGL","B737-800","AMS","CMN","12:30","16:00","Scheduled","PAX"),
-  L("L079","552","CN-RGL","B737-800","CMN","DUS","17:30","21:00","Scheduled","PAX"),
-  L("L080","553","CN-RGL","B737-800","DUS","CMN","22:00","23:40","Scheduled","PAX"),
-
-  /* ── CN-RGM  B737-800 — Domestic extra (PAX) ────── */
-  L("L081","660","CN-RGM","B737-800","CMN","AGA","06:30","07:30","Arrived","PAX",{OFF_BLOCK_TIME:"06:32",AIRBORNE_TIME:"06:42",LANDING_TIME:"07:28",ON_BLOCK_TIME:"07:34"}),
-  L("L082","661","CN-RGM","B737-800","AGA","CMN","08:30","09:30","Arrived","PAX",{OFF_BLOCK_TIME:"08:33",AIRBORNE_TIME:"08:43",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:34"}),
-  L("L083","662","CN-RGM","B737-800","CMN","RAK","11:00","12:00","Boarding","PAX"),
-  L("L084","663","CN-RGM","B737-800","RAK","CMN","13:30","14:30","Scheduled","PAX"),
-  L("L085","664","CN-RGM","B737-800","CMN","TNG","16:00","17:00","Scheduled","PAX"),
-  L("L086","665","CN-RGM","B737-800","TNG","CMN","18:30","19:30","Scheduled","PAX"),
-
-  /* ═══════════════════════════════════════════════════════════════
-     J-1  (yesterday)
-     ═══════════════════════════════════════════════════════════════ */
-  Ld(DM1,"L100","200","CN-RHA","B737-800","CMN","ORY","06:15","09:45","Arrived","J",{OFF_BLOCK_TIME:"06:18",AIRBORNE_TIME:"06:30",LANDING_TIME:"09:43",ON_BLOCK_TIME:"09:50"}),
-  Ld(DM1,"L101","201","CN-RHA","B737-800","ORY","CMN","11:45","15:15","Arrived","J",{OFF_BLOCK_TIME:"11:48",AIRBORNE_TIME:"12:00",LANDING_TIME:"15:13",ON_BLOCK_TIME:"15:20"}),
-  Ld(DM1,"L102","300","CN-RHB","B737-800","CMN","BCN","07:30","10:10","Arrived","PAX",{OFF_BLOCK_TIME:"07:33",AIRBORNE_TIME:"07:45",LANDING_TIME:"10:08",ON_BLOCK_TIME:"10:14"}),
-  Ld(DM1,"L103","301","CN-RHB","B737-800","BCN","CMN","12:00","14:40","Arrived","PAX",{OFF_BLOCK_TIME:"12:03",AIRBORNE_TIME:"12:15",LANDING_TIME:"14:38",ON_BLOCK_TIME:"14:44"}),
-  Ld(DM1,"L104","400","CN-RHC","B737-800","CMN","FCO","08:30","12:10","Arrived","PAX",{OFF_BLOCK_TIME:"08:33",AIRBORNE_TIME:"08:45",LANDING_TIME:"12:08",ON_BLOCK_TIME:"12:15"}),
-  Ld(DM1,"L105","401","CN-RHC","B737-800","FCO","CMN","14:00","17:40","Arrived","PAX",{OFF_BLOCK_TIME:"14:03",AIRBORNE_TIME:"14:15",LANDING_TIME:"17:38",ON_BLOCK_TIME:"17:45"}),
-  Ld(DM1,"L106","120","CN-ROC","B787-8","CMN","CDG","06:30","10:00","Arrived","J",{OFF_BLOCK_TIME:"06:33",AIRBORNE_TIME:"06:45",LANDING_TIME:"09:58",ON_BLOCK_TIME:"10:05"}),
-  Ld(DM1,"L107","121","CN-ROC","B787-8","CDG","CMN","12:00","15:30","Arrived","J",{OFF_BLOCK_TIME:"12:03",AIRBORNE_TIME:"12:15",LANDING_TIME:"15:28",ON_BLOCK_TIME:"15:35"}),
-  Ld(DM1,"L108","630","CN-RGA","ATR72-600","CMN","RAK","08:30","09:30","Arrived","PAX",{OFF_BLOCK_TIME:"08:33",AIRBORNE_TIME:"08:43",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:34"}),
-  Ld(DM1,"L109","631","CN-RGA","ATR72-600","RAK","CMN","10:30","11:30","Arrived","PAX",{OFF_BLOCK_TIME:"10:33",AIRBORNE_TIME:"10:43",LANDING_TIME:"11:28",ON_BLOCK_TIME:"11:34"}),
-  Ld(DM1,"L110","880","CN-RHJ","B737-800","CMN","ACC","03:30","08:00","Arrived","F",{OFF_BLOCK_TIME:"03:34",AIRBORNE_TIME:"03:46",LANDING_TIME:"07:58",ON_BLOCK_TIME:"08:05"}),
-  Ld(DM1,"L111","881","CN-RHJ","B737-800","ACC","CMN","10:30","15:00","Arrived","F",{OFF_BLOCK_TIME:"10:34",AIRBORNE_TIME:"10:46",LANDING_TIME:"14:58",ON_BLOCK_TIME:"15:05"}),
-  Ld(DM1,"L112","510","CN-RHF","B737-800","CMN","FRA","06:30","10:00","Arrived","PAX",{OFF_BLOCK_TIME:"06:33",AIRBORNE_TIME:"06:45",LANDING_TIME:"09:58",ON_BLOCK_TIME:"10:05"}),
-  Ld(DM1,"L113","511","CN-RHF","B737-800","FRA","CMN","12:00","15:30","Arrived","PAX",{OFF_BLOCK_TIME:"12:03",AIRBORNE_TIME:"12:15",LANDING_TIME:"15:28",ON_BLOCK_TIME:"15:35"}),
-  Ld(DM1,"L114","660","CN-RGM","B737-800","CMN","AGA","07:00","08:00","Arrived","PAX",{OFF_BLOCK_TIME:"07:03",AIRBORNE_TIME:"07:13",LANDING_TIME:"07:58",ON_BLOCK_TIME:"08:04"}),
-  Ld(DM1,"L115","661","CN-RGM","B737-800","AGA","CMN","09:00","10:00","Arrived","PAX",{OFF_BLOCK_TIME:"09:03",AIRBORNE_TIME:"09:13",LANDING_TIME:"09:58",ON_BLOCK_TIME:"10:04"}),
-  Ld(DM1,"L116","550","CN-RGL","B737-800","CMN","AMS","07:30","11:00","Arrived","PAX",{OFF_BLOCK_TIME:"07:33",AIRBORNE_TIME:"07:45",LANDING_TIME:"10:58",ON_BLOCK_TIME:"11:04"}),
-  Ld(DM1,"L117","551","CN-RGL","B737-800","AMS","CMN","13:00","16:30","Arrived","PAX",{OFF_BLOCK_TIME:"13:03",AIRBORNE_TIME:"13:15",LANDING_TIME:"16:28",ON_BLOCK_TIME:"16:34"}),
-
-  /* ═══════════════════════════════════════════════════════════════
-     J-2  (2 days ago)
-     ═══════════════════════════════════════════════════════════════ */
-  Ld(DM2,"L200","200","CN-RHA","B737-800","CMN","ORY","06:00","09:30","Arrived","J",{OFF_BLOCK_TIME:"06:04",AIRBORNE_TIME:"06:16",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:35"}),
-  Ld(DM2,"L201","201","CN-RHA","B737-800","ORY","CMN","11:30","15:00","Arrived","J",{OFF_BLOCK_TIME:"11:34",AIRBORNE_TIME:"11:46",LANDING_TIME:"14:58",ON_BLOCK_TIME:"15:05"}),
-  Ld(DM2,"L202","100","CN-ROA","B787-9","CMN","JFK","01:00","09:30","Arrived","PAX",{OFF_BLOCK_TIME:"01:04",AIRBORNE_TIME:"01:16",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:35"}),
-  Ld(DM2,"L203","101","CN-ROA","B787-9","JFK","CMN","14:00","04:00","Arrived","PAX",{OFF_BLOCK_TIME:"14:03",AIRBORNE_TIME:"14:15"}),
-  Ld(DM2,"L204","300","CN-RHB","B737-800","CMN","BCN","07:00","09:40","Arrived","PAX",{OFF_BLOCK_TIME:"07:03",AIRBORNE_TIME:"07:15",LANDING_TIME:"09:38",ON_BLOCK_TIME:"09:44"}),
-  Ld(DM2,"L205","301","CN-RHB","B737-800","BCN","CMN","11:00","13:40","Arrived","PAX",{OFF_BLOCK_TIME:"11:03",AIRBORNE_TIME:"11:15",LANDING_TIME:"13:38",ON_BLOCK_TIME:"13:44"}),
-  Ld(DM2,"L206","620","CN-RHI","B737-800","CMN","RAK","08:00","09:00","Arrived","PAX",{OFF_BLOCK_TIME:"08:03",AIRBORNE_TIME:"08:13",LANDING_TIME:"08:58",ON_BLOCK_TIME:"09:04"}),
-  Ld(DM2,"L207","621","CN-RHI","B737-800","RAK","CMN","10:00","11:00","Arrived","PAX",{OFF_BLOCK_TIME:"10:03",AIRBORNE_TIME:"10:13",LANDING_TIME:"10:58",ON_BLOCK_TIME:"11:04"}),
-  Ld(DM2,"L208","890","CN-ROE","B737-800","CMN","CAI","04:30","09:30","Arrived","Cargo",{OFF_BLOCK_TIME:"04:34",AIRBORNE_TIME:"04:46",LANDING_TIME:"09:28",ON_BLOCK_TIME:"09:35"}),
-  Ld(DM2,"L209","891","CN-ROE","B737-800","CAI","CMN","12:30","17:30","Arrived","Cargo",{OFF_BLOCK_TIME:"12:34",AIRBORNE_TIME:"12:46",LANDING_TIME:"17:28",ON_BLOCK_TIME:"17:35"}),
-  Ld(DM2,"L210","410","CN-RHD","B737-800","CMN","BRU","07:00","10:30","Arrived","J",{OFF_BLOCK_TIME:"07:03",AIRBORNE_TIME:"07:15",LANDING_TIME:"10:28",ON_BLOCK_TIME:"10:35"}),
-  Ld(DM2,"L211","411","CN-RHD","B737-800","BRU","CMN","12:30","15:50","Arrived","J",{OFF_BLOCK_TIME:"12:34",AIRBORNE_TIME:"12:46",LANDING_TIME:"15:48",ON_BLOCK_TIME:"15:55"}),
-  Ld(DM2,"L212","640","CN-RGB","ATR72-600","CMN","FES","07:00","07:50","Arrived","PAX",{OFF_BLOCK_TIME:"07:02",AIRBORNE_TIME:"07:12",LANDING_TIME:"07:48",ON_BLOCK_TIME:"07:54"}),
-  Ld(DM2,"L213","641","CN-RGB","ATR72-600","FES","CMN","09:00","09:50","Arrived","PAX",{OFF_BLOCK_TIME:"09:03",AIRBORNE_TIME:"09:13",LANDING_TIME:"09:48",ON_BLOCK_TIME:"09:54"}),
-
-  /* ═══════════════════════════════════════════════════════════════
-     J+1  (tomorrow)
-     ═══════════════════════════════════════════════════════════════ */
-  Ld(DP1,"L300","200","CN-RHA","B737-800","CMN","ORY","06:00","09:30","Scheduled","J"),
-  Ld(DP1,"L301","201","CN-RHA","B737-800","ORY","CMN","11:30","15:00","Scheduled","J"),
-  Ld(DP1,"L302","202","CN-RHA","B737-800","CMN","LYS","17:00","20:30","Scheduled","J"),
-  Ld(DP1,"L303","300","CN-RHB","B737-800","CMN","BCN","07:00","09:40","Scheduled","PAX"),
-  Ld(DP1,"L304","301","CN-RHB","B737-800","BCN","CMN","11:00","13:40","Scheduled","PAX"),
-  Ld(DP1,"L305","302","CN-RHB","B737-800","CMN","MAD","15:30","17:10","Scheduled","PAX"),
-  Ld(DP1,"L306","303","CN-RHB","B737-800","MAD","CMN","18:30","20:10","Scheduled","PAX"),
-  Ld(DP1,"L307","400","CN-RHC","B737-800","CMN","FCO","08:00","11:40","Scheduled","PAX"),
-  Ld(DP1,"L308","401","CN-RHC","B737-800","FCO","CMN","13:30","17:10","Scheduled","PAX"),
-  Ld(DP1,"L309","120","CN-ROC","B787-8","CMN","CDG","06:00","09:30","Scheduled","J"),
-  Ld(DP1,"L310","121","CN-ROC","B787-8","CDG","CMN","11:45","15:15","Scheduled","J"),
-  Ld(DP1,"L311","122","CN-ROC","B787-8","CMN","CDG","18:00","21:30","Scheduled","J"),
-  Ld(DP1,"L312","500","CN-RHE","B737-800","CMN","LHR","07:30","11:00","Scheduled","PAX"),
-  Ld(DP1,"L313","501","CN-RHE","B737-800","LHR","CMN","13:00","16:30","Scheduled","PAX"),
-  Ld(DP1,"L314","630","CN-RGA","ATR72-600","CMN","RAK","08:00","09:00","Scheduled","PAX"),
-  Ld(DP1,"L315","631","CN-RGA","ATR72-600","RAK","CMN","10:00","11:00","Scheduled","PAX"),
-  Ld(DP1,"L316","632","CN-RGA","ATR72-600","CMN","NDR","13:00","14:10","Scheduled","PAX"),
-  Ld(DP1,"L317","633","CN-RGA","ATR72-600","NDR","CMN","15:30","16:40","Scheduled","PAX"),
-  Ld(DP1,"L318","880","CN-RHJ","B737-800","CMN","ACC","03:00","07:30","Scheduled","F"),
-  Ld(DP1,"L319","881","CN-RHJ","B737-800","ACC","CMN","10:00","14:30","Scheduled","F"),
-  Ld(DP1,"L320","100","CN-ROA","B787-9","CMN","JFK","01:15","09:40","Scheduled","PAX"),
-  Ld(DP1,"L321","101","CN-ROA","B787-9","JFK","CMN","14:30","04:20","Scheduled","PAX"),
-  Ld(DP1,"L322","660","CN-RGM","B737-800","CMN","AGA","06:30","07:30","Scheduled","PAX"),
-  Ld(DP1,"L323","661","CN-RGM","B737-800","AGA","CMN","08:30","09:30","Scheduled","PAX"),
-  Ld(DP1,"L324","662","CN-RGM","B737-800","CMN","RAK","11:00","12:00","Scheduled","PAX"),
-  Ld(DP1,"L325","663","CN-RGM","B737-800","RAK","CMN","13:30","14:30","Scheduled","PAX"),
-  Ld(DP1,"L326","950","CN-RGD","B737-800","CMN","SSH","07:00","12:30","Scheduled","O"),
-  Ld(DP1,"L327","951","CN-RGD","B737-800","SSH","CMN","16:00","21:30","Scheduled","O"),
-
-  /* ═══════════════════════════════════════════════════════════════
-     J+2  (day after tomorrow)
-     ═══════════════════════════════════════════════════════════════ */
-  Ld(DP2,"L400","200","CN-RHA","B737-800","CMN","ORY","06:30","10:00","Scheduled","J"),
-  Ld(DP2,"L401","201","CN-RHA","B737-800","ORY","CMN","12:00","15:30","Scheduled","J"),
-  Ld(DP2,"L402","300","CN-RHB","B737-800","CMN","BCN","07:30","10:10","Scheduled","PAX"),
-  Ld(DP2,"L403","301","CN-RHB","B737-800","BCN","CMN","12:00","14:40","Scheduled","PAX"),
-  Ld(DP2,"L404","110","CN-ROB","B787-9","CMN","YUL","02:00","10:30","Scheduled","PAX"),
-  Ld(DP2,"L405","111","CN-ROB","B787-9","YUL","CMN","15:00","04:00","Scheduled","PAX"),
-  Ld(DP2,"L406","120","CN-ROC","B787-8","CMN","CDG","06:00","09:30","Scheduled","J"),
-  Ld(DP2,"L407","121","CN-ROC","B787-8","CDG","CMN","11:45","15:15","Scheduled","J"),
-  Ld(DP2,"L408","410","CN-RHD","B737-800","CMN","BRU","06:30","10:00","Scheduled","J"),
-  Ld(DP2,"L409","411","CN-RHD","B737-800","BRU","CMN","12:00","15:20","Scheduled","J"),
-  Ld(DP2,"L410","510","CN-RHF","B737-800","CMN","FRA","06:00","09:30","Scheduled","PAX"),
-  Ld(DP2,"L411","511","CN-RHF","B737-800","FRA","CMN","11:30","15:00","Scheduled","PAX"),
-  Ld(DP2,"L412","630","CN-RGA","ATR72-600","CMN","RAK","08:30","09:30","Scheduled","PAX"),
-  Ld(DP2,"L413","631","CN-RGA","ATR72-600","RAK","CMN","10:30","11:30","Scheduled","PAX"),
-  Ld(DP2,"L414","700","CN-ROD","B787-9","CMN","IST","08:00","12:30","Scheduled","Charter"),
-  Ld(DP2,"L415","701","CN-ROD","B787-9","IST","CMN","15:00","19:30","Scheduled","Charter"),
-  Ld(DP2,"L416","890","CN-ROE","B737-800","CMN","CAI","04:00","09:00","Scheduled","Cargo"),
-  Ld(DP2,"L417","891","CN-ROE","B737-800","CAI","CMN","12:00","17:00","Scheduled","Cargo"),
-  Ld(DP2,"L418","530","CN-RGI","B737-800","CMN","DKR","09:00","13:30","Scheduled","PAX"),
-  Ld(DP2,"L419","531","CN-RGI","B737-800","DKR","CMN","16:00","20:30","Scheduled","PAX"),
+/* ── Fleet definitions ── */
+const B737_REGS = [
+  'CN-RHA','CN-RHB','CN-RHC','CN-RHD','CN-RHE',
+  'CN-RHF','CN-RHG','CN-RHH','CN-RHI','CN-RHJ',
+  'CN-RHK','CN-RHL','CN-RHM','CN-RHN','CN-RHO',
+  'CN-RHP','CN-RHQ','CN-RHR','CN-RHS','CN-RHT',
 ];
 
+const B789_REGS = [
+  'CN-ROA','CN-ROB','CN-ROC','CN-ROD','CN-ROE',
+  'CN-ROF','CN-ROG','CN-ROH',
+];
 
+const B788_REGS = [
+  'CN-ROI','CN-ROJ','CN-ROK','CN-ROL',
+];
+
+const ATR_REGS = [
+  'CN-RGA','CN-RGB','CN-RGC','CN-RGD',
+  'CN-RGE','CN-RGF','CN-RGG','CN-RGH',
+];
+
+/*
+ * Route pairs — one entry per destination.
+ * outFn / retFn : flight numbers for outbound and return leg.
+ * dur           : flight duration in minutes (same each direction).
+ * svc           : service type.
+ * Hub is always CMN for all fleets.
+ */
+const HUB = 'CMN';
+
+const B737_PAIRS = [
+  { dest: 'ORY', outFn: '200', retFn: '201', dur: 210, svc: 'J'   },
+  { dest: 'BCN', outFn: '300', retFn: '301', dur: 155, svc: 'PAX' },
+  { dest: 'FCO', outFn: '400', retFn: '401', dur: 220, svc: 'PAX' },
+  { dest: 'BRU', outFn: '410', retFn: '411', dur: 210, svc: 'J'   },
+  { dest: 'LHR', outFn: '500', retFn: '501', dur: 185, svc: 'PAX' },
+  { dest: 'FRA', outFn: '510', retFn: '511', dur: 210, svc: 'PAX' },
+  { dest: 'GVA', outFn: '520', retFn: '521', dur: 210, svc: 'PAX' },
+  { dest: 'DKR', outFn: '530', retFn: '531', dur: 270, svc: 'PAX' },
+  { dest: 'AMS', outFn: '540', retFn: '541', dur: 210, svc: 'J'   },
+  { dest: 'MAD', outFn: '550', retFn: '551', dur: 95,  svc: 'PAX' },
+  { dest: 'TUN', outFn: '560', retFn: '561', dur: 130, svc: 'PAX' },
+  { dest: 'ALG', outFn: '570', retFn: '571', dur: 110, svc: 'PAX' },
+  { dest: 'LIS', outFn: '610', retFn: '611', dur: 115, svc: 'PAX' },
+  { dest: 'MXP', outFn: '620', retFn: '621', dur: 215, svc: 'PAX' },
+];
+
+const B789_PAIRS = [
+  { dest: 'JFK', outFn: '100', retFn: '101', dur: 480, svc: 'J'       },
+  { dest: 'YUL', outFn: '110', retFn: '111', dur: 510, svc: 'PAX'     },
+  { dest: 'CDG', outFn: '130', retFn: '131', dur: 210, svc: 'J'       },
+  { dest: 'DXB', outFn: '140', retFn: '141', dur: 450, svc: 'J'       },
+  { dest: 'IST', outFn: '700', retFn: '701', dur: 270, svc: 'Charter' },
+  { dest: 'CAI', outFn: '710', retFn: '711', dur: 210, svc: 'PAX'     },
+  { dest: 'LOS', outFn: '720', retFn: '721', dur: 360, svc: 'PAX'     },
+  { dest: 'DOH', outFn: '730', retFn: '731', dur: 450, svc: 'VJ'      },
+];
+
+const B788_PAIRS = [
+  { dest: 'CDG', outFn: '120', retFn: '121', dur: 210, svc: 'J'   },
+  { dest: 'ORY', outFn: '122', retFn: '123', dur: 210, svc: 'J'   },
+  { dest: 'DOH', outFn: '960', retFn: '961', dur: 450, svc: 'VJ'  },
+  { dest: 'CAI', outFn: '890', retFn: '891', dur: 210, svc: 'PAX' },
+];
+
+const ATR_PAIRS = [
+  { dest: 'RAK', outFn: '630', retFn: '631', dur: 60, svc: 'PAX'   },
+  { dest: 'NDR', outFn: '632', retFn: '633', dur: 70, svc: 'PAX'   },
+  { dest: 'FES', outFn: '640', retFn: '641', dur: 50, svc: 'PAX'   },
+  { dest: 'AGA', outFn: '650', retFn: '651', dur: 60, svc: 'PAX'   },
+  { dest: 'OUD', outFn: '660', retFn: '661', dur: 70, svc: 'PAX'   },
+  { dest: 'OZZ', outFn: '670', retFn: '671', dur: 90, svc: 'S'     },
+  { dest: 'ERH', outFn: '680', retFn: '681', dur: 90, svc: 'PAX'   },
+  { dest: 'TNG', outFn: '690', retFn: '691', dur: 45, svc: 'Ferry' },
+];
+
+/* ── Delay codes ── */
+const DELAY_CODES = ['93', '15', '71', '89'];
+
+/* ── Helpers ── */
+function addTime(timeStr, minutes) {
+  const [h, m] = timeStr.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  return `${String(Math.floor(total / 60) % 24).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}
+
+function minutesToTime(mins) {
+  const clamped = Math.max(0, Math.min(1439, mins));
+  return `${String(Math.floor(clamped / 60)).padStart(2, '0')}:${String(clamped % 60).padStart(2, '0')}`;
+}
+
+/* ── Deterministic pseudo-random seeded by string ── */
+function seededHash(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
+/* ── Day range: -7 to +5 (13 days total) ── */
+const DAY_OFFSETS = [-7,-6,-5,-4,-3,-2,-1,0,1,2,3,4,5];
+
+/**
+ * Generates all legs for an entire fleet across all day offsets.
+ *
+ * Each aircraft builds a geographic chain each day:
+ *   CMN → A  →  A → CMN  →  CMN → B  →  B → CMN  → …
+ * Arrival airport of leg N is always the departure airport of leg N+1.
+ * No two legs on the same aircraft overlap in time.
+ *
+ * Target per aircraft-day: 4–8 legs, 60 % chance of 7.
+ */
+function generateFleetLegs(regs, subtype, pairs, dayOffsets) {
+  const allLegs = [];
+
+  for (const reg of regs) {
+    /* Per-aircraft seed used for start-time staggering */
+    const regSeed = seededHash(reg);
+
+    for (const offsetN of dayOffsets) {
+      const dateStr  = dayOffset(offsetN);
+      const daySeed  = seededHash(`${reg}-${dateStr}`);
+      const isPast   = offsetN < 0;
+      const isFuture = offsetN > 0;
+
+      /* ── Target flight count: 4-8, 60 % = 7 ── */
+      const roll   = daySeed % 100;
+      const target = roll < 8 ? 4 : roll < 18 ? 5 : roll < 30 ? 6 : roll < 90 ? 7 : 8;
+
+      /* ── Staggered start: 05:00 – 07:00 (per aircraft) ── */
+      const startMin = 300 + (regSeed % 121);
+
+      let currentPos  = HUB;
+      let currentMin  = startMin;
+      let prevOutDest = null; /* avoid picking the same destination twice in a row */
+      let legIdx      = 0;
+
+      while (legIdx < target) {
+        const legSeed = seededHash(`${reg}-${dateStr}-${legIdx}`);
+
+        let depAp, arrAp, fn, dur, svc;
+
+        if (currentPos === HUB) {
+          /* ── Outbound: pick a destination ── */
+          const available = pairs.filter(p => p.dest !== prevOutDest);
+          const pool      = available.length > 0 ? available : pairs;
+          const pair      = pool[legSeed % pool.length];
+          depAp      = HUB;
+          arrAp      = pair.dest;
+          fn         = pair.outFn;
+          dur        = pair.dur;
+          svc        = pair.svc;
+          prevOutDest = pair.dest;
+        } else {
+          /* ── Return to hub ── */
+          const pair = pairs.find(p => p.dest === currentPos);
+          if (!pair) { currentPos = HUB; continue; }
+          depAp = currentPos;
+          arrAp = HUB;
+          fn    = pair.retFn;
+          dur   = pair.dur;
+          svc   = pair.svc;
+        }
+
+        const arrMin = currentMin + dur;
+        if (arrMin > 23 * 60 + 59) break; /* don't schedule past midnight */
+
+        const depTime = minutesToTime(currentMin);
+        const arrTime = minutesToTime(arrMin);
+        const legNo   = `${reg}-${offsetN + 7}-${legIdx}`;
+
+        /* ── State determination ── */
+        let legState = 'Scheduled';
+        let extra    = {};
+
+        if (isPast) {
+          legState = 'Arrived';
+          extra = {
+            OFF_BLOCK_TIME: addTime(depTime, 3),
+            AIRBORNE_TIME:  addTime(depTime, 15),
+            LANDING_TIME:   addTime(arrTime, -5),
+            ON_BLOCK_TIME:  addTime(arrTime, 5),
+          };
+        } else if (!isFuture) {
+          /* today — derive state from current departure minute */
+          if (currentMin < 9 * 60) {
+            legState = 'Arrived';
+            extra = {
+              OFF_BLOCK_TIME: addTime(depTime, 3),
+              AIRBORNE_TIME:  addTime(depTime, 15),
+              LANDING_TIME:   addTime(arrTime, -5),
+              ON_BLOCK_TIME:  addTime(arrTime, 5),
+            };
+          } else if (currentMin < 11 * 60) {
+            legState = 'Airborne';
+            extra = {
+              OFF_BLOCK_TIME: addTime(depTime, 3),
+              AIRBORNE_TIME:  addTime(depTime, 15),
+            };
+          } else if (currentMin < 12 * 60 + 30) {
+            legState = 'Boarding';
+          }
+
+          /* ~8 % delayed */
+          const delayRoll = (legSeed % 100) / 100;
+          if (delayRoll < 0.08 && legState === 'Scheduled') {
+            legState = 'Delayed';
+            extra = {
+              DELAY_CODE_01: DELAY_CODES[legSeed % DELAY_CODES.length],
+              DELAY_TIME_01: 15 + (legSeed % 46),
+            };
+          }
+          /* ~3 % cancelled */
+          const cancelRoll = ((legSeed >> 3) % 100) / 100;
+          if (cancelRoll < 0.03 && legState === 'Scheduled') {
+            legState = 'Cancelled';
+          }
+        }
+
+        allLegs.push(new Leg({
+          LEG_NO:          legNo,
+          FN_CARRIER:      'AT',
+          FN_NUMBER:       fn,
+          AC_REGISTRATION: reg,
+          AC_SUBTYPE:      subtype,
+          DEP_AP_SCHED:    depAp,
+          ARR_AP_SCHED:    arrAp,
+          DEP_TIME_SCHED:  depTime,
+          ARR_TIME_SCHED:  arrTime,
+          LEG_STATE:       legState,
+          LEG_TYPE:        svc,
+          DAY_OF_ORIGIN:   dateStr,
+          ...extra,
+        }));
+
+        /* ── Advance clock: turnaround 25 – 40 min (seeded) ── */
+        const turnaround = 25 + (seededHash(`${reg}-${dateStr}-${legIdx}-ta`) % 16);
+        currentPos = arrAp;
+        currentMin = arrMin + turnaround;
+        legIdx++;
+      }
+    }
+  }
+
+  return allLegs;
+}
+
+export const legs = [
+  ...generateFleetLegs(B737_REGS, 'B737-800',  B737_PAIRS, DAY_OFFSETS),
+  ...generateFleetLegs(B789_REGS, 'B787-9',    B789_PAIRS, DAY_OFFSETS),
+  ...generateFleetLegs(B788_REGS, 'B787-8',    B788_PAIRS, DAY_OFFSETS),
+  ...generateFleetLegs(ATR_REGS,  'ATR72-600', ATR_PAIRS,  DAY_OFFSETS),
+];
+
+console.log(`[flightsData] Generated ${legs.length} legs for ${B737_REGS.length + B789_REGS.length + B788_REGS.length + ATR_REGS.length} aircraft across ${DAY_OFFSETS.length} days`);
 
 /* ── Build DataSets from any legs array ── */
 export function buildGroups(legsArr) {

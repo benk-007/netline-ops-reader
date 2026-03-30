@@ -5,6 +5,7 @@ import com.ram.netline_reader_backend.dto.UserResponseDTO;
 import com.ram.netline_reader_backend.entity.User;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,9 @@ public class UserMapper {
                 .role(user.getRole())
                 .isActivated(user.getIsActivated())
                 .permissions(user.getPermissions())
+                .assignedAirports(user.getAssignedAirports() != null
+                        ? user.getAssignedAirports()
+                        : Collections.emptyList())
                 .savedFilters(user.getSavedFilters() != null
                         ? user.getSavedFilters().stream()
                             .map(savedFilterMapper::toResponseDTO)
@@ -48,6 +52,7 @@ public class UserMapper {
                 .role(dto.getRole())
                 .isActivated(dto.getIsActivated() == null || dto.getIsActivated())
                 .permissions(dto.getPermissions() != null ? dto.getPermissions() : Collections.emptyList())
+                .assignedAirports(dto.getAssignedAirports() != null ? dto.getAssignedAirports() : Collections.emptyList())
                 .build();
     }
 
@@ -74,6 +79,9 @@ public class UserMapper {
         }
         if (dto.getPermissions() != null) {
             user.setPermissions(dto.getPermissions());
+        }
+        if (dto.getAssignedAirports() != null) {
+            user.setAssignedAirports(dto.getAssignedAirports());
         }
     }
 }

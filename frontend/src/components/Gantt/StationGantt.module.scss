@@ -1,0 +1,15 @@
+.stationBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  margin: 6px 12px;
+  border-radius: 20px;
+  border: 1px solid #c8102e;
+  background: rgba(200, 16, 46, 0.08);
+  color: #f1f5f9;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

@@ -168,8 +168,9 @@ public class LegServiceImpl implements LegService {
 
     cq.where(predicates.toArray(new Predicate[0]));
     cq.distinct(true);
-    // TODO : pagination
-    List<Leg> results = entityManager.createQuery(cq).getResultList();
+    List<Leg> results = entityManager.createQuery(cq)
+            .setMaxResults(1000)
+            .getResultList();
 
     return results.stream()
             .map(legMapper::toResponseDTO)

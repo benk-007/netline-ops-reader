@@ -4,7 +4,7 @@ import "./SideMenu.css";
 const ROLE_PAGES = {
   admin:       ["gantt", "schedule", "reports", "admin"],
   staff_ops:   ["gantt", "schedule", "reports"],
-  chef_escale: ["schedule", "reports"],
+  chef_escale: ["gantt", "schedule", "reports"],
   aol_agent:   ["reports"],
 };
 
@@ -117,7 +117,7 @@ export default function SideMenu({
 
       {/* Nav items — filtered by role */}
       <div className="sidemenu-nav">
-        {navItems.map(({ key, label, Icon }) => (
+        {navItems.map(({ key, label, Icon }) => ( // eslint-disable-line no-unused-vars
           <button
             key={key}
             className={`sidemenu-item ${currentPage === key ? "active" : ""}`}

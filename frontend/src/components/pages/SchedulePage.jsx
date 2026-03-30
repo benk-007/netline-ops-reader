@@ -331,6 +331,7 @@ export default function SchedulePage({ isDark, legs = [] }) {
     const legsNext3h = useMemo(() => legs.filter(l => {
         const dep = timeToMins(l.depUtc);
         return dep >= nowMins && dep <= windowEnd;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }), [legs]);
     const next3hByState = useMemo(() => legsNext3h.reduce((acc, l) => {
         acc[l.state] = (acc[l.state] || 0) + 1;

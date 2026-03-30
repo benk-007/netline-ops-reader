@@ -9,8 +9,9 @@
  *  - Dark/light theme, UTC mode
  */
 import "./App.css";
-import { useState, useEffect, useRef } from "react";
-import * as XLSX from "xlsx";
+import { useState, useEffect } from "react";
+// import { useRef } from "react";  // re-enable when Gantt import is re-activated
+// import * as XLSX from "xlsx";    // re-enable when Gantt import is re-activated
 
 /* ── Auth ── */
 import { getUserInfo, logout as keycloakLogout, getKeycloak } from "./auth";
@@ -20,7 +21,9 @@ import { meApi } from "./api";
 import GanttBottomPanel from "./components/BottomBar/GanttBottomPanel";
 import GanttTopbar from "./components/TopBar/GanttTopbar";
 import FlightGantt from "./components/Gantt/FlightGantt";
+import StationGantt from "./components/Gantt/StationGantt";
 import GanttFilterBar from "./components/Filters/GanttFilterBar";
+// import ImportFeedback from "./components/Filters/ImportFeedback"; // re-enable when Gantt import is re-activated
 import SideMenu from "./components/Menu/SideMenu";
 import ProfileManager from "./components/Profiles/ProfileManager";
 import ExportModal from "./components/Export/ExportModal";
@@ -33,7 +36,9 @@ import AdminPage from "./components/pages/AdminPage";
 import LoginPage from "./components/Auth/LoginPage";
 
 /* ── Data ── */
-import { legs as defaultLegs, Leg } from "./data/flightsData";
+import { legs as defaultLegs } from "./data/flightsData";
+// import { Leg } from "./data/flightsData";         // re-enable when Gantt import is re-activated
+// import { normalizeDate, normalizeTime } from "./utils/dateUtils"; // re-enable when Gantt import is re-activated
 
 /* ── Role-based access control ──
  * Maps each role to the pages it can see.
@@ -42,14 +47,14 @@ import { legs as defaultLegs, Leg } from "./data/flightsData";
 const ROLE_PAGES = {
   admin:       ["gantt", "schedule", "reports", "admin"],
   staff_ops:   ["gantt", "schedule", "reports"],
-  chef_escale: ["schedule", "reports"],
+  chef_escale: ["gantt", "schedule", "reports"],
   aol_agent:   ["reports"],
 };
 
 const ROLE_DEFAULT_PAGE = {
   admin:       "gantt",
   staff_ops:   "gantt",
-  chef_escale: "schedule",
+  chef_escale: "gantt",
   aol_agent:   "reports",
 };
 
@@ -86,12 +91,18 @@ function App({ keycloakFailed }) {
     document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light");
   }, [isDark]);
 
-  /* Auto-provision DB user on first Keycloak login */
+  /* Auto-provision DB user on first Keycloak login and fetch assignedAirports */
   useEffect(() => {
     if (currentUser && !keycloakFailed) {
-      meApi.get().catch(() => {}); // fire-and-forget — provisions the DB record
+      meApi.get()
+        .then(me => {
+          if (me?.assignedAirports) {
+            setCurrentUser(u => u ? { ...u, assignedAirports: me.assignedAirports } : u);
+          }
+        })
+        .catch(() => {});
     }
-  }, [currentUser, keycloakFailed]);
+  }, [currentUser?.name, keycloakFailed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ── Day navigation state for Gantt ── */
   const [dayCount, setDayCount] = useState(1);       // 1, 2, or 3 days visible
@@ -125,54 +136,19 @@ function App({ keycloakFailed }) {
   const [showProfiles, setShowProfiles] = useState(false);
   const [showExport, setShowExport] = useState(false);
   const [viewMode, setViewMode] = useState("gantt");
+  /* ── Gantt import disabled — re-enable block below when needed ──────────
+  const [importFeedback, setImportFeedback] = useState({ message: '', type: null });
   const importRef = useRef(null);
 
-  /* ── Date/time normalization helpers (for CSV/Excel import) ── */
-  function normalizeDate(val) {
-    if (val == null || val === '') return null;
-    if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val.trim())) return val.trim();
-    if (val instanceof Date) {
-      return `${val.getFullYear()}-${String(val.getMonth()+1).padStart(2,'0')}-${String(val.getDate()).padStart(2,'0')}`;
-    }
-    const num = Number(val);
-    if (!isNaN(num) && num > 40000 && num < 60000) {
-      const d = new Date(new Date(1899,11,30).getTime() + num * 86400000);
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    }
-    let str = String(val).trim().replace(/\s+\d{1,2}:\d{2}(:\d{2})?.*$/, '').trim();
-    const parts = str.split(/[/\-.]/);
-    if (parts.length === 3) {
-      const [a, b, c] = parts;
-      if (a.length === 4) return `${a}-${b.padStart(2,'0')}-${c.padStart(2,'0')}`;
-      if (c.length === 4) return `${c}-${b.padStart(2,'0')}-${a.padStart(2,'0')}`;
-    }
-    return str || null;
-  }
-
-  function normalizeTime(val) {
-    if (val == null || val === '') return null;
-    if (typeof val === 'string' && /^\d{1,2}:\d{2}(:\d{2})?$/.test(val.trim())) return val.trim().slice(0,5).padStart(5,'0');
-    if (val instanceof Date) return `${String(val.getHours()).padStart(2,'0')}:${String(val.getMinutes()).padStart(2,'0')}`;
-    const num = Number(val);
-    if (!isNaN(num) && num >= 0 && num < 1) {
-      const mins = Math.round(num * 1440);
-      return `${String(Math.floor(mins/60)%24).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`;
-    }
-    return String(val).trim() || null;
-  }
-
-  /* ── CSV/Excel import from Gantt page ── */
   function processImportRows(headerRow, dataRows) {
     const colIdx = {};
     headerRow.forEach((h, i) => { colIdx[String(h).trim().toUpperCase()] = i; });
     const required = ['LEG_NO','FN_CARRIER','FN_NUMBER','DEP_AP_SCHED','ARR_AP_SCHED','DEP_TIME_SCHED','ARR_TIME_SCHED','DAY_OF_ORIGIN'];
     const missing = required.filter(c => colIdx[c] === undefined);
-    if (missing.length > 0) { alert(`Colonnes manquantes: ${missing.join(', ')}`); return; }
-
+    if (missing.length > 0) { setImportFeedback({ message: `Colonnes manquantes: ${missing.join(', ')}`, type: 'error' }); return; }
     const g = (row, col) => { const i = colIdx[col]; return i !== undefined && row[i] != null ? String(row[i]).trim() || null : null; };
     const gd = (row, col) => { const i = colIdx[col]; return i !== undefined ? normalizeDate(row[i]) : null; };
     const gt = (row, col) => { const i = colIdx[col]; return i !== undefined ? normalizeTime(row[i]) : null; };
-
     const newLegs = [];
     for (const cells of dataRows) {
       const legNo = g(cells,'LEG_NO'), carrier = g(cells,'FN_CARRIER'), fnNum = g(cells,'FN_NUMBER');
@@ -193,11 +169,12 @@ function App({ keycloakFailed }) {
           DELAY_CODE_02: g(cells,'DELAY_CODE_02'), DELAY_TIME_02: Number(g(cells,'DELAY_TIME_02')) || 0,
           DELAY_CODE_03: g(cells,'DELAY_CODE_03'), DELAY_TIME_03: Number(g(cells,'DELAY_TIME_03')) || 0,
         }));
-      } catch { /* skip bad rows */ }
+      } catch { }
     }
-    if (newLegs.length === 0) { alert('Aucun leg valide dans le fichier.'); return; }
+    if (newLegs.length === 0) { setImportFeedback({ message: 'Aucun leg valide dans le fichier.', type: 'error' }); return; }
     setLegsData(newLegs);
     setSelectedLeg(null);
+    setImportFeedback({ message: `${newLegs.length} leg${newLegs.length > 1 ? 's' : ''} importé${newLegs.length > 1 ? 's' : ''} avec succès`, type: 'success' });
   }
 
   function handleFileImport(e) {
@@ -231,6 +208,7 @@ function App({ keycloakFailed }) {
     }
     e.target.value = '';
   }
+  ─────────────────────────────────────────────────────────────────────── */
 
   /* ── Filter state — all dropdowns are string[], [] = show all ── */
   const [filters, setFilters] = useState({
@@ -327,7 +305,14 @@ function App({ keycloakFailed }) {
           {/* ── GANTT PAGE ── */}
           {safePage === "gantt" && (
             <div className="gantt-area">
+              {/* ImportFeedback — re-enable when Gantt import is re-activated
+              <ImportFeedback
+                message={importFeedback.message}
+                type={importFeedback.type}
+                onDismiss={() => setImportFeedback({ message: '', type: null })}
+              />
               <input ref={importRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={handleFileImport} />
+              */}
 
               <GanttFilterBar
                 filters={filters}
@@ -339,15 +324,18 @@ function App({ keycloakFailed }) {
                 onResetToToday={resetToToday}
                 onOpenProfiles={() => setShowProfiles(true)}
                 onOpenExport={() => setShowExport(true)}
-                onImport={() => importRef.current?.click()}
+                // onImport={() => importRef.current?.click()} // re-enable when Gantt import is re-activated
                 legs={legsData}
                 viewMode={viewMode}
                 onViewChange={setViewMode}
+                hideFilters={currentUser?.role === 'chef_escale'}
               />
 
               <div className="timeline-container">
                 {viewMode === "gantt" ? (
-                  <FlightGantt legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} dayCount={dayCount} referenceDate={referenceDate} />
+                  currentUser.role === 'chef_escale'
+                    ? <StationGantt legs={legsData} userAirports={currentUser.assignedAirports || ["CMN"]} filters={filters} onSelectLeg={setSelectedLeg} dayCount={dayCount} referenceDate={referenceDate} />
+                    : <FlightGantt legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} dayCount={dayCount} referenceDate={referenceDate} />
                 ) : (
                   <FlightBoard legs={legsData} filters={filters} onSelectLeg={setSelectedLeg} />
                 )}
@@ -384,6 +372,8 @@ function App({ keycloakFailed }) {
         onClose={() => setShowExport(false)}
         legs={legsData}
         filters={filters}
+        referenceDate={referenceDate}
+        dayCount={dayCount}
       />
     </div>
   );

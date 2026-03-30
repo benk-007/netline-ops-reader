@@ -25,7 +25,7 @@ function loadLocalProfiles() {
     try {
         const raw = localStorage.getItem(storageKey());
         if (raw) return JSON.parse(raw);
-    } catch (_) { }
+    } catch { /* ignore */ }
     return [{ ...DEFAULT_PROFILE }];
 }
 
@@ -75,6 +75,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
 
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             fetchProfiles();
             setNewName("");
             setSaved(false);

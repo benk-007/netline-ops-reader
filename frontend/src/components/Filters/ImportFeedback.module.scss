@@ -1,0 +1,32 @@
+.banner {
+  position: fixed;
+  top: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 600;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  animation: fadeIn 0.2s ease-out;
+  white-space: nowrap;
+}
+
+.error {
+  background: rgba(239, 68, 68, 0.92);
+  color: #fff;
+  border: 1px solid rgba(239, 68, 68, 0.6);
+}
+
+.success {
+  background: rgba(34, 197, 94, 0.92);
+  color: #fff;
+  border: 1px solid rgba(34, 197, 94, 0.6);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-6px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}

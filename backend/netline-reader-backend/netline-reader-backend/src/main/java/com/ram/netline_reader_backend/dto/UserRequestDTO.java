@@ -37,4 +37,7 @@ public class UserRequestDTO {
 
     /** Account activation status — false = revoked. */
     private Boolean isActivated;
+
+    /** Airport codes assigned to this user (Chef d'Escale station scope). */
+    private List<String> assignedAirports;
 }

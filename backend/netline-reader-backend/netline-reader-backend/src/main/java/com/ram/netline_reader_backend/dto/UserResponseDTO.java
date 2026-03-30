@@ -24,5 +24,6 @@ public class UserResponseDTO {
     private Role role;
     private Boolean isActivated;
     private List<Permission> permissions;
+    private List<String> assignedAirports;
     private List<SavedFilterResponseDTO> savedFilters;
 }

@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Timeline } from "vis-timeline/standalone";
 import "vis-timeline/styles/vis-timeline-graph2d.css";
 import { DataSet } from "vis-data";
+import { applyFilters } from "../../utils/filterUtils";
 
 import "./gantt.css";
 import "./gantt-legend.css";
@@ -55,27 +56,9 @@ function buildActualTemplate(leg, actStart, actEnd) {
   return container;
 }
 
-/** Apply active filters to legs and return filtered groups + items DataSets */
-function applyFilters(allLegs, filters) {
-  const { fDate, fService, fDep, fArr, fFlight, fSubtype } = filters || {};
-
-  const toArr = v => Array.isArray(v) ? v : [];
-
-  const filtered = allLegs.filter(leg => {
-    const fdArr = toArr(fDate);
-    const fsArr = toArr(fService);
-    const fdepArr = toArr(fDep);
-    const farrArr = toArr(fArr);
-    const fstArr = toArr(fSubtype);
-
-    if (fdArr.length > 0 && !fdArr.includes(leg.date)) return false;
-    if (fsArr.length > 0 && !fsArr.includes(leg.service)) return false;
-    if (fdepArr.length > 0 && !fdepArr.includes(leg.dep)) return false;
-    if (farrArr.length > 0 && !farrArr.includes(leg.arr)) return false;
-    if (fstArr.length > 0 && !fstArr.includes(leg.subtype)) return false;
-    if (fFlight && !leg.fn.toLowerCase().includes(fFlight.toLowerCase())) return false;
-    return true;
-  });
+/** Build gantt DataSets from filtered legs */
+function buildGanttData(allLegs, filters) {
+  const filtered = applyFilters(allLegs, filters || {});
 
   const uniqueRegs = [...new Set(filtered.map(l => l.reg))];
 
@@ -215,10 +198,17 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
   const dayCountRef = useRef(dayCount);
   const refDateRef = useRef(referenceDate);
 
+  const { groups, items, filtered } = useMemo(
+    () => buildGanttData(allLegs, filters || {}),
+    [allLegs, filters]
+  );
+
+  useEffect(() => {
+    filteredRef.current = filtered;
+  }, [filtered]);
+
   /* ── Build / rebuild timeline only when DATA or FILTERS change ── */
   useEffect(() => {
-    const { groups, items, filtered } = applyFilters(allLegs, filters || {});
-    filteredRef.current = filtered;
     itemsRef.current = items;
 
     const win = computeWindow(refDateRef.current, dayCountRef.current);
@@ -264,6 +254,7 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
       timeline.destroy();
       timelineRef.current = null;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allLegs, filters]);
 
   /* ── Smoothly move the visible window when navigating days ── */

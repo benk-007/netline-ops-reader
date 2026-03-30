@@ -167,7 +167,6 @@ function LegDetailModal({ leg, flight, onClose }) {
     const airborne  = leg.AIRBORNE_TIME;
     const landing   = leg.LANDING_TIME;
     const onBlock   = leg.ON_BLOCK_TIME;
-    const hasOOOI   = Boolean(offBlock);
 
     // Metric calculations
     const blockTime  = timeDiff(offBlock, onBlock);
@@ -398,7 +397,6 @@ function LegDetailModal({ leg, flight, onClose }) {
                                 </div>
                                 <div className="ldm-delay-codes">
                                     {delays.map((d, i) => {
-                                        const pct = totalDelay > 0 ? (d.time / totalDelay * 100) : 0;
                                         const color = d.time >= 30 ? "#ef4444" : d.time >= 15 ? "#f59e0b" : "#fcd34d";
                                         return (
                                             <div key={i} className="ldm-delay-code-row">
@@ -811,7 +809,7 @@ function FlightCard({ flight, onClick }) {
 }
 
 /* ── MAIN ── */
-export default function FlightSearch({ isDark, legs: ALL_LEGS = [] }) {
+export default function FlightSearch({ legs: ALL_LEGS = [] }) {
     const [tab, setTab] = useState("route");
 
     // Route

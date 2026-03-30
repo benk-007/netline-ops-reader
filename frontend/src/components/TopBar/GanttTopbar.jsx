@@ -1,16 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import "./GanttTopbar.css";
 import ramLogoUrl from "../../assets/ram logo.jpeg";
-
-/* ── Live clock hook ─────────────────────────────────────────── */
-function useClock() {
-    const [now, setNow] = useState(new Date());
-    useEffect(() => {
-        const id = setInterval(() => setNow(new Date()), 1000);
-        return () => clearInterval(id);
-    }, []);
-    return now;
-}
+import { useClock } from "../../hooks/useClock";
 
 /* ── Inline SVG icons ────────────────────────────────────────── */
 

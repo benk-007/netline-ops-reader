@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
-import * as XLSX from "xlsx";
 import "./ExportModal.css";
+import { applyFilters } from "../../utils/filterUtils";
+import { downloadCsv, downloadXlsx } from "../../utils/exportUtils";
+import { getGanttWindowDates } from "../../utils/dateUtils";
 
 /* ── Field groups to export — mapped to new DB schema ──────── */
 const FIELD_GROUPS = [
@@ -83,21 +85,6 @@ const DEFAULT_SELECTED = new Set([
     "LEG_STATE", "LEG_TYPE", "DELAY_CODE_01", "DELAY_TIME_01",
 ]);
 
-/* ── Apply the same filter logic as FlightGantt ────────────── */
-function applyFilters(allLegs, filters) {
-    const { fDate, fService, fDep, fArr, fFlight, fSubtype } = filters || {};
-    const toArr = v => Array.isArray(v) ? v : [];
-
-    return allLegs.filter(leg => {
-        if (toArr(fDate).length > 0    && !toArr(fDate).includes(leg.date))       return false;
-        if (toArr(fService).length > 0 && !toArr(fService).includes(leg.service)) return false;
-        if (toArr(fDep).length > 0     && !toArr(fDep).includes(leg.dep))         return false;
-        if (toArr(fArr).length > 0     && !toArr(fArr).includes(leg.arr))         return false;
-        if (toArr(fSubtype).length > 0 && !toArr(fSubtype).includes(leg.subtype)) return false;
-        if (fFlight && !leg.fn.toLowerCase().includes(fFlight.toLowerCase()))     return false;
-        return true;
-    });
-}
 
 function CheckIcon() {
     return (
@@ -191,7 +178,7 @@ const SEP_OPTIONS = [
     { key: "\t", label: "Tab" },
 ];
 
-export default function ExportModal({ isOpen, onClose, legs, filters }) {
+export default function ExportModal({ isOpen, onClose, legs, filters, referenceDate, dayCount }) {
     const [selected, setSelected] = useState(new Set(DEFAULT_SELECTED));
     const [separator, setSeparator] = useState(";");
     const [format, setFormat] = useState("xlsx");
@@ -216,14 +203,18 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
     useEffect(() => {
         if (isOpen) {
             const toArr = v => (Array.isArray(v) ? v : []);
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLocalDep(toArr(filters?.fDep));
             setLocalArr(toArr(filters?.fArr));
             setLocalService(toArr(filters?.fService));
             setLocalSubtype(toArr(filters?.fSubtype));
             setLocalFlight(filters?.fFlight || "");
-            setLocalDate(toArr(filters?.fDate));
+            const ganttDates = referenceDate && dayCount
+                ? getGanttWindowDates(referenceDate, dayCount)
+                : toArr(filters?.fDate);
+            setLocalDate(ganttDates);
         }
-    }, [isOpen, filters]);
+    }, [isOpen, filters, referenceDate, dayCount]);
 
     /* Compute filtered legs from LOCAL filter state */
     const localFilters = useMemo(() => ({
@@ -266,52 +257,19 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
         const keys = ALL_KEYS.filter(k => selected.has(k));
         if (keys.length === 0 || filteredLegs.length === 0) return;
 
+        const headers = keys.map(k => KEY_TO_LABEL[k] || k);
+        const dataRows = filteredLegs.map(leg =>
+            keys.map(k => {
+                const v = leg[k];
+                return v === null || v === undefined ? "" : v;
+            })
+        );
+        const today = new Date().toLocaleDateString("en-CA");
+
         if (format === "xlsx") {
-            // Build data rows with readable headers
-            const headers = keys.map(k => KEY_TO_LABEL[k] || k);
-            const dataRows = filteredLegs.map(leg =>
-                keys.map(k => {
-                    const v = leg[k];
-                    return v === null || v === undefined ? "" : v;
-                })
-            );
-
-            const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
-
-            // Auto-size columns
-            ws["!cols"] = headers.map((h, i) => {
-                let maxLen = h.length;
-                for (const row of dataRows) {
-                    const cellLen = String(row[i] ?? "").length;
-                    if (cellLen > maxLen) maxLen = cellLen;
-                }
-                return { wch: Math.min(maxLen + 2, 40) };
-            });
-
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Flights");
-            XLSX.writeFile(wb, `ram_gantt_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
+            downloadXlsx(headers, dataRows, `ram_gantt_export_${today}.xlsx`);
         } else {
-            // CSV export
-            const header = keys.map(k => KEY_TO_LABEL[k] || k).join(separator);
-            const rows = filteredLegs.map(leg =>
-                keys.map(k => {
-                    const v = leg[k];
-                    const str = v === null || v === undefined ? "" : String(v);
-                    return str.includes(separator) || str.includes("\n")
-                        ? `"${str.replace(/"/g, '""')}"`
-                        : str;
-                }).join(separator)
-            );
-
-            const csv = [header, ...rows].join("\n");
-            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `ram_gantt_export_${new Date().toISOString().slice(0, 10)}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
+            downloadCsv(headers, dataRows, `ram_gantt_export_${today}.csv`, separator);
         }
 
         onClose();
@@ -337,6 +295,14 @@ export default function ExportModal({ isOpen, onClose, legs, filters }) {
                 </div>
 
                 <div className="em-body">
+
+                    {/* ── Gantt window info banner ── */}
+                    {referenceDate && dayCount && localDate.join(',') === getGanttWindowDates(referenceDate, dayCount).join(',') && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 10, borderRadius: 6, background: 'var(--filter-bg, rgba(30,41,59,0.8))', border: '1px solid rgba(59,130,246,0.3)', fontSize: 12, color: 'var(--color-dim, #94a3b8)' }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Fenêtre Gantt active : {dayCount} jour{dayCount > 1 ? 's' : ''} à partir du {referenceDate}
+                        </div>
+                    )}
 
                     {/* ── Export filter section ── */}
                     <div className="em-filter-section">

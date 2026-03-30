@@ -333,7 +333,7 @@ function TrajectoryTab({ leg, sc }) {
 }
 
 /* ── Main component ───────────────────────────────────────── */
-export default function GanttBottomPanel({ leg, onClose, isDark }) {
+export default function GanttBottomPanel({ leg, onClose }) {
     const [tab, setTab] = useState("vol");
     if (!leg) return null;
 

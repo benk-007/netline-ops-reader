@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collections;
 
 /**
  * Represents an application user (operator, manager, or admin).
@@ -63,6 +64,13 @@ public class User {
     @Column(name = "permission")
     @Builder.Default
     private List<Permission> permissions = new ArrayList<>();
+
+    /** Airports assigned to this user (relevant for Chef d'Escale role). */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_airports", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "airport_code")
+    @Builder.Default
+    private List<String> assignedAirports = new ArrayList<>();
 
     /** Filter profiles saved by this user. */
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)

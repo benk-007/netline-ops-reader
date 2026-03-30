@@ -1,0 +1,106 @@
+stages:
+  - lint
+  - test
+  - build
+  - docker
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+
+# ── Frontend ────────────────────────────────────────────────
+frontend:lint:
+  stage: lint
+  image: node:20-alpine
+  cache:
+    key: frontend-$CI_COMMIT_REF_SLUG
+    paths:
+      - frontend/node_modules/
+  before_script:
+    - cd frontend && npm ci
+  script:
+    - npm run lint
+  only:
+    changes:
+      - frontend/**/*
+
+frontend:build:
+  stage: build
+  image: node:20-alpine
+  cache:
+    key: frontend-$CI_COMMIT_REF_SLUG
+    paths:
+      - frontend/node_modules/
+  before_script:
+    - cd frontend && npm ci
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 hour
+  only:
+    changes:
+      - frontend/**/*
+
+# ── Backend ─────────────────────────────────────────────────
+backend:test:
+  stage: test
+  image: eclipse-temurin:17-jdk-jammy
+  cache:
+    key: backend-$CI_COMMIT_REF_SLUG
+    paths:
+      - .m2/repository/
+  variables:
+    ORACLE_ENABLED: "false"
+    SPRING_DATASOURCE_URL: "jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1"
+    SPRING_DATASOURCE_USERNAME: "sa"
+    SPRING_DATASOURCE_PASSWORD: ""
+    KEYCLOAK_ISSUER_URI: "http://localhost:9090/realms/netline-reader"
+    KEYCLOAK_JWK_SET_URI: "http://localhost:9090/realms/netline-reader/protocol/openid-connect/certs"
+  before_script:
+    - cd backend/netline-reader-backend/netline-reader-backend
+  script:
+    - ./mvnw clean verify -B -Ptest
+  only:
+    changes:
+      - backend/**/*
+
+backend:build:
+  stage: build
+  image: eclipse-temurin:17-jdk-jammy
+  cache:
+    key: backend-$CI_COMMIT_REF_SLUG
+    paths:
+      - .m2/repository/
+  before_script:
+    - cd backend/netline-reader-backend/netline-reader-backend
+  script:
+    - ./mvnw clean package -DskipTests -B
+  artifacts:
+    paths:
+      - backend/netline-reader-backend/netline-reader-backend/target/*.jar
+    expire_in: 1 hour
+  only:
+    changes:
+      - backend/**/*
+
+# ── Docker ──────────────────────────────────────────────────
+docker:frontend:
+  stage: docker
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t netline-frontend:$CI_COMMIT_SHORT_SHA ./frontend
+  only:
+    - main
+
+docker:backend:
+  stage: docker
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t netline-backend:$CI_COMMIT_SHORT_SHA ./backend/netline-reader-backend/netline-reader-backend
+  only:
+    - main

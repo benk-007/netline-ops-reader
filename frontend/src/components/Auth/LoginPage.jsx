@@ -5,7 +5,7 @@ import "./LoginPage.css";
 const USERS = [
   { username: "admin", password: "admin123", role: "admin",       displayName: "Admin System",    initials: "AD" },
   { username: "ops",   password: "ops123",   role: "staff_ops",   displayName: "Staff Ops",       initials: "OP" },
-  { username: "chef",  password: "chef123",  role: "chef_escale", displayName: "Chef d'Escale",   initials: "CE" },
+  { username: "chef",  password: "chef123",  role: "chef_escale", displayName: "Chef d'Escale",   initials: "CE", assignedAirports: ["CMN"] },
 ];
 
 const DEMO_ROWS = [
@@ -93,7 +93,7 @@ export default function LoginPage({ onLogin }) {
       );
 
       if (user) {
-        onLogin({ name: user.username, displayName: user.displayName, role: user.role, initials: user.initials });
+        onLogin({ name: user.username, displayName: user.displayName, role: user.role, initials: user.initials, assignedAirports: user.assignedAirports || [] });
       } else {
         setError("Identifiant ou mot de passe incorrect.");
         setLoading(false);
