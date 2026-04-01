@@ -1,24 +1,32 @@
 package com.ram.netline_reader_backend.provider.fake;
 
-import com.ram.netline_reader_backend.entity.fake.LegMv;
-import com.ram.netline_reader_backend.entity.fake.LegMvDelay;
-import com.ram.netline_reader_backend.event.MvRefreshEvent;
-import com.ram.netline_reader_backend.repository.fake.LegMvRepository;
-import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.zip.CRC32;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.util.*;
-import java.util.zip.CRC32;
+import com.ram.netline_reader_backend.entity.fake.LegMv;
+import com.ram.netline_reader_backend.entity.fake.LegMvDelay;
+import com.ram.netline_reader_backend.event.MvRefreshEvent;
+import com.ram.netline_reader_backend.repository.fake.LegMvRepository;
+
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * [DEV ONLY] Simulates an Oracle Materialized View refresh.
@@ -264,7 +272,50 @@ public class FakeMvRefreshJob {
     // ═══════════════════════════════════════════════════════════════════════
     //  Data generation
     // ═══════════════════════════════════════════════════════════════════════
+private List<LegMv> checkCollisionsFlightTime(List<LegMv> legs) {
 
+    // Group legs by aircraft (REAL constraint)
+    Map<String, List<LegMv>> byAircraft = legs.stream()
+            .collect(Collectors.groupingBy(LegMv::getAircraftRegistration));
+
+    for (Map.Entry<String, List<LegMv>> entry : byAircraft.entrySet()) {
+
+        String aircraft = entry.getKey();
+        List<LegMv> sameAircraftLegs = entry.getValue();
+
+        // Sort by scheduled departure time (STD)
+        sameAircraftLegs.sort(Comparator.comparing(LegMv::getStd));
+
+        for (int i = 0; i < sameAircraftLegs.size() - 1; i++) {
+
+            LegMv current = sameAircraftLegs.get(i);
+            LegMv next = sameAircraftLegs.get(i + 1);
+
+            //  REAL collision condition: current flight ends AFTER next starts
+            if (current.getSta().isAfter(next.getStd())) {
+
+                // Calculate exact overlap duration
+                long overlapMinutes = Duration
+                        .between(next.getStd(), current.getSta())
+                        .toMinutes();
+
+                // Add turnaround buffer (e.g., 30 min)
+                long shiftMinutes = overlapMinutes + 30;
+
+                log.warn("[FakeMV] Rotation conflict for aircraft {} between leg {} and {}. Shifting by {} minutes.",
+                        aircraft, current.getLegNo(), next.getLegNo(), shiftMinutes);
+                // Apply shift to next leg (and keep consistency)
+                next.setStd(next.getStd().plusMinutes(shiftMinutes));
+                next.setSta(next.getSta().plusMinutes(shiftMinutes));
+                next.setEtd(next.getEtd().plusMinutes(shiftMinutes));
+                next.setEta(next.getEta().plusMinutes(shiftMinutes));
+
+            }
+        }
+    }
+
+    return legs;
+}
     private List<LegMv> generateLegsForDay(LocalDate date) {
         List<LegMv> legs = new ArrayList<>();
         // Epoch-day prefix guarantees unique legNo across all days with no collisions
@@ -315,7 +366,8 @@ public class FakeMvRefreshJob {
             applyActualTimes(leg, std, t.durationMin());
             legs.add(leg);
         }
-        return legs;
+
+        return checkCollisionsFlightTime(legs);
     }
 
     // ═══════════════════════════════════════════════════════════════════════
