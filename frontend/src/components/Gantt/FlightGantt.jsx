@@ -57,7 +57,7 @@ function buildActualTemplate(leg, actStart, actEnd) {
 
 /** Apply active filters to legs and return filtered groups + items DataSets */
 function applyFilters(allLegs, filters) {
-  const { fDate, fService, fDep, fArr, fFlight, fSubtype } = filters || {};
+  const { fDate, fService, fDep, fArr, fFlight, fSubtype, fReg } = filters || {};
 
   const toArr = v => Array.isArray(v) ? v : [];
 
@@ -67,12 +67,14 @@ function applyFilters(allLegs, filters) {
     const fdepArr = toArr(fDep);
     const farrArr = toArr(fArr);
     const fstArr = toArr(fSubtype);
+    const fregArr = toArr(fReg);
 
     if (fdArr.length > 0 && !fdArr.includes(leg.date)) return false;
     if (fsArr.length > 0 && !fsArr.includes(leg.service)) return false;
     if (fdepArr.length > 0 && !fdepArr.includes(leg.dep)) return false;
     if (farrArr.length > 0 && !farrArr.includes(leg.arr)) return false;
     if (fstArr.length > 0 && !fstArr.includes(leg.subtype)) return false;
+    if (fregArr.length > 0 && !fregArr.includes(leg.reg)) return false;
     if (fFlight && !leg.fn.toLowerCase().includes(fFlight.toLowerCase())) return false;
     return true;
   });

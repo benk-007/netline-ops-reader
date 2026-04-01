@@ -85,7 +85,7 @@ const DEFAULT_SELECTED = new Set([
 
 /* ── Apply the same filter logic as FlightGantt ────────────── */
 function applyFilters(allLegs, filters) {
-    const { fDate, fService, fDep, fArr, fFlight, fSubtype } = filters || {};
+    const { fDate, fService, fDep, fArr, fFlight, fSubtype, fReg } = filters || {};
     const toArr = v => Array.isArray(v) ? v : [];
 
     return allLegs.filter(leg => {
@@ -94,6 +94,7 @@ function applyFilters(allLegs, filters) {
         if (toArr(fDep).length > 0     && !toArr(fDep).includes(leg.dep))         return false;
         if (toArr(fArr).length > 0     && !toArr(fArr).includes(leg.arr))         return false;
         if (toArr(fSubtype).length > 0 && !toArr(fSubtype).includes(leg.subtype)) return false;
+        if (toArr(fReg).length > 0     && !toArr(fReg).includes(leg.reg))         return false;
         if (fFlight && !leg.fn.toLowerCase().includes(fFlight.toLowerCase()))     return false;
         return true;
     });

@@ -93,7 +93,7 @@ export function nowFraction() {
 }*/
 export const DEFAULT_PROFILE = {
   id: "default",
-  name: "Défaut",
+  name: "Default",
   filters: {
     fDate:    [],   // [] = all dates
     fService: [],   // [] = all services

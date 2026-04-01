@@ -347,7 +347,7 @@ function App({ keycloakFailed }) {
     setFilters(newFilters);
     setSelectedLeg(null);
 
-    const { fFlight, fDep, fArr, fService, fDate, fSubtype, fReg } = newFilters;
+    const { fFlight, fDep, fArr, fService, fDate, fReg } = newFilters;
     const toArr = v => Array.isArray(v) ? v : [];
     const date = toArr(fDate)[0] ?? referenceDate;
 

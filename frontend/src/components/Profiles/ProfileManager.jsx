@@ -8,11 +8,12 @@ import { filtersApi } from "../../api";
 import { getUserInfo } from "../../auth";
 
 const STORAGE_KEY_PREFIX = "ram_gantt_profiles_";
-const allDeps     = ["Tous", ...[...new Set(legs.map(l => l.dep))].sort()];
-const allArrs     = ["Tous", ...[...new Set(legs.map(l => l.arr))].sort()];
-const allServices = ["Tous", ...Object.keys(SERVICE_COLORS)];
-const allDates    = ["Tous", ...dates];
-const allSubtypes = ["Tous", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types")];
+const allDeps     = ["All", ...[...new Set(legs.map(l => l.dep))].sort()];
+const allArrs     = ["All", ...[...new Set(legs.map(l => l.arr))].sort()];
+const allServices = ["All", ...Object.keys(SERVICE_COLORS)];
+const allDates    = ["All", ...dates];
+const allSubtypes = ["All", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types" && t !== "All")];
+const allRegs     = ["All", ...[...new Set(legs.map(l => l.reg).filter(Boolean))].sort()];
 
 /* ── User-scoped localStorage key ── */
 function storageKey() {
@@ -61,6 +62,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                     fService: f.serviceType || [],
                     fSubtype: f.aircraftType || [],
                     fFlight: (f.flightNumber && f.flightNumber[0]) || "",
+                    fReg: f.aircraftRegistration || [],
                     fDate: [],
                 },
                 savedAt: new Date().toISOString(),
@@ -223,20 +225,20 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
 
                         </div>
                         <div>
-                            <div className="pm-title">Profils de vue</div>
-                            <div className="pm-subtitle">Sauvegardez et rechargez vos configurations de filtres</div>
+                            <div className="pm-title">View Profiles</div>
+                            <div className="pm-subtitle">Save and reload your filter configurations</div>
                         </div>
                     </div>
-                    <button className="pm-close" onClick={onClose} aria-label="Fermer">×</button>
+                    <button className="pm-close" onClick={onClose} aria-label="Close">×</button>
                 </div>
 
                 {/* Tabs */}
                 <div className="pm-tabs">
                     <button className={`pm-tab ${activeTab === "load" ? "active" : ""}`} onClick={() => { setActiveTab("load"); setEditingProfile(null); }}>
-                        Charger un profil
+                        Load a profile
                     </button>
                     <button className={`pm-tab ${activeTab === "save" ? "active" : ""}`} onClick={() => { setActiveTab("save"); if (!isEditing) { setNewName(""); setProfileFilters({ ...currentFilters }); } }}>
-                        {isEditing ? "Modifier" : "Sauvegarder"}
+                        {isEditing ? "Edit" : "Save"}
                     </button>
                 </div>
 
@@ -244,7 +246,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                 {activeTab === "load" && (
                     <div className="pm-body">
                         {profiles.length === 0 ? (
-                            <div className="pm-empty">Aucun profil sauvegardé. Créez votre premier profil.</div>
+                            <div className="pm-empty">No saved profiles. Create your first profile.</div>
                         ) : (
                             <div className="pm-list">
                                 {profiles.map(profile => (
@@ -253,14 +255,14 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                             <div className="pm-profile-name">{profile.name}</div>
                                             <div className="pm-profile-meta">
                                                 {profile.savedAt
-                                                    ? new Date(profile.savedAt).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })
-                                                    : "Profil par défaut"}
+                                                    ? new Date(profile.savedAt).toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" })
+                                                    : "Default profile"}
                                             </div>
                                             <div className="pm-profile-tags">
                                                 {Object.entries(profile.filters)
                                                     .flatMap(([k, v]) => {
                                                         if (Array.isArray(v)) return v.map(item => ({ k, label: item }));
-                                                        if (!v || v === "Tous" || v === "Tous types" || v === "") return [];
+                                                        if (!v || v === "All" || v === "Tous types" || v === "") return [];
                                                         return [{ k, label: v }];
                                                     })
                                                     .slice(0, 4)
@@ -268,25 +270,25 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                                         <span key={`${k}-${i}`} className="pm-tag">{label}</span>
                                                     ))}
                                                 {Object.entries(profile.filters).every(([, v]) =>
-                                                    Array.isArray(v) ? v.length === 0 : (!v || v === "Tous" || v === "Tous types" || v === "")
+                                                    Array.isArray(v) ? v.length === 0 : (!v || v === "All" || v === "Tous types" || v === "")
                                                 ) && (
-                                                    <span className="pm-tag pm-tag-neutral">Tous filtres</span>
+                                                    <span className="pm-tag pm-tag-neutral">All filters</span>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="pm-profile-actions">
                                             <button className="pm-load-btn" onClick={() => handleLoad(profile)}>
-                                                Charger
+                                                Load
                                             </button>
                                             {profile.id !== "default" && (
                                                 <>
-                                                    <button className="pm-edit-btn" onClick={() => handleEdit(profile)} aria-label="Modifier">
+                                                    <button className="pm-edit-btn" onClick={() => handleEdit(profile)} aria-label="Edit">
                                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                                         </svg>
                                                     </button>
-                                                    <button className="pm-delete-btn" onClick={() => handleDelete(profile.id)} aria-label="Supprimer">
+                                                    <button className="pm-delete-btn" onClick={() => handleDelete(profile.id)} aria-label="Delete">
                                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                                             <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6M14 11v6" />
                                                         </svg>
@@ -309,17 +311,17 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                             {/* Edit mode banner */}
                             {isEditing && (
                                 <div className="pm-edit-banner">
-                                    <span>Modification de : <strong>{editingProfile.name}</strong></span>
-                                    <button className="pm-edit-cancel" onClick={handleCancelEdit}>Annuler</button>
+                                    <span>Editing: <strong>{editingProfile.name}</strong></span>
+                                    <button className="pm-edit-cancel" onClick={handleCancelEdit}>Cancel</button>
                                 </div>
                             )}
 
-                            <div className="pm-section-label">Nom du profil</div>
+                            <div className="pm-section-label">Profile name</div>
                             <div className="pm-save-input-row">
                                 <input
                                     className="pm-name-input"
                                     type="text"
-                                    placeholder="ex: Vue CDG matin..."
+                                    placeholder="e.g. CDG Morning..."
                                     value={newName}
                                     onChange={e => setNewName(e.target.value)}
                                     onKeyDown={e => e.key === "Enter" && (isEditing ? handleUpdate() : handleSave())}
@@ -331,13 +333,13 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                     disabled={!newName.trim()}
                                 >
                                     {saved ? (
-                                        <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> {isEditing ? "Mis à jour" : "Sauvegardé"}</>
-                                    ) : (isEditing ? "Mettre à jour" : "Sauvegarder")}
+                                        <><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg> {isEditing ? "Updated" : "Saved"}</>
+                                    ) : (isEditing ? "Update" : "Save")}
                                 </button>
                             </div>
 
                             {/* Manual filter selection */}
-                            <div className="pm-section-label" style={{ marginTop: 20 }}>Détails du profil</div>
+                            <div className="pm-section-label" style={{ marginTop: 20 }}>Profile details</div>
                             <div className="pm-filter-editor">
 
                                 <div className="pm-editor-row pm-editor-row-select">
@@ -346,7 +348,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                         options={allDates}
                                         value={Array.isArray(profileFilters.fDate) ? profileFilters.fDate : []}
                                         onChange={v => setProfileFilters({ ...profileFilters, fDate: v })}
-                                        placeholder="Rechercher date..."
+                                        placeholder="Search date..."
                                         multi
                                     />
                                 </div>
@@ -357,7 +359,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                         options={allDeps}
                                         value={Array.isArray(profileFilters.fDep) ? profileFilters.fDep : []}
                                         onChange={v => setProfileFilters({ ...profileFilters, fDep: v })}
-                                        placeholder="Rechercher aéroport..."
+                                        placeholder="Search airport..."
                                         multi
                                     />
                                 </div>
@@ -368,7 +370,7 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                         options={allArrs}
                                         value={Array.isArray(profileFilters.fArr) ? profileFilters.fArr : []}
                                         onChange={v => setProfileFilters({ ...profileFilters, fArr: v })}
-                                        placeholder="Rechercher aéroport..."
+                                        placeholder="Search airport..."
                                         multi
                                     />
                                 </div>
@@ -379,24 +381,35 @@ export default function ProfileManager({ isOpen, onClose, currentFilters, utcMod
                                         options={allServices}
                                         value={Array.isArray(profileFilters.fService) ? profileFilters.fService : []}
                                         onChange={v => setProfileFilters({ ...profileFilters, fService: v })}
-                                        placeholder="Rechercher service..."
+                                        placeholder="Search service..."
                                         multi
                                     />
                                 </div>
 
                                 <div className="pm-editor-row pm-editor-row-select">
-                                    <label>Type Avion</label>
+                                    <label>Aircraft Type</label>
                                     <SearchableSelect
                                         options={allSubtypes}
                                         value={Array.isArray(profileFilters.fSubtype) ? profileFilters.fSubtype : []}
                                         onChange={v => setProfileFilters({ ...profileFilters, fSubtype: v })}
-                                        placeholder="Rechercher type..."
+                                        placeholder="Search type..."
+                                        multi
+                                    />
+                                </div>
+
+                                <div className="pm-editor-row pm-editor-row-select">
+                                    <label>Registration</label>
+                                    <SearchableSelect
+                                        options={allRegs}
+                                        value={Array.isArray(profileFilters.fReg) ? profileFilters.fReg : []}
+                                        onChange={v => setProfileFilters({ ...profileFilters, fReg: v })}
+                                        placeholder="Search registration..."
                                         multi
                                     />
                                 </div>
 
                                 <div className="pm-editor-row">
-                                    <label>Vol N°</label>
+                                    <label>Flight No.</label>
                                     <input
                                         type="text"
                                         value={profileFilters.fFlight}

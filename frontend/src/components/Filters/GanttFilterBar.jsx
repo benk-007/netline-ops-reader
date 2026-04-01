@@ -45,14 +45,6 @@ function ProfilesIcon() {
   );
 }
 
-function FilterIcon() {
-  return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-    </svg>
-  );
-}
-
 function GanttIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -74,12 +66,10 @@ export default function GanttFilterBar({
   onChange,
   dayCount = 1,
   onDayCountChange,
-  referenceDate,
   onShiftDays,
   onResetToToday,
   onOpenProfiles,
   onOpenExport,
-  onImport,
   legs = [],
   viewMode = "gantt",
   onViewChange,
@@ -112,12 +102,12 @@ export default function GanttFilterBar({
   const hasPendingChanges = JSON.stringify(pending) !== JSON.stringify(filters);
 
   // Build dynamic option lists from current legs data
-  const allDeps     = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.dep).filter(Boolean))].sort()], [legs]);
-  const allArrs     = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.arr).filter(Boolean))].sort()], [legs]);
-  const allServices = useMemo(() => ["Tous", ...Object.keys(SERVICE_COLORS)], []);
-  const allDates    = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.date).filter(Boolean))].sort()], [legs]);
-  const allSubtypes = useMemo(() => ["Tous", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types")], []);
-  const allRegs     = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.reg).filter(Boolean))].sort()], [legs]);
+  const allDeps     = useMemo(() => ["All", ...[...new Set(legs.map(l => l.dep).filter(Boolean))].sort()], [legs]);
+  const allArrs     = useMemo(() => ["All", ...[...new Set(legs.map(l => l.arr).filter(Boolean))].sort()], [legs]);
+  const allServices = useMemo(() => ["All", ...Object.keys(SERVICE_COLORS)], []);
+  const allDates    = useMemo(() => ["All", ...[...new Set(legs.map(l => l.date).filter(Boolean))].sort()], [legs]);
+  const allSubtypes = useMemo(() => ["All", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types" && t !== "All")], []);
+  const allRegs     = useMemo(() => ["All", ...[...new Set(legs.map(l => l.reg).filter(Boolean))].sort()], [legs]);
 
   const toArr = v => Array.isArray(v) ? v : [];
   const activeCount = [
@@ -149,7 +139,7 @@ export default function GanttFilterBar({
           title="Table view"
         >
           <BoardIcon />
-          <span>Tableau</span>
+          <span>Board</span>
         </button>
       </div>
 
@@ -165,7 +155,7 @@ export default function GanttFilterBar({
           options={allDates}
           value={toArr(fDate)}
           onChange={v => changePending({ fDate: v })}
-          placeholder="Rechercher date..."
+          placeholder="Search date..."
           multi
         />
       </div>
@@ -271,7 +261,7 @@ export default function GanttFilterBar({
             aria-label="Search by flight number"
           />
           {fFlight && (
-            <button className="filter-clear-btn" onClick={() => changePending({ fFlight: "" })} type="button" aria-label="Effacer">x</button>
+            <button className="filter-clear-btn" onClick={() => changePending({ fFlight: "" })} type="button" aria-label="Clear">x</button>
           )}
         </div>
       </div>
@@ -307,7 +297,7 @@ export default function GanttFilterBar({
             <CalendarIcon /> Days
           </span>
           <div className="day-nav-row">
-            <button className="day-nav-arrow" onClick={() => onShiftDays(-1)} aria-label="Jour précédent" title="Jour précédent">
+            <button className="day-nav-arrow" onClick={() => onShiftDays(-1)} aria-label="Previous day" title="Previous day">
               <ChevronLeftIcon />
             </button>
             {[1, 2, 3].map(n => (
@@ -316,10 +306,10 @@ export default function GanttFilterBar({
                 className={`day-nav-btn ${dayCount === n ? "day-nav-btn--active" : ""}`}
                 onClick={() => onDayCountChange(n)}
               >
-                {n}J
+                {n}D
               </button>
             ))}
-            <button className="day-nav-arrow" onClick={() => onShiftDays(1)} aria-label="Jour suivant" title="Jour suivant">
+            <button className="day-nav-arrow" onClick={() => onShiftDays(1)} aria-label="Next day" title="Next day">
               <ChevronRightIcon />
             </button>
             <button className="day-nav-today" onClick={onResetToToday} title="Today">
