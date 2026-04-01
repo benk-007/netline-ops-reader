@@ -3,8 +3,8 @@ import { SERVICE_COLORS, STATE_COLORS } from "../../constants/ganttConstants";
 import "./GanttBottomPanel.css";
 
 const TABS = [
-    { key: "vol",          label: "Vol"         },
-    { key: "trajectoire",  label: "Trajectoire" },
+    { key: "vol",          label: "Flight"      },
+    { key: "trajectoire",  label: "Track"       },
 ];
 
 /* ── IATA Delay Codes ────────────────────────────────────── */
@@ -88,7 +88,7 @@ const DELAY_CODES = {
 };
 
 function getDelayDescription(code) {
-    if (!code) return "Code inconnu";
+    if (!code) return "Unknown code";
     return DELAY_CODES[code] || `Code IATA ${code}`;
 }
 
@@ -168,13 +168,13 @@ function VolTab({ leg, sc }) {
             <div className="bp-vol-data">
                 <div className="bp-vol-grid">
                     {[
-                        ["Vol",     leg.fn,      sc.bar],
-                        ["Immat.",  leg.reg,     null],
+                        ["Flight",  leg.fn,      sc.bar],
+                        ["Reg.",    leg.reg,     null],
                         ["Type",    leg.subtype,  null],
                         ["Service", leg.service,  sc.text],
-                        ["Départ",  leg.dep,     null],
-                        ["Arrivée", leg.arr,     null],
-                        ["Statut",  leg.state,   STATE_COLORS[leg.state]],
+                        ["Dep",     leg.dep,     null],
+                        ["Arr",     leg.arr,     null],
+                        ["Status",  leg.state,   STATE_COLORS[leg.state]],
                         ["Date",    leg.date,    null],
                     ].map(([k, v, color]) => (
                         <div key={k} className="bp-card-lg">
@@ -191,7 +191,7 @@ function VolTab({ leg, sc }) {
             {hasDelay && (
                 <div className="bp-delay-section">
                     <div className="bp-delay-header">
-                        <div className="bp-delay-header-label">RETARD TOTAL</div>
+                        <div className="bp-delay-header-label">TOTAL DELAY</div>
                         <div className="bp-delay-total" style={{ color: totalSevColor }}>
                             +{leg.totalDelay} <span className="bp-delay-total-unit">min</span>
                         </div>
@@ -220,9 +220,9 @@ function TrajectoryTab({ leg, sc }) {
 
     // Phase labels
     const phases = [
-        { label: "Pré-vol",   pct: 0,   active: progress < 15 },
-        { label: "En vol",    pct: 40,  active: progress >= 15 && progress < 95 },
-        { label: "Terminé",   pct: 85,  active: progress >= 95 },
+        { label: "Pre-flight", pct: 0,   active: progress < 15 },
+        { label: "Airborne",   pct: 40,  active: progress >= 15 && progress < 95 },
+        { label: "Arrived",    pct: 85,  active: progress >= 95 },
     ];
 
     return (
@@ -308,19 +308,19 @@ function TrajectoryTab({ leg, sc }) {
                 )}
 
                 <div className="bp-traj-progress-label" style={{ color: sc.text }}>
-                    {cancelled ? "Annulé" : `${progress}% parcouru`}
+                    {cancelled ? "Cancelled" : `${progress}% complete`}
                 </div>
             </div>
 
             {/* Timing grid */}
             <div className="bp-traj-timing">
                 {[
-                    ["Dép. prévu",  leg.DEP_TIME_SCHED || "—"],
+                    ["STD",         leg.DEP_TIME_SCHED || "—"],
                     ["Off Block",   leg.OFF_BLOCK_TIME || "—"],
                     ["Airborne",    leg.AIRBORNE_TIME  || "—"],
                     ["Landing",     leg.LANDING_TIME   || "—"],
                     ["On Block",    leg.ON_BLOCK_TIME  || "—"],
-                    ["Arr. prévu",  leg.ARR_TIME_SCHED || "—"],
+                    ["STA",         leg.ARR_TIME_SCHED || "—"],
                 ].map(([k, v]) => (
                     <div key={k} className="bp-traj-time-cell">
                         <div className="bp-traj-time-label">{k}</div>

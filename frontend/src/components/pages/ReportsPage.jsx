@@ -812,7 +812,7 @@ function FlightCard({ flight, onClick }) {
 
 /* ── MAIN ── */
 export default function FlightSearch({ isDark, legs: ALL_LEGS = [] }) {
-    const [tab, setTab] = useState("route");
+    const [tab, setTab] = useState("number");
 
     // Route
     const [from, setFrom] = useState("LBV");

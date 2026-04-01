@@ -92,7 +92,7 @@ export default function GanttFilterBar({
     setPending(filters);
   }, [filters]);
 
-  const { fDate, fService, fDep, fArr, fFlight, fSubtype } = pending;
+  const { fDate, fService, fDep, fArr, fFlight, fSubtype, fReg } = pending;
 
   function changePending(update) {
     setPending(prev => ({ ...prev, ...update }));
@@ -103,7 +103,7 @@ export default function GanttFilterBar({
   }
 
   function clearAll() {
-    const empty = { fDate: [], fService: [], fDep: [], fArr: [], fFlight: "", fSubtype: [] };
+    const empty = { fDate: [], fService: [], fDep: [], fArr: [], fFlight: "", fSubtype: [], fReg: [] };
     setPending(empty);
     onChange(empty);
   }
@@ -117,6 +117,7 @@ export default function GanttFilterBar({
   const allServices = useMemo(() => ["Tous", ...Object.keys(SERVICE_COLORS)], []);
   const allDates    = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.date).filter(Boolean))].sort()], [legs]);
   const allSubtypes = useMemo(() => ["Tous", ...SUBTYPE_OPTIONS.filter(t => t !== "Tous types")], []);
+  const allRegs     = useMemo(() => ["Tous", ...[...new Set(legs.map(l => l.reg).filter(Boolean))].sort()], [legs]);
 
   const toArr = v => Array.isArray(v) ? v : [];
   const activeCount = [
@@ -126,6 +127,7 @@ export default function GanttFilterBar({
     toArr(fArr).length > 0,
     fFlight !== "",
     toArr(fSubtype).length > 0,
+    toArr(fReg).length > 0,
   ].filter(Boolean).length;
 
   return (
@@ -136,7 +138,7 @@ export default function GanttFilterBar({
         <button
           className={`view-switch-btn ${viewMode === "gantt" ? "view-switch-btn--active" : ""}`}
           onClick={() => onViewChange && onViewChange("gantt")}
-          title="Vue Gantt"
+          title="Gantt view"
         >
           <GanttIcon />
           <span>Gantt</span>
@@ -144,19 +146,11 @@ export default function GanttFilterBar({
         <button
           className={`view-switch-btn ${viewMode === "board" ? "view-switch-btn--active" : ""}`}
           onClick={() => onViewChange && onViewChange("board")}
-          title="Vue Tableau"
+          title="Table view"
         >
           <BoardIcon />
           <span>Tableau</span>
         </button>
-      </div>
-
-      <div className="filter-sep" />
-
-      {/* Filter icon label */}
-      <div className="filter-bar-label">
-        <FilterIcon />
-        <span>Filtres</span>
       </div>
 
       <div className="filter-sep" />
@@ -182,13 +176,13 @@ export default function GanttFilterBar({
       <div className="filter-chip" data-type="dep">
         <span className="filter-chip-label">
           <span className="filter-chip-dot" />
-          Depart
+          Departure
         </span>
         <SearchableSelect
           options={allDeps}
           value={toArr(fDep)}
           onChange={v => changePending({ fDep: v })}
-          placeholder="Rechercher aeroport..."
+          placeholder="Search airport..."
           multi
         />
       </div>
@@ -197,13 +191,13 @@ export default function GanttFilterBar({
       <div className="filter-chip" data-type="arr">
         <span className="filter-chip-label">
           <span className="filter-chip-dot" />
-          Arrivee
+          Arrival
         </span>
         <SearchableSelect
           options={allArrs}
           value={toArr(fArr)}
           onChange={v => changePending({ fArr: v })}
-          placeholder="Rechercher aeroport..."
+          placeholder="Search airport..."
           multi
         />
       </div> 
@@ -220,7 +214,7 @@ export default function GanttFilterBar({
           options={allServices}
           value={toArr(fService)}
           onChange={v => changePending({ fService: v })}
-          placeholder="Rechercher service..."
+          placeholder="Search service..."
           multi
         />
       </div>
@@ -229,13 +223,28 @@ export default function GanttFilterBar({
       <div className="filter-chip" data-type="type">
         <span className="filter-chip-label">
           <span className="filter-chip-dot" />
-          Type avion
+          Aircraft Type
         </span>
         <SearchableSelect
           options={allSubtypes}
           value={toArr(fSubtype)}
           onChange={v => changePending({ fSubtype: v })}
-          placeholder="Rechercher type..."
+          placeholder="Search type..."
+          multi
+        />
+      </div>
+
+      {/* ── Registration ── */}
+      <div className="filter-chip" data-type="reg">
+        <span className="filter-chip-label">
+          <span className="filter-chip-dot" />
+          Registration
+        </span>
+        <SearchableSelect
+          options={allRegs}
+          value={toArr(fReg)}
+          onChange={v => changePending({ fReg: v })}
+          placeholder="Search reg..."
           multi
         />
       </div>
@@ -246,7 +255,7 @@ export default function GanttFilterBar({
       <div className="filter-chip" data-type="flight">
         <span className="filter-chip-label">
           <span className="filter-chip-dot" />
-          Vol N
+          Flight No.
         </span>
         <div className="filter-search-wrap">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--color-dim)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -259,7 +268,7 @@ export default function GanttFilterBar({
             placeholder="AT101..."
             value={fFlight}
             onChange={e => changePending({ fFlight: e.target.value })}
-            aria-label="Rechercher par numero de vol"
+            aria-label="Search by flight number"
           />
           {fFlight && (
             <button className="filter-clear-btn" onClick={() => changePending({ fFlight: "" })} type="button" aria-label="Effacer">x</button>
@@ -272,19 +281,19 @@ export default function GanttFilterBar({
         className={`filter-apply-btn ${hasPendingChanges ? "filter-apply-btn--active" : ""}`}
         onClick={handleApply}
         type="button"
-        title="Appliquer les filtres"
+        title="Apply filters"
         disabled={!hasPendingChanges}
       >
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="20 6 9 17 4 12" />
         </svg>
-        <span>Appliquer</span>
+        <span>Apply</span>
       </button>
 
       {/* ── Active filter badge ── */}
       {activeCount > 0 && (
-        <button className="filter-active-badge" onClick={clearAll} title="Effacer tous les filtres" type="button">
-          {activeCount} filtre{activeCount > 1 ? "s" : ""}
+        <button className="filter-active-badge" onClick={clearAll} title="Clear all filters" type="button">
+          {activeCount} filter{activeCount > 1 ? "s" : ""}
           <span className="filter-clear-all">x</span>
         </button>
       )}
@@ -295,7 +304,7 @@ export default function GanttFilterBar({
         {/* Day navigator */}
         <div className="day-nav-group">
           <span className="filter-label" style={{ display: "flex", alignItems: "center", gap: 3 }}>
-            <CalendarIcon /> Jours
+            <CalendarIcon /> Days
           </span>
           <div className="day-nav-row">
             <button className="day-nav-arrow" onClick={() => onShiftDays(-1)} aria-label="Jour précédent" title="Jour précédent">
@@ -313,8 +322,8 @@ export default function GanttFilterBar({
             <button className="day-nav-arrow" onClick={() => onShiftDays(1)} aria-label="Jour suivant" title="Jour suivant">
               <ChevronRightIcon />
             </button>
-            <button className="day-nav-today" onClick={onResetToToday} title="Aujourd'hui">
-              Auj.
+            <button className="day-nav-today" onClick={onResetToToday} title="Today">
+              Today
             </button>
           </div>
         </div>
@@ -334,12 +343,12 @@ export default function GanttFilterBar({
 
           <button id="profiles-btn" className="profiles-btn" onClick={onOpenProfiles} type="button">
             <ProfilesIcon />
-            <span>Profils</span>
+            <span>Profiles</span>
           </button>
 
-          <button className="export-btn" onClick={onOpenExport} type="button" title="Exporter les donnees">
+          <button className="export-btn" onClick={onOpenExport} type="button" title="Export data">
             <ExportIcon />
-            <span>Exporter</span>
+            <span>Export</span>
           </button>
         </div>
       </div>

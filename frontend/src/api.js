@@ -173,6 +173,22 @@ export const legsApi = {
     ).toString();
     return request(`/legs/search${qs ? `?${qs}` : ""}`);
   },
+
+  /** Legs by flight number + date. */
+  getByFlightAndDate: (flightNumber, date) =>
+    request(`/legs/flight/${encodeURIComponent(flightNumber)}?date=${date}`),
+
+  /** Legs by departure airport + date. */
+  getByDeparture: (iata, date) =>
+    request(`/legs/departure/${encodeURIComponent(iata)}?date=${date}`),
+
+  /** Legs by arrival airport + date. */
+  getByArrival: (iata, date) =>
+    request(`/legs/arrival/${encodeURIComponent(iata)}?date=${date}`),
+
+  /** Legs by aircraft registration + date. */
+  getByAircraft: (registration, date) =>
+    request(`/legs/aircraft/${encodeURIComponent(registration)}?date=${date}`),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────

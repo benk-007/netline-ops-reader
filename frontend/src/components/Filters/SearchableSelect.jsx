@@ -23,16 +23,26 @@ export default function SearchableSelect({
     const [search, setSearch] = useState("");
     const ref = useRef(null);
 
-    // Close on outside click
+    // Close on outside click or Escape key
     useEffect(() => {
-        function handler(e) {
+        function handleClick(e) {
             if (ref.current && !ref.current.contains(e.target)) {
                 setOpen(false);
                 setSearch("");
             }
         }
-        document.addEventListener("mousedown", handler);
-        return () => document.removeEventListener("mousedown", handler);
+        function handleKey(e) {
+            if (e.key === "Escape") {
+                setOpen(false);
+                setSearch("");
+            }
+        }
+        document.addEventListener("mousedown", handleClick);
+        document.addEventListener("keydown", handleKey);
+        return () => {
+            document.removeEventListener("mousedown", handleClick);
+            document.removeEventListener("keydown", handleKey);
+        };
     }, []);
 
     const filtered = options.filter(o =>
@@ -65,9 +75,9 @@ export default function SearchableSelect({
     function triggerLabel() {
         if (!multi) return value;
         const arr = Array.isArray(value) ? value : [];
-        if (arr.length === 0) return "Tous";
+        if (arr.length === 0) return "All";
         if (arr.length <= 2) return arr.join(" · ");
-        return `${arr.length} sélectionnés`;
+        return `${arr.length} selected`;
     }
 
     const isActive = multi && Array.isArray(value) && value.length > 0;
@@ -113,7 +123,7 @@ export default function SearchableSelect({
                     {/* Options list */}
                     <div className="ss-list">
                         {filtered.length === 0 ? (
-                            <div className="ss-no-results">Aucun résultat</div>
+                            <div className="ss-no-results">No results</div>
                         ) : (
                             filtered.map(opt => {
                                 const isSelected = multi
@@ -156,15 +166,15 @@ export default function SearchableSelect({
                         <div className="ss-apply-row">
                             <span className="ss-apply-count">
                                 {Array.isArray(value) && value.length > 0
-                                    ? `${value.length} sélectionné${value.length > 1 ? "s" : ""}`
-                                    : "Tous"}
+                                    ? `${value.length} selected`
+                                    : "All"}
                             </span>
                             <button
                                 className="ss-apply-btn"
                                 type="button"
                                 onClick={() => { setOpen(false); setSearch(""); }}
                             >
-                                Appliquer
+                                Apply
                             </button>
                         </div>
                     )}

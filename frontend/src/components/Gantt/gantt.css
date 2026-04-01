@@ -87,14 +87,14 @@
 /* ── Leg bars (vis-item.vis-range) ── */
 .vis-item.vis-range {
   border-radius: 4px !important;
-  height: 20px !important;
+  height: var(--gantt-item-h, 20px) !important;
   padding: 0 !important;
   border: none !important;
   border-top: 1px solid rgba(255,255,255,0.15) !important;
   background: var(--leg-planned) !important;
   color: #ffffff !important;
   font-family: "JetBrains Mono", monospace !important;
-  font-size: 9px !important;
+  font-size: var(--gantt-item-fs, 9px) !important;
   font-weight: 700 !important;
   letter-spacing: 0.4px !important;
   overflow: hidden !important;
@@ -183,7 +183,7 @@
 /* ── PLANNED bars — Blue (default) ── */
 .vis-item.vis-range.leg-planned {
   background: var(--leg-planned) !important;
-  height: 20px !important;
+  height: var(--gantt-item-h, 20px) !important;
 }
 
 .vis-item.vis-range.leg-planned:hover {
@@ -213,7 +213,7 @@
 /* ── ACTUAL bars — Gray (default), thinner ── */
 .vis-item.vis-range.leg-actual {
   background: var(--leg-actual) !important;
-  height: 16px !important;
+  height: var(--gantt-item-act-h, 16px) !important;
   opacity: 0.9;
   border-radius: 3px !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.25) !important;

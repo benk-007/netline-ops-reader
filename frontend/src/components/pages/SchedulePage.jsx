@@ -318,7 +318,7 @@ const STATE_COLORS_SCH = {
 
 export default function SchedulePage({ isDark, legs = [] }) {
     const [selected, setSelected] = useState(null);
-    const [filter, setFilter] = useState("Tous");
+    const [filter, setFilter] = useState("All");
 
     const t = themes[isDark ? "dark" : "light"];
 
@@ -351,10 +351,10 @@ export default function SchedulePage({ isDark, legs = [] }) {
         return { otp, avg_delay: avgDelay, turnaround_avg: "—", total_flights: total, on_time: onTime, delayed, cancelled };
     }, [scheduleFlights]);
 
-    const states = ["Tous", "Scheduled", "Boarding", "Airborne", "Arrived", "Delayed", "Cancelled"];
-    const filtered = filter === "Tous" ? scheduleFlights : scheduleFlights.filter(f => f.leg_state === filter);
+    const states = ["All", "Scheduled", "Boarding", "Airborne", "Arrived", "Delayed", "Cancelled"];
+    const filtered = filter === "All" ? scheduleFlights : scheduleFlights.filter(f => f.leg_state === filter);
 
-    const COLS = "90px 70px 150px 120px 140px 120px 80px 100px 100px";
+    const COLS = "90px 70px 1fr 120px 140px 120px 80px 100px";
 
     return (
         <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: "'DM Sans', system-ui, sans-serif", transition: "background 0.3s, color 0.3s" }}>
@@ -444,14 +444,14 @@ export default function SchedulePage({ isDark, legs = [] }) {
                                 color: active ? "#e05f72" : t.filterText,
                                 fontSize: 10, fontWeight: 600, letterSpacing: 1,
                                 textTransform: "uppercase", cursor: "pointer", transition: "all 0.18s"
-                            }}>{s === "Tous" ? `Tous (${scheduleFlights.length})` : s}</button>
+                            }}>{s === "All" ? `All (${scheduleFlights.length})` : s}</button>
                         );
                     })}
                 </div>
 
                 {/* Table header */}
                 <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "6px 18px", color: t.textDimmer, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700 }}>
-                    {["Vol", "Dir.", "Route", "Avion", "Planifié", "Réel OOOI", "Retard", "Statut", "Services"].map(h => <span key={h}>{h}</span>)}
+                    {["Vol", "Dir.", "Route", "Avion", "Scheduled", "Actual OOOI", "Delay", "Status"].map(h => <span key={h}>{h}</span>)}
                 </div>
 
                 {/* Rows */}
@@ -498,14 +498,6 @@ export default function SchedulePage({ isDark, legs = [] }) {
                                         {isLive && <span style={{ width: 5, height: 5, borderRadius: "50%", background: state.color, animation: "pulse 1.5s infinite", flexShrink: 0 }} />}
                                         {state.label}
                                     </span>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                                    {[["F", f.fuel_status], ["C", f.catering_status], ["N", f.cleaning_status], ["L", f.loadsheet_status]].map(([abbr, s]) => (
-                                        <div key={abbr} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                                            <div style={{ width: 7, height: 7, borderRadius: "50%", background: statusDot(s) }} />
-                                            <span style={{ fontSize: 8, color: t.textDimmer, letterSpacing: 0.3 }}>{abbr}</span>
-                                        </div>
-                                    ))}
                                 </div>
                             </div>
                         );

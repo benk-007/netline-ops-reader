@@ -31,6 +31,7 @@ import SchedulePage from "./components/pages/SchedulePage";
 import ReportsPage from "./components/pages/ReportsPage";
 import AdminPage from "./components/pages/AdminPage";
 import LoginPage from "./components/Auth/LoginPage";
+import StationGanttPage from "./components/pages/StationGanttPage";
 
 /* ── Data ── */
 import { Leg } from "./data/flightsData";
@@ -106,14 +107,14 @@ function windowDates(refDate, dayCount) {
 const ROLE_PAGES = {
   admin:       ["gantt", "schedule", "reports", "admin"],
   staff_ops:   ["gantt", "schedule", "reports"],
-  chef_escale: ["schedule", "reports"],
+  chef_escale: ["station-gantt", "schedule", "reports"],
   aol_agent:   ["reports"],
 };
 
 const ROLE_DEFAULT_PAGE = {
   admin:       "gantt",
   staff_ops:   "gantt",
-  chef_escale: "schedule",
+  chef_escale: "station-gantt",
   aol_agent:   "reports",
 };
 
@@ -339,43 +340,53 @@ function App({ keycloakFailed }) {
     fArr:     [],
     fFlight:  "",
     fSubtype: [],
+    fReg:     [],
   });
 
   async function changeFilter(newFilters) {
     setFilters(newFilters);
     setSelectedLeg(null);
 
-    const { fFlight, fDep, fArr, fService, fDate, fSubtype } = newFilters;
+    const { fFlight, fDep, fArr, fService, fDate, fSubtype, fReg } = newFilters;
     const toArr = v => Array.isArray(v) ? v : [];
+    const date = toArr(fDate)[0] ?? referenceDate;
 
-    // Build backend search params from the filter state.
-    // fSubtype has no backend equivalent — it is handled by FlightGantt client-side.
-    const params = {};
-    if (fFlight)            params.flightNumber       = fFlight;
-    if (toArr(fDep)[0])     params.departureAirport   = toArr(fDep)[0];
-    if (toArr(fArr)[0])     params.arrivalAirport     = toArr(fArr)[0];
-    if (toArr(fService)[0]) params.legService         = toArr(fService)[0];
-    // Use the first selected date, or the current reference date as fallback
-    params.date = toArr(fDate)[0] ?? referenceDate;
+    const dep    = toArr(fDep)[0];
+    const arr    = toArr(fArr)[0];
+    const reg    = toArr(fReg)[0];
+    const hasAny = fFlight || dep || arr || reg
+                || toArr(fService).length > 0
+                || toArr(fDate).length > 0;
 
-    const hasSearchParam = Object.keys(params).length > 1 // more than just date
-      || fFlight
-      || toArr(fDep).length > 0
-      || toArr(fArr).length > 0
-      || toArr(fService).length > 0
-      || toArr(fDate).length > 0;
-
-    if (hasSearchParam) {
-      // Let the backend do the heavy lifting — update legsData with search results
-      try {
-        const data = await legsApi.search(params);
-        setLegsData(data.map(dtoToLeg));
-      } catch (err) {
-        console.error("[Netline] Search failed:", err);
-      }
-    } else {
-      // No backend-filterable params (only fSubtype or all clear) — reload window
+    if (!hasAny) {
+      // Nothing backend-filterable — just reload the window
       fetchLegsForWindow(referenceDate, dayCount);
+      return;
+    }
+
+    // Route to the most specific endpoint first, fall back to generic search
+    try {
+      let data;
+      if (fFlight && !dep && !arr && !reg && toArr(fService).length === 0) {
+        data = await legsApi.getByFlightAndDate(fFlight, date);
+      } else if (dep && !fFlight && !arr && !reg && toArr(fService).length === 0) {
+        data = await legsApi.getByDeparture(dep, date);
+      } else if (arr && !fFlight && !dep && !reg && toArr(fService).length === 0) {
+        data = await legsApi.getByArrival(arr, date);
+      } else if (reg && !fFlight && !dep && !arr && toArr(fService).length === 0) {
+        data = await legsApi.getByAircraft(reg, date);
+      } else {
+        const params = { date };
+        if (fFlight)            params.flightNumber        = fFlight;
+        if (dep)                params.departureAirport    = dep;
+        if (arr)                params.arrivalAirport      = arr;
+        if (reg)                params.aircraftRegistration = reg;
+        if (toArr(fService)[0]) params.legService          = toArr(fService)[0];
+        data = await legsApi.search(params);
+      }
+      setLegsData(data.map(dtoToLeg));
+    } catch (err) {
+      console.error("[Netline] Filter fetch failed:", err);
     }
   }
 
@@ -490,6 +501,9 @@ function App({ keycloakFailed }) {
               <GanttBottomPanel leg={selectedLeg} onClose={() => setSelectedLeg(null)} isDark={isDark} />
             </div>
           )}
+
+          {/* ── STATION GANTT PAGE (chef_escale) ── */}
+          {safePage === "station-gantt" && <StationGanttPage isDark={isDark} />}
 
           {/* ── SCHEDULE PAGE ── */}
           {safePage === "schedule" && <SchedulePage isDark={isDark} legs={legsData} />}

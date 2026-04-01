@@ -10,6 +10,7 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.jsx";
 import { initKeycloak } from "./auth";
+import ToastProvider from "./components/Toast/ToastProvider.jsx";
 
 const root = createRoot(document.getElementById("root"));
 
@@ -18,7 +19,9 @@ initKeycloak()
   .then(() => {
     root.render(
       <StrictMode>
-        <App />
+        <ToastProvider>
+          <App />
+        </ToastProvider>
       </StrictMode>
     );
   })
@@ -27,7 +30,9 @@ initKeycloak()
     console.warn("[Auth] Keycloak unavailable — using mock login");
     root.render(
       <StrictMode>
-        <App keycloakFailed />
+        <ToastProvider>
+          <App keycloakFailed />
+        </ToastProvider>
       </StrictMode>
     );
   });

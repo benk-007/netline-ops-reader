@@ -190,40 +190,89 @@ export default function AdminPage({ onLegsImported }) {
         }
     }
 
-    /* ── CSV import ── */
+    /* ── User import (CSV + xlsx) ── */
     async function handleCsvImport(e) {
         const file = e.target.files[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
-            if (lines.length < 2) { setCsvFeedback('Fichier vide.'); return; }
-            const [header, ...rows] = lines;
-            const cols = header.toLowerCase().split(',').map(s => s.trim());
-            const idx = { name: cols.indexOf('name'), username: cols.indexOf('username'), role: cols.indexOf('role'), status: cols.indexOf('status'), password: cols.indexOf('password') };
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        async function processUserRows(rows) {
+            if (rows.length < 2) { setCsvFeedback('Empty file.'); return; }
+            const [header, ...dataRows] = rows;
+            const cols = header.map(h => String(h).toLowerCase().trim());
+            const idx = {
+                name:      cols.indexOf('name'),
+                username:  cols.indexOf('username'),
+                role:      cols.indexOf('role'),
+                status:    cols.indexOf('status'),
+                password:  cols.indexOf('password'),
+                airports:  cols.indexOf('assignedairports'),
+            };
             let imported = 0;
-            for (const row of rows) {
-                const cells = row.split(',').map(s => s.trim());
-                const name = idx.name >= 0 ? cells[idx.name] : '';
+            for (const cells of dataRows) {
+                const name = idx.name >= 0 ? String(cells[idx.name] || '').trim() : '';
                 if (!name) continue;
-                const roleKey = APP_ROLES.find(r => r.label.toLowerCase() === (cells[idx.role] || '').toLowerCase())?.key || 'staff_ops';
+                const roleKey = APP_ROLES.find(r =>
+                    r.label.toLowerCase() === (cells[idx.role] || '').toLowerCase()
+                    || r.key === (cells[idx.role] || '').toLowerCase()
+                )?.key || 'staff_ops';
+                const rawAirports = idx.airports >= 0 ? String(cells[idx.airports] || '') : '';
+                const assignedAirports = rawAirports ? rawAirports.split('|').map(a => a.trim()).filter(Boolean) : [];
                 try {
                     await usersApi.create({
                         fullName: name,
-                        matricule: (idx.username >= 0 ? cells[idx.username] : '') || name.toLowerCase().replace(/\s+/g, '.'),
-                        password: (idx.password >= 0 ? cells[idx.password] : '') || 'changeme',
+                        matricule: (idx.username >= 0 ? String(cells[idx.username] || '').trim() : '') || name.toLowerCase().replace(/\s+/g, '.'),
+                        password: (idx.password >= 0 ? String(cells[idx.password] || '').trim() : '') || 'changeme',
                         role: backendRole(roleKey),
-                        isActivated: (idx.status >= 0 ? cells[idx.status] : '') !== 'Inactive',
+                        isActivated: String(cells[idx.status] || '') !== 'Inactive',
+                        assignedAirports,
                     });
                     imported++;
                 } catch { /* skip duplicates */ }
             }
             await fetchUsers();
-            setCsvFeedback(`${imported} utilisateur${imported > 1 ? 's' : ''} importé${imported > 1 ? 's' : ''}`);
+            setCsvFeedback(`${imported} user${imported !== 1 ? 's' : ''} imported`);
             setTimeout(() => setCsvFeedback(''), 3500);
-        };
-        reader.readAsText(file);
+        }
+
+        if (ext === 'xlsx' || ext === 'xls') {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                try {
+                    const wb = XLSX.read(ev.target.result, { type: 'array' });
+                    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
+                    await processUserRows(rows);
+                } catch { setCsvFeedback('Error reading Excel file.'); }
+            };
+            reader.readAsArrayBuffer(file);
+        } else {
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const lines = ev.target.result.split('\n').map(l => l.trim()).filter(Boolean);
+                const rows = lines.map(l => l.split(',').map(c => c.replace(/^"|"$/g, '').trim()));
+                await processUserRows(rows);
+            };
+            reader.readAsText(file);
+        }
         e.target.value = '';
+    }
+
+    /* ── Export users to xlsx ── */
+    function handleExportUsers() {
+        const rows = [
+            ['name', 'username', 'role', 'status', 'assignedAirports'],
+            ...users.map(u => [
+                u.name,
+                u.username,
+                APP_ROLES.find(r => r.key === u.role)?.label || u.role,
+                u.status,
+                (u.airports || []).join('|'),
+            ]),
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Users');
+        XLSX.writeFile(wb, `users_export_${new Date().toISOString().slice(0, 10)}.xlsx`);
     }
 
     /* ── Helpers: normalize Excel date/time values ── */
@@ -449,10 +498,10 @@ export default function AdminPage({ onLegsImported }) {
 
     /* ── Tabs ── */
     const tabs = [
-        { id: 'users',  label: 'Utilisateurs' },
-        { id: 'data',   label: 'Données Vols' },
-        { id: 'roles',  label: 'Rôles & Accès' },
-        { id: 'theme',  label: 'Apparence' },
+        { id: 'users',  label: 'Users' },
+        { id: 'data',   label: 'Flight Data' },
+        { id: 'roles',  label: 'Roles & Access' },
+        { id: 'theme',  label: 'Appearance' },
     ];
 
     return (
@@ -466,8 +515,8 @@ export default function AdminPage({ onLegsImported }) {
                     </svg>
                 </div>
                 <div>
-                    <h1 className="admin-title">Administration Système</h1>
-                    <p className="admin-subtitle">Gestion des accès, rôles et apparence — RAM OPS Center</p>
+                    <h1 className="admin-title">System Administration</h1>
+                    <p className="admin-subtitle">Access management, roles and appearance — RAM OPS Center</p>
                 </div>
             </header>
 
@@ -491,15 +540,16 @@ export default function AdminPage({ onLegsImported }) {
                     <div className="admin-section fade-in">
                         <div className="section-header">
                             <div>
-                                <h2>Gestion des utilisateurs</h2>
-                                <p className="section-desc">{users.length} compte{users.length > 1 ? 's' : ''} · {users.filter(u => u.status === 'Active').length} actif{users.filter(u => u.status === 'Active').length > 1 ? 's' : ''}</p>
+                                <h2>User Management</h2>
+                                <p className="section-desc">{users.length} account{users.length !== 1 ? 's' : ''} · {users.filter(u => u.status === 'Active').length} active</p>
                             </div>
                             <div className="section-header-actions">
                                 {csvFeedback && <span className="csv-feedback">{csvFeedback}</span>}
                                 {error && <span className="csv-feedback" style={{color: '#ef4444'}}>{error}</span>}
-                                <input ref={csvInputRef} type="file" accept=".csv" style={{ display: 'none' }} onChange={handleCsvImport} />
-                                <button className="btn-secondary" onClick={() => csvInputRef.current?.click()}>↑ Import CSV</button>
-                                <button className="btn-primary" onClick={openCreateForm}>+ Nouvel utilisateur</button>
+                                <input ref={csvInputRef} type="file" accept=".csv,.xlsx,.xls" style={{ display: 'none' }} onChange={handleCsvImport} />
+                                <button className="btn-secondary" onClick={() => csvInputRef.current?.click()}>↑ Import</button>
+                                <button className="btn-secondary" onClick={handleExportUsers} title="Export users to xlsx">↓ Export</button>
+                                <button className="btn-primary" onClick={openCreateForm}>+ New user</button>
                             </div>
                         </div>
 
@@ -507,34 +557,34 @@ export default function AdminPage({ onLegsImported }) {
                         {showForm && (
                             <form className="admin-form-card slide-down" onSubmit={handleFormSubmit}>
                                 <div className="form-card-header">
-                                    <h3>{editingId !== null ? 'Modifier l\'utilisateur' : 'Créer un utilisateur'}</h3>
+                                    <h3>{editingId !== null ? 'Edit User' : 'Create User'}</h3>
                                     <button type="button" className="btn-icon-close" onClick={() => setShowForm(false)}>×</button>
                                 </div>
 
                                 <div className="form-grid">
                                     <div className="form-group">
-                                        <label>Nom complet</label>
-                                        <input type="text" value={formName} onChange={e => setFormName(e.target.value)} placeholder="ex. Ahmed Bertal" required />
+                                        <label>Full name</label>
+                                        <input type="text" value={formName} onChange={e => setFormName(e.target.value)} placeholder="e.g. Ahmed Bertal" required />
                                     </div>
                                     <div className="form-group">
                                         <label>Matricule</label>
-                                        <input type="text" value={formUsername} onChange={e => setFormUsername(e.target.value)} placeholder="ex. ahmed.bertal" />
+                                        <input type="text" value={formUsername} onChange={e => setFormUsername(e.target.value)} placeholder="e.g. ahmed.bertal" />
                                     </div>
                                     <div className="form-group">
-                                        <label>Mot de passe {editingId !== null && <span style={{fontSize:11,opacity:0.6}}>(laisser vide = inchangé)</span>}</label>
-                                        <input type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} placeholder={editingId !== null ? '••••••••' : 'Mot de passe'} required={editingId === null} />
+                                        <label>Password {editingId !== null && <span style={{fontSize:11,opacity:0.6}}>(leave blank to keep unchanged)</span>}</label>
+                                        <input type="password" value={formPassword} onChange={e => setFormPassword(e.target.value)} placeholder={editingId !== null ? '••••••••' : 'Password'} required={editingId === null} />
                                     </div>
                                     <div className="form-group">
-                                        <label>Rôle</label>
+                                        <label>Role</label>
                                         <select value={formRole} onChange={e => { setFormRole(e.target.value); if (e.target.value !== 'chef_escale') setFormAirports([]); }}>
                                             {APP_ROLES.map(r => <option key={r.key} value={r.key}>{r.label}</option>)}
                                         </select>
                                     </div>
                                     <div className="form-group">
-                                        <label>Statut</label>
+                                        <label>Status</label>
                                         <select value={formStatus} onChange={e => setFormStatus(e.target.value)}>
-                                            <option value="Active">Actif</option>
-                                            <option value="Inactive">Inactif</option>
+                                            <option value="Active">Active</option>
+                                            <option value="Inactive">Inactive</option>
                                         </select>
                                     </div>
                                 </div>
@@ -542,8 +592,8 @@ export default function AdminPage({ onLegsImported }) {
                                 {/* Airport assignment — only for chef_escale */}
                                 {formRole === 'chef_escale' && (
                                     <div className="form-group" style={{ marginTop: 8 }}>
-                                        <label>Aéroports assignés <span className="form-required">*</span></label>
-                                        <p className="form-hint">Précisez les aéroports sous la responsabilité de ce Chef d'Escale.</p>
+                                        <label>Assigned airports <span className="form-required">*</span></label>
+                                        <p className="form-hint">Specify the airports under this Station Manager's responsibility.</p>
                                         <SearchableSelect
                                             options={ALL_AIRPORTS}
                                             value={formAirports}
@@ -555,13 +605,13 @@ export default function AdminPage({ onLegsImported }) {
                                 )}
 
                                 <div className="form-actions">
-                                    <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Annuler</button>
+                                    <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
                                     <button
                                         type="submit"
                                         className="btn-submit"
                                         disabled={formSaving || (formRole === 'chef_escale' && formAirports.length === 0)}
                                     >
-                                        {formSaving ? 'Enregistrement...' : editingId !== null ? 'Enregistrer' : 'Créer'}
+                                        {formSaving ? 'Saving...' : editingId !== null ? 'Save' : 'Create'}
                                     </button>
                                 </div>
                             </form>
@@ -575,10 +625,10 @@ export default function AdminPage({ onLegsImported }) {
                             <table className="admin-table">
                                 <thead>
                                     <tr>
-                                        <th>Utilisateur</th>
-                                        <th>Rôle</th>
-                                        <th>Aéroports</th>
-                                        <th>Statut</th>
+                                        <th>User</th>
+                                        <th>Role</th>
+                                        <th>Airports</th>
+                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -610,17 +660,17 @@ export default function AdminPage({ onLegsImported }) {
                                                 <td>
                                                     <div className="status-cell">
                                                         <span className={`status-dot ${u.status === 'Active' ? 'active' : 'inactive'}`} />
-                                                        <span className="status-text">{u.status === 'Active' ? 'Actif' : 'Inactif'}</span>
+                                                        <span className="status-text">{u.status === 'Active' ? 'Active' : 'Inactive'}</span>
                                                     </div>
                                                 </td>
                                                 <td>
                                                     <div className="action-btns">
-                                                        <button className="btn-text" onClick={() => openEditForm(u)}>Modifier</button>
+                                                        <button className="btn-text" onClick={() => openEditForm(u)}>Edit</button>
                                                         <button
                                                             className={`btn-text ${u.status === 'Active' ? 'text-danger' : 'text-success'}`}
                                                             onClick={() => handleToggleActivation(u)}
                                                         >
-                                                            {u.status === 'Active' ? 'Révoquer' : 'Activer'}
+                                                            {u.status === 'Active' ? 'Revoke' : 'Activate'}
                                                         </button>
                                                     </div>
                                                 </td>
@@ -628,7 +678,7 @@ export default function AdminPage({ onLegsImported }) {
                                         );
                                     })}
                                     {users.length === 0 && !loading && (
-                                        <tr><td colSpan="5" className="text-center text-muted">Aucun utilisateur.</td></tr>
+                                        <tr><td colSpan="5" className="text-center text-muted">No users found.</td></tr>
                                     )}
                                 </tbody>
                             </table>

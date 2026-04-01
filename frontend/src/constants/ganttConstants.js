@@ -101,6 +101,7 @@ export const DEFAULT_PROFILE = {
     fArr:     [],   // [] = all arrivals
     fFlight:  "",
     fSubtype: [],   // [] = all subtypes
+    fReg:     [],   // [] = all registrations
   },
   utcMode: true,
   dayCount: 1,

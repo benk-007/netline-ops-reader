@@ -199,6 +199,7 @@ function computeWindow(referenceDate, dayCount) {
 
 export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCount = 1, referenceDate }) {
   const container = useRef(null);
+  const wrapperRef = useRef(null);
   const timelineRef = useRef(null);
   const filteredRef = useRef([]);
 
@@ -209,6 +210,30 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     const handleMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
     window.addEventListener("mousemove", handleMove);
     return () => window.removeEventListener("mousemove", handleMove);
+  }, []);
+
+  /* ── Dynamic row height / font scaling via ResizeObserver ── */
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    function applyScale(width) {
+      // Scale item height linearly: 20px at 800px width, 32px at 1600px+
+      const itemH = Math.round(Math.min(32, Math.max(18, 18 + (width - 800) * 0.018)));
+      const itemActH = Math.round(itemH * 0.75);
+      const fs = itemH <= 20 ? "9px" : itemH <= 26 ? "10px" : "11px";
+      el.style.setProperty("--gantt-item-h",     `${itemH}px`);
+      el.style.setProperty("--gantt-item-act-h",  `${itemActH}px`);
+      el.style.setProperty("--gantt-item-fs",     fs);
+    }
+
+    const ro = new ResizeObserver(entries => {
+      const width = entries[0]?.contentRect.width ?? el.offsetWidth;
+      applyScale(width);
+    });
+    ro.observe(el);
+    applyScale(el.offsetWidth); // initial
+    return () => ro.disconnect();
   }, []);
 
   const itemsRef = useRef(null);
@@ -281,7 +306,7 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
   }, [dayCount, referenceDate]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div ref={wrapperRef} style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <div style={{ flex: 1, position: "relative", minHeight: 0, display: "flex", flexDirection: "column" }}>
         <div ref={container} className="gantt-wrapper" style={{ flex: 1, width: "100%" }} />
 

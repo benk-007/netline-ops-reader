@@ -255,3 +255,58 @@
   font-weight: 600;
   letter-spacing: 0.3px;
 }
+
+/* ── Row selection ── */
+.fb-row--selected {
+  background: rgba(37, 99, 235, 0.09) !important;
+}
+
+.fb-row--selected:hover {
+  background: rgba(37, 99, 235, 0.14) !important;
+}
+
+.fb-row--selected td {
+  border-bottom-color: rgba(37, 99, 235, 0.25) !important;
+}
+
+/* ── Selection toolbar elements ── */
+.fb-sel-count {
+  font-size: 11px;
+  font-weight: 700;
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.14);
+  border: 1px solid rgba(37, 99, 235, 0.3);
+  border-radius: 5px;
+  padding: 2px 8px;
+}
+
+.fb-export-sel-btn {
+  background: rgba(5, 150, 105, 0.14);
+  border: 1px solid rgba(5, 150, 105, 0.35);
+  color: #6ee7b7;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.fb-export-sel-btn:hover {
+  background: rgba(5, 150, 105, 0.22);
+}
+
+.fb-clear-sel-btn {
+  background: none;
+  border: none;
+  color: var(--color-dim);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.fb-clear-sel-btn:hover {
+  opacity: 1;
+}

@@ -4,7 +4,7 @@ import "./SideMenu.css";
 const ROLE_PAGES = {
   admin:       ["gantt", "schedule", "reports", "admin"],
   staff_ops:   ["gantt", "schedule", "reports"],
-  chef_escale: ["schedule", "reports"],
+  chef_escale: ["station-gantt", "schedule", "reports"],
   aol_agent:   ["reports"],
 };
 
@@ -73,10 +73,11 @@ function LogoutIcon() {
 }
 
 const ALL_NAV_ITEMS = [
-  { key: "gantt",    label: "Gantt",    Icon: GanttIcon    },
-  { key: "schedule", label: "Schedule", Icon: ScheduleIcon },
-  { key: "reports",  label: "Reports",  Icon: ReportsIcon  },
-  { key: "admin",    label: "Admin",    Icon: AdminIcon    },
+  { key: "gantt",         label: "Gantt",         Icon: GanttIcon    },
+  { key: "station-gantt", label: "Station Gantt",  Icon: GanttIcon    },
+  { key: "schedule",      label: "Schedule",       Icon: ScheduleIcon },
+  { key: "reports",       label: "Reports",        Icon: ReportsIcon  },
+  { key: "admin",         label: "Admin",          Icon: AdminIcon    },
 ];
 
 export default function SideMenu({
@@ -150,13 +151,13 @@ export default function SideMenu({
         <button
           className="sidemenu-logout"
           onClick={onLogout}
-          title="Se déconnecter"
-          aria-label="Se déconnecter"
+          title="Sign out"
+          aria-label="Sign out"
         >
           <span className="sidemenu-icon">
             <LogoutIcon />
           </span>
-          <span className="sidemenu-label">Déconnexion</span>
+          <span className="sidemenu-label">Sign out</span>
         </button>
       </div>
 
