@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -54,11 +54,12 @@ public class LegServiceImpl implements LegService {
     @Override
     @Cacheable(value = "legs", key = "#legNo")
     public LegResponseDTO getLegByLegNo(Long legNo) {
+        log.debug("[Service] getLegByLegNo({}) — cache miss, querying provider", legNo);
         LegResponseDTO leg = legDataProvider.findByLegNo(legNo)
                 .orElseThrow(() -> new ResourceNotFoundException("Leg not found: " + legNo));
 
-        // Station managers must not access legs outside their station
         if (!passesStationScope(leg)) {
+            log.debug("[Service] getLegByLegNo({}) — blocked by station scope", legNo);
             throw new ResourceNotFoundException("Leg not found: " + legNo);
         }
         return leg;
@@ -67,36 +68,42 @@ public class LegServiceImpl implements LegService {
     @Override
     @Cacheable(value = "legsByDate", key = "#date")
     public List<LegResponseDTO> getLegsByDate(LocalDate date) {
+        log.debug("[Service] getLegsByDate({}) — cache miss, querying provider", date);
         return applyStationScope(legDataProvider.findByDate(date));
     }
 
     @Override
     @Cacheable(value = "legsByDateRange", key = "#startDate + '-' + #endDate")
     public List<LegResponseDTO> getLegsByDateRange(LocalDate startDate, LocalDate endDate) {
+        log.debug("[Service] getLegsByDateRange({} → {}) — cache miss, querying provider", startDate, endDate);
         return applyStationScope(legDataProvider.findByDateRange(startDate, endDate));
     }
 
     @Override
     @Cacheable(value = "legsByFlight", key = "#flightNumber + '-' + #date")
     public List<LegResponseDTO> getLegsByFlightNumberAndDate(String flightNumber, LocalDate date) {
+        log.debug("[Service] getLegsByFlightNumberAndDate({}, {}) — cache miss", flightNumber, date);
         return applyStationScope(legDataProvider.findByFlightNumberAndDate(flightNumber, date));
     }
 
     @Override
     @Cacheable(value = "legsByDeparture", key = "#iataCode + '-' + #date")
     public List<LegResponseDTO> getLegsByDepartureAirportAndDate(String iataCode, LocalDate date) {
+        log.debug("[Service] getLegsByDepartureAirportAndDate({}, {}) — cache miss", iataCode, date);
         return applyStationScope(legDataProvider.findByDepartureAirportAndDate(iataCode, date));
     }
 
     @Override
     @Cacheable(value = "legsByArrival", key = "#iataCode + '-' + #date")
     public List<LegResponseDTO> getLegsByArrivalAirportAndDate(String iataCode, LocalDate date) {
+        log.debug("[Service] getLegsByArrivalAirportAndDate({}, {}) — cache miss", iataCode, date);
         return applyStationScope(legDataProvider.findByArrivalAirportAndDate(iataCode, date));
     }
 
     @Override
     @Cacheable(value = "legsByAircraft", key = "#registration + '-' + #date")
     public List<LegResponseDTO> getLegsByAircraftAndDate(String registration, LocalDate date) {
+        log.debug("[Service] getLegsByAircraftAndDate({}, {}) — cache miss", registration, date);
         return applyStationScope(legDataProvider.findByAircraftAndDate(registration, date));
     }
 
@@ -108,6 +115,8 @@ public class LegServiceImpl implements LegService {
     public List<LegResponseDTO> searchLegs(String flightNumber, String departureAirport,
                                             String arrivalAirport, String aircraftRegistration,
                                             String legService, LocalDate date) {
+        log.debug("[Service] searchLegs(fn={}, dep={}, arr={}, ac={}, type={}, date={}) — cache miss",
+                flightNumber, departureAirport, arrivalAirport, aircraftRegistration, legService, date);
         return applyStationScope(legDataProvider.search(
                 flightNumber, departureAirport, arrivalAirport,
                 aircraftRegistration, legService, date));
@@ -127,23 +136,28 @@ public class LegServiceImpl implements LegService {
             @CacheEvict(value = "legsSearch",        allEntries = true)
     })
     public void onMvRefresh(MvRefreshEvent event) {
-        log.info("[Cache] Evicted all leg caches after MV refresh ({} records changed)",
+        log.info("[Cache] All leg caches evicted — MV refresh reported {} changed record(s)",
                 event.getChangedCount());
     }
 
     // ── Station-scope filtering ───────────────────────────────────────────
 
     /**
-     * Filters a list of legs to those touching the caller's assigned airport.
+     * Filters a list of legs to those touching any of the caller's assigned airports.
      * Returns the list unchanged if the caller is not a station manager
-     * or if no assigned airport is configured.
+     * or if no airports are assigned.
      */
     private List<LegResponseDTO> applyStationScope(List<LegResponseDTO> legs) {
-        return resolveStationAirport()
-                .map(airport -> legs.stream()
-                        .filter(l -> airportMatches(l, airport))
-                        .collect(Collectors.toList()))
-                .orElse(legs);
+        Set<String> airports = resolveStationAirports();
+        if (airports.isEmpty()) return legs;
+
+        List<LegResponseDTO> filtered = legs.stream()
+                .filter(l -> airportMatches(l, airports))
+                .collect(Collectors.toList());
+
+        log.debug("[StationScope] Filtered {}/{} legs for airports {}",
+                filtered.size(), legs.size(), airports);
+        return filtered;
     }
 
     /**
@@ -151,43 +165,48 @@ public class LegServiceImpl implements LegService {
      * Used for the single-leg lookup where filtering-by-list is not possible.
      */
     private boolean passesStationScope(LegResponseDTO leg) {
-        return resolveStationAirport()
-                .map(airport -> airportMatches(leg, airport))
-                .orElse(true);
+        Set<String> airports = resolveStationAirports();
+        return airports.isEmpty() || airportMatches(leg, airports);
     }
 
     /**
-     * Resolves the station airport for the current authenticated user.
-     * Returns empty if:
+     * Resolves the set of station airports for the current authenticated user.
+     * Returns an empty set if:
      *   - the caller is not a station manager
-     *   - the user has no assignedAirport configured
+     *   - the user has no assignedAirports configured
      */
-    private Optional<String> resolveStationAirport() {
+    private Set<String> resolveStationAirports() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return Optional.empty();
+        if (auth == null) return Set.of();
 
         boolean isStationManager = auth.getAuthorities().stream()
                 .anyMatch(a -> ROLE_CHEF_ESCALE.equals(a.getAuthority()));
-        if (!isStationManager) return Optional.empty();
+        if (!isStationManager) return Set.of();
 
         try {
             User user = userService.getUserByKeycloakId(auth.getName());
-            String airport = user.getAssignedAirport();
-            if (airport == null || airport.isBlank()) {
-                log.warn("[StationScope] Station manager keycloakId={} has no assignedAirport — returning all legs",
+            List<String> airports = user.getAssignedAirports();
+            if (airports == null || airports.isEmpty()) {
+                log.warn("[StationScope] Station manager keycloakId={} has no assignedAirports — returning all legs",
                         auth.getName());
-                return Optional.empty();
+                return Set.of();
             }
-            return Optional.of(airport.toUpperCase());
+            Set<String> result = airports.stream()
+                    .filter(a -> a != null && !a.isBlank())
+                    .map(String::toUpperCase)
+                    .collect(Collectors.toSet());
+            log.debug("[StationScope] Station manager keycloakId={} scoped to airports {}",
+                    auth.getName(), result);
+            return result;
         } catch (Exception e) {
             log.warn("[StationScope] Could not resolve station manager user — returning all legs: {}", e.getMessage());
-            return Optional.empty();
+            return Set.of();
         }
     }
 
-    private static boolean airportMatches(LegResponseDTO leg, String airport) {
-        return airport.equals(iataOf(leg.getDepartureAirport()))
-            || airport.equals(iataOf(leg.getArrivalAirport()));
+    private static boolean airportMatches(LegResponseDTO leg, Set<String> airports) {
+        return airports.contains(iataOf(leg.getDepartureAirport()))
+            || airports.contains(iataOf(leg.getArrivalAirport()));
     }
 
     private static String iataOf(LegResponseDTO.AirportDTO a) {

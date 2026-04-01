@@ -57,13 +57,16 @@ public class User {
     private Boolean isActivated = true;
 
     /**
-     * IATA airport code this user is responsible for (e.g. "CMN", "RAK").
-     * Mandatory for STATION_MANAGER role — all leg queries are scoped to legs
-     * where dep == assignedAirport OR arr == assignedAirport.
-     * Null for all other roles.
+     * IATA airport codes this station manager is responsible for (e.g. ["CMN"], ["RAK","AGA"]).
+     * A manager can oversee one or several airports simultaneously.
+     * All leg queries are scoped to legs where dep OR arr is in this set.
+     * Empty for all other roles.
      */
-    @Column(name = "assigned_airport", length = 3)
-    private String assignedAirport;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "user_assigned_airports", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "airport_code", length = 3)
+    @Builder.Default
+    private List<String> assignedAirports = new ArrayList<>();
 
     /** Fine-grained permissions (eagerly loaded for auth checks). */
     @ElementCollection(targetClass = Permission.class, fetch = FetchType.EAGER)

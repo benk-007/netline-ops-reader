@@ -85,8 +85,8 @@ public class UserServiceImpl implements UserService {
         User saved = userRepository.save(user);
 
         if (Role.STATION_MANAGER == request.getRole()
-                && (request.getAssignedAirport() == null || request.getAssignedAirport().isBlank())) {
-            log.warn("Station manager matricule='{}' created without an assignedAirport — leg visibility will be unrestricted",
+                && (request.getAssignedAirports() == null || request.getAssignedAirports().isEmpty())) {
+            log.warn("Station manager matricule='{}' created without any assignedAirports — leg visibility will be unrestricted",
                     request.getMatricule());
         }
 

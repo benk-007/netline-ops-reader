@@ -6,6 +6,7 @@ import com.ram.netline_reader_backend.provider.LegDataProvider;
 import com.ram.netline_reader_backend.repository.fake.LegMvRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
@@ -30,6 +31,7 @@ import java.util.stream.Collectors;
 @Component
 @Profile("dev")
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(value = "postgresTransactionManager", readOnly = true)
 public class FakeLegDataProvider implements LegDataProvider {
 
@@ -37,43 +39,60 @@ public class FakeLegDataProvider implements LegDataProvider {
 
     @Override
     public Optional<LegResponseDTO> findByLegNo(Long legNo) {
-        return legMvRepository.findById(legNo).map(this::toDto);
+        Optional<LegResponseDTO> result = legMvRepository.findById(legNo).map(this::toDto);
+        log.debug("[FakeProvider] findByLegNo({}) → {}", legNo, result.isPresent() ? "found" : "not found");
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByDate(LocalDate date) {
-        return legMvRepository.findByOperationalDate(date).stream()
+        List<LegResponseDTO> result = legMvRepository.findByOperationalDate(date).stream()
                 .map(this::toDto).collect(Collectors.toList());
+        log.debug("[FakeProvider] findByDate({}) → {} legs", date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByDateRange(LocalDate startDate, LocalDate endDate) {
-        return legMvRepository.findByOperationalDateBetween(startDate, endDate).stream()
+        List<LegResponseDTO> result = legMvRepository.findByOperationalDateBetween(startDate, endDate).stream()
                 .map(this::toDto).collect(Collectors.toList());
+        log.debug("[FakeProvider] findByDateRange({} → {}) → {} legs", startDate, endDate, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByFlightNumberAndDate(String flightNumber, LocalDate date) {
-        return legMvRepository.findByFlightNumberAndOperationalDate(flightNumber, date).stream()
+        List<LegResponseDTO> result = legMvRepository.findByFlightNumberAndOperationalDate(flightNumber, date).stream()
                 .map(this::toDto).collect(Collectors.toList());
+        log.debug("[FakeProvider] findByFlightNumberAndDate({}, {}) → {} legs", flightNumber, date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByDepartureAirportAndDate(String iataCode, LocalDate date) {
-        return legMvRepository.findByDepAirportCodeAndOperationalDate(iataCode.toUpperCase(), date).stream()
+        List<LegResponseDTO> result = legMvRepository
+                .findByDepAirportCodeAndOperationalDate(iataCode.toUpperCase(), date).stream()
                 .map(this::toDto).collect(Collectors.toList());
+        log.debug("[FakeProvider] findByDepartureAirportAndDate({}, {}) → {} legs", iataCode, date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByArrivalAirportAndDate(String iataCode, LocalDate date) {
-        return legMvRepository.findByArrAirportCodeAndOperationalDate(iataCode.toUpperCase(), date).stream()
+        List<LegResponseDTO> result = legMvRepository
+                .findByArrAirportCodeAndOperationalDate(iataCode.toUpperCase(), date).stream()
                 .map(this::toDto).collect(Collectors.toList());
+        log.debug("[FakeProvider] findByArrivalAirportAndDate({}, {}) → {} legs", iataCode, date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByAircraftAndDate(String registration, LocalDate date) {
-        return legMvRepository.findByAircraftRegistrationAndOperationalDate(registration.toUpperCase(), date).stream()
+        List<LegResponseDTO> result = legMvRepository
+                .findByAircraftRegistrationAndOperationalDate(registration.toUpperCase(), date).stream()
                 .map(this::toDto).collect(Collectors.toList());
+        log.debug("[FakeProvider] findByAircraftAndDate({}, {}) → {} legs", registration, date, result.size());
+        return result;
     }
 
     @Override
@@ -82,8 +101,11 @@ public class FakeLegDataProvider implements LegDataProvider {
                                        String legType, LocalDate date) {
         Specification<LegMv> spec = buildSpec(flightNumber, departureAirport, arrivalAirport,
                 aircraftRegistration, legType, date);
-        return legMvRepository.findAll(spec).stream()
+        List<LegResponseDTO> result = legMvRepository.findAll(spec).stream()
                 .map(this::toDto).collect(Collectors.toList());
+        log.debug("[FakeProvider] search(fn={}, dep={}, arr={}, ac={}, type={}, date={}) → {} legs",
+                flightNumber, departureAirport, arrivalAirport, aircraftRegistration, legType, date, result.size());
+        return result;
     }
 
     // ── Specification builder ─────────────────────────────────────────────

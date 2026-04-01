@@ -40,7 +40,7 @@ public class MvRefreshSseService {
             emitters.remove(emitter);
         });
         emitter.onError(e -> emitters.remove(emitter));
-        log.debug("SSE client connected — total active: {}", emitters.size());
+        log.info("[SSE] Client connected — active connections: {}", emitters.size());
 
         // Send a welcome ping so the client knows the connection is live
         try {
@@ -74,7 +74,8 @@ public class MvRefreshSseService {
             }
         }
         emitters.removeAll(dead);
-        log.debug("SSE broadcast sent to {} clients ({} dead removed)", emitters.size(), dead.size());
+        log.info("[SSE] mv-refresh broadcast — {} client(s) notified, {} dead connection(s) removed",
+                emitters.size(), dead.size());
     }
 
     public int getActiveConnectionCount() {

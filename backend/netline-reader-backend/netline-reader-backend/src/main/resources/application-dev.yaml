@@ -9,12 +9,13 @@
 #   - FakeMvRefreshJob seeds realistic RAM flight data on startup
 #     and refreshes every 3 minutes (configurable via fake-mv.refresh-cron)
 #   - SSE events broadcast MV changes to connected frontend clients
-#   - Hibernate DDL auto=update → leg_mv table is auto-created
-#   - SQL logging enabled for debugging
+#   - Hibernate DDL auto=update → leg_mv / leg_mv_delay tables auto-created
+#   - Rich structured logging enabled for all relevant layers
 # ══════════════════════════════════════════════════════════════
 
 spring:
   jpa:
+    show-sql: false   # use provider-level DEBUG logs instead of raw SQL noise
     properties:
       hibernate:
         hbm2ddl:
@@ -22,8 +23,8 @@ spring:
 
 app:
   # ── Fake MV refresh schedule ─────────────────────────────────
-  # Cron expression: every 3 minutes.
-  # Set to "-" to disable (useful for debugging to freeze data).
+  # Standard cron: every 3 minutes.
+  # Set to "-" to freeze data while debugging (disables scheduling).
   fake-mv:
     refresh-cron: "0 */3 * * * *"
 
@@ -35,7 +36,35 @@ app:
       password:          ${SPRING_DATASOURCE_PASSWORD:netline_secret}
       driver-class-name: org.postgresql.Driver
 
+# ══════════════════════════════════════════════════════════════
+# Logging — dev profile
+#
+# Layer                           Level    What you see
+# ──────────────────────────────  ──────   ──────────────────────────────────────────
+# FakeMvRefreshJob                DEBUG    seed counts, state transitions, delay adds
+# FakeLegDataProvider             DEBUG    every query + result count
+# LegServiceImpl                  DEBUG    cache hits/misses, station-scope filtering
+# MvRefreshSseService             DEBUG    SSE connect/disconnect/broadcast
+# Spring Cache                    DEBUG    @Cacheable / @CacheEvict decisions
+# Spring Security (auth)          INFO     token validation, access denied
+# Hibernate SQL                   WARN     suppressed — use provider logs instead
+# ══════════════════════════════════════════════════════════════
 logging:
   level:
-    com.ram.netline_reader_backend.provider.fake: DEBUG
-    com.ram.netline_reader_backend.service:       INFO
+    # ── Application layers ──────────────────────────────────
+    com.ram.netline_reader_backend.provider.fake: DEBUG   # FakeMvRefreshJob + FakeLegDataProvider
+    com.ram.netline_reader_backend.provider:      DEBUG   # OracleLegDataProvider (unused in dev but harmless)
+    com.ram.netline_reader_backend.service:       DEBUG   # LegServiceImpl, MvRefreshSseService, UserService
+    com.ram.netline_reader_backend.controller:    INFO    # request entry points — keep concise
+    com.ram.netline_reader_backend.config:        INFO    # datasource / security wiring
+
+    # ── Spring Cache ─────────────────────────────────────────
+    org.springframework.cache:                    DEBUG   # shows cache hits, misses, evictions
+
+    # ── Spring Security ──────────────────────────────────────
+    org.springframework.security:                 INFO    # JWT validation, 401/403 decisions
+
+    # ── Hibernate / JDBC — suppressed ────────────────────────
+    org.hibernate.SQL:                            WARN    # raw SQL off — use provider DEBUG logs
+    org.hibernate.type.descriptor.sql:            WARN
+    com.zaxxer.hikari:                            WARN    # connection pool noise suppressed

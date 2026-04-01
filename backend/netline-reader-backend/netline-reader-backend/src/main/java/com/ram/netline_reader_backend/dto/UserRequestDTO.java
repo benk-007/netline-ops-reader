@@ -39,8 +39,9 @@ public class UserRequestDTO {
     private Boolean isActivated;
 
     /**
-     * IATA airport code (e.g. "CMN") this station manager oversees.
-     * Required when role is STATION_MANAGER — used to scope leg data visibility.
+     * IATA airport codes this station manager oversees (e.g. ["CMN", "RAK"]).
+     * A manager may be responsible for multiple airports simultaneously.
+     * All legs for dep or arr matching any of these codes will be visible to the user.
      */
-    private String assignedAirport;
+    private List<String> assignedAirports;
 }

@@ -5,10 +5,14 @@
 #
 # Key differences from dev:
 #   - OracleDataSourceConfig is active (@Profile("prod"))
-#   - LegDataProvider is OracleLegDataProvider
-#   - FakeMvRefreshJob is NOT instantiated
-#   - Hibernate DDL auto=none for Oracle (read-only MVs)
-#   - SQL logging disabled for performance
+#   - LegDataProvider is OracleLegDataProvider (real Oracle MV)
+#   - FakeMvRefreshJob is NOT instantiated (no leg_mv seeding)
+#   - Hibernate DDL auto=none — Oracle MVs are never touched
+#   - SQL logging disabled — use OracleLegDataProvider DEBUG if needed
+#
+# All datasource values MUST be supplied via environment variables.
+# No defaults are provided here — a missing variable causes startup failure,
+# which is intentional: we never want prod to silently use wrong credentials.
 # ══════════════════════════════════════════════════════════════
 
 spring:
@@ -17,10 +21,12 @@ spring:
     properties:
       hibernate:
         format_sql: false
+        hbm2ddl:
+          auto: none   # never modify Oracle tables
 
 app:
+  # ── PostgreSQL (primary — required, no defaults) ──────────
   datasource:
-    # ── PostgreSQL (primary — required, no defaults) ──────────
     postgres:
       jdbc-url:          ${SPRING_DATASOURCE_URL}
       username:          ${SPRING_DATASOURCE_USERNAME}
@@ -28,13 +34,35 @@ app:
       driver-class-name: org.postgresql.Driver
 
     # ── Oracle (secondary — required in prod, no defaults) ────
+    # Connects to the Netline OPS Oracle DB hosting the leg MVs.
+    # The account must have SELECT-only grants on all relevant MVs.
     oracle:
       jdbc-url:          ${ORACLE_DATASOURCE_URL}
       username:          ${ORACLE_DATASOURCE_USERNAME}
       password:          ${ORACLE_DATASOURCE_PASSWORD}
       driver-class-name: oracle.jdbc.OracleDriver
 
+# ══════════════════════════════════════════════════════════════
+# Logging — prod profile
+#
+# Layer                           Level    Rationale
+# ──────────────────────────────  ──────   ──────────────────────────────────────────
+# Application (all packages)      INFO     operational events, warnings, errors
+# OracleLegDataProvider           INFO     query counts visible without debug noise
+# Spring Security                 WARN     only log access-denied / config errors
+# Hibernate SQL                   WARN     never log SQL in prod (sensitive data)
+# HikariCP                        WARN     pool internals suppressed
+# ══════════════════════════════════════════════════════════════
 logging:
   level:
-    com.ram.netline_reader_backend: INFO
-    org.hibernate.SQL: WARN
+    # ── Application ──────────────────────────────────────────
+    com.ram.netline_reader_backend:                INFO   # full application at INFO
+
+    # ── Spring Security ──────────────────────────────────────
+    org.springframework.security:                  WARN
+
+    # ── Database / ORM ───────────────────────────────────────
+    org.hibernate.SQL:                             WARN
+    org.hibernate.type.descriptor.sql:             WARN
+    com.zaxxer.hikari:                             WARN
+    oracle.jdbc:                                   WARN

@@ -10,6 +10,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.persistence.criteria.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
 @Component
 @Profile("prod")
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(value = "oracleTransactionManager", readOnly = true)
 public class OracleLegDataProvider implements LegDataProvider {
 
@@ -42,58 +44,72 @@ public class OracleLegDataProvider implements LegDataProvider {
 
     @Override
     public Optional<LegResponseDTO> findByLegNo(Long legNo) {
-        return legRepository.findById(legNo).map(legMapper::toResponseDTO);
+        Optional<LegResponseDTO> result = legRepository.findById(legNo).map(legMapper::toResponseDTO);
+        log.debug("[OracleProvider] findByLegNo({}) → {}", legNo, result.isPresent() ? "found" : "not found");
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByDate(LocalDate date) {
-        return legRepository.findByOperationalDate(date).stream()
+        List<LegResponseDTO> result = legRepository.findByOperationalDate(date).stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        log.debug("[OracleProvider] findByDate({}) → {} legs", date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByDateRange(LocalDate startDate, LocalDate endDate) {
-        return legRepository.findByOperationalDateBetween(startDate, endDate).stream()
+        List<LegResponseDTO> result = legRepository.findByOperationalDateBetween(startDate, endDate).stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        log.debug("[OracleProvider] findByDateRange({} → {}) → {} legs", startDate, endDate, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByFlightNumberAndDate(String flightNumber, LocalDate date) {
-        return legRepository.findByFlightNumberAndOperationalDate(flightNumber, date).stream()
+        List<LegResponseDTO> result = legRepository.findByFlightNumberAndOperationalDate(flightNumber, date).stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        log.debug("[OracleProvider] findByFlightNumberAndDate({}, {}) → {} legs", flightNumber, date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByDepartureAirportAndDate(String iataCode, LocalDate date) {
-        return legRepository.findByDepartureAirportAndDate(iataCode, date).stream()
+        List<LegResponseDTO> result = legRepository.findByDepartureAirportAndDate(iataCode, date).stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        log.debug("[OracleProvider] findByDepartureAirportAndDate({}, {}) → {} legs", iataCode, date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByArrivalAirportAndDate(String iataCode, LocalDate date) {
-        return legRepository.findByArrivalAirportAndDate(iataCode, date).stream()
+        List<LegResponseDTO> result = legRepository.findByArrivalAirportAndDate(iataCode, date).stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        log.debug("[OracleProvider] findByArrivalAirportAndDate({}, {}) → {} legs", iataCode, date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> findByAircraftAndDate(String registration, LocalDate date) {
-        return legRepository.findByAircraftAndDate(registration, date).stream()
+        List<LegResponseDTO> result = legRepository.findByAircraftAndDate(registration, date).stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        log.debug("[OracleProvider] findByAircraftAndDate({}, {}) → {} legs", registration, date, result.size());
+        return result;
     }
 
     @Override
     public List<LegResponseDTO> search(String flightNumber, String departureAirport,
                                        String arrivalAirport, String aircraftRegistration,
                                        String legType, LocalDate date) {
-        CriteriaBuilder cb = entityManager.getCriteriaBuilder();
-        CriteriaQuery<Leg> cq = cb.createQuery(Leg.class);
-        Root<Leg> leg = cq.from(Leg.class);
+        CriteriaBuilder    cb  = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Leg> cq  = cb.createQuery(Leg.class);
+        Root<Leg>          leg = cq.from(Leg.class);
 
         List<Predicate> predicates = new ArrayList<>();
 
@@ -119,9 +135,12 @@ public class OracleLegDataProvider implements LegDataProvider {
             predicates.add(cb.equal(cb.upper(leg.get("legType")), legType.toUpperCase()));
         }
 
-        cq.where(predicates.toArray(new Predicate[0])).distinct(true);
-        return entityManager.createQuery(cq).getResultList().stream()
+        cq.where(predicates.toArray(Predicate[]::new)).distinct(true);
+        List<LegResponseDTO> result = entityManager.createQuery(cq).getResultList().stream()
                 .map(legMapper::toResponseDTO)
                 .collect(Collectors.toList());
+        log.debug("[OracleProvider] search(fn={}, dep={}, arr={}, ac={}, type={}, date={}) → {} legs",
+                flightNumber, departureAirport, arrivalAirport, aircraftRegistration, legType, date, result.size());
+        return result;
     }
 }

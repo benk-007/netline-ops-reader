@@ -5,7 +5,9 @@ import com.ram.netline_reader_backend.dto.UserResponseDTO;
 import com.ram.netline_reader_backend.entity.User;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 /**
@@ -30,7 +32,9 @@ public class UserMapper {
                 .fullName(user.getFullName())
                 .role(user.getRole())
                 .isActivated(user.getIsActivated())
-                .assignedAirport(user.getAssignedAirport())
+                .assignedAirports(user.getAssignedAirports() != null
+                        ? new ArrayList<>(user.getAssignedAirports())
+                        : Collections.emptyList())
                 .permissions(user.getPermissions())
                 .savedFilters(user.getSavedFilters() != null
                         ? user.getSavedFilters().stream()
@@ -48,13 +52,13 @@ public class UserMapper {
                 .password(dto.getPassword())
                 .role(dto.getRole())
                 .isActivated(dto.getIsActivated() == null || dto.getIsActivated())
-                .assignedAirport(upperOrNull(dto.getAssignedAirport()))
+                .assignedAirports(normalizeAirports(dto.getAssignedAirports()))
                 .permissions(dto.getPermissions() != null ? dto.getPermissions() : Collections.emptyList())
                 .build();
     }
 
     /**
-     * Applies partial updates — only non-null / non-blank fields are written.
+     * Applies partial updates — only non-null fields are written.
      * This gives PATCH semantics through a PUT endpoint.
      */
     public void updateEntity(User user, UserRequestDTO dto) {
@@ -76,13 +80,19 @@ public class UserMapper {
         if (dto.getPermissions() != null) {
             user.setPermissions(dto.getPermissions());
         }
-        // Explicit null clears the assignment (manager reassigned to no station)
-        if (dto.getAssignedAirport() != null) {
-            user.setAssignedAirport(upperOrNull(dto.getAssignedAirport()));
+        // Non-null list replaces the assignment; an empty list clears it
+        if (dto.getAssignedAirports() != null) {
+            user.setAssignedAirports(normalizeAirports(dto.getAssignedAirports()));
         }
     }
 
-    private static String upperOrNull(String code) {
-        return (code != null && !code.isBlank()) ? code.trim().toUpperCase() : null;
+    /** Trims, uppercases and deduplicates IATA codes; blank entries are dropped. */
+    private static List<String> normalizeAirports(List<String> codes) {
+        if (codes == null) return new ArrayList<>();
+        return codes.stream()
+                .filter(c -> c != null && !c.isBlank())
+                .map(c -> c.trim().toUpperCase())
+                .distinct()
+                .collect(Collectors.toList());
     }
 }
