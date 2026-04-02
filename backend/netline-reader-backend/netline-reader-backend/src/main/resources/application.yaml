@@ -33,6 +33,13 @@ spring:
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
 
+  # ── Flyway — disable Spring Boot auto-config; we configure it manually ──
+  # The project uses a custom DataSource (app.datasource.postgres.*), which
+  # Spring Boot's auto-configured Flyway can't find. FlywayConfig.java wires
+  # Flyway explicitly against the postgresDataSource bean instead.
+  flyway:
+    enabled: false
+
   # ── JPA global settings ──────────────────────────────────────
   jpa:
     show-sql: true

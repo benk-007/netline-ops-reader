@@ -39,6 +39,8 @@ export class Leg {
     LANDING_TIME    = null,
     ON_BLOCK_DAY    = null,
     ON_BLOCK_TIME   = null,
+    ETD_TIME        = null,
+    ETA_TIME        = null,
     PRBD            = null,
     CHANGE_TIME     = null,
     ENTRY_USER      = "",
@@ -78,6 +80,8 @@ export class Leg {
     this.LANDING_TIME    = LANDING_TIME;
     this.ON_BLOCK_DAY    = ON_BLOCK_DAY;
     this.ON_BLOCK_TIME   = ON_BLOCK_TIME;
+    this.ETD_TIME        = ETD_TIME;
+    this.ETA_TIME        = ETA_TIME;
     this.PRBD            = PRBD;
     this.CHANGE_TIME     = CHANGE_TIME;
     this.ENTRY_USER      = ENTRY_USER;
@@ -95,6 +99,8 @@ export class Leg {
   get state()   { return this.LEG_STATE; }
   get date()    { return this.DAY_OF_ORIGIN; }
   get delay()   { return this.DELAY_TIME_01 || 0; }
+  get etd()     { return this.ETD_TIME; }
+  get eta()     { return this.ETA_TIME; }
 
   /* Total delay across all three codes */
   get totalDelay() {

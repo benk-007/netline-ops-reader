@@ -36,6 +36,8 @@ function dtoToLeg(dto) {
     AIRBORNE_TIME:   t(ft.airborne),
     LANDING_TIME:    t(ft.landing),
     ON_BLOCK_TIME:   t(ft.onBlock),
+    ETD_TIME:        t(ft.etd),
+    ETA_TIME:        t(ft.eta),
     DELAY_CODE_01:   delays[0]?.code     ?? null,
     DELAY_TIME_01:   delays[0]?.duration ?? 0,
     DELAY_CODE_02:   delays[1]?.code     ?? null,

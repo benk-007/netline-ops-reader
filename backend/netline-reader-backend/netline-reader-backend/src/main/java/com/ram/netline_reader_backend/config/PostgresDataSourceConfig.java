@@ -6,6 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.orm.jpa.JpaTransactionManager;
@@ -73,6 +74,7 @@ public class PostgresDataSourceConfig {
      */
     @Primary
     @Bean(name = "postgresEntityManagerFactory")
+    @DependsOn("flyway") // Flyway must run migrations before Hibernate validates the schema
     public LocalContainerEntityManagerFactoryBean postgresEntityManagerFactory(
             @Qualifier("postgresDataSource") DataSource dataSource) {
 
@@ -94,7 +96,9 @@ public class PostgresDataSourceConfig {
         em.setJpaVendorAdapter(vendorAdapter);
 
         Map<String, Object> properties = new HashMap<>();
-        properties.put("hibernate.hbm2ddl.auto", "update");
+        // "validate" — Hibernate checks the schema against entities on startup
+        // but never modifies it. Flyway (FlywayConfig.java) owns all DDL.
+        properties.put("hibernate.hbm2ddl.auto", "validate");
         properties.put("hibernate.dialect", "org.hibernate.dialect.PostgreSQLDialect");
         properties.put("hibernate.format_sql", "true");
         em.setJpaPropertyMap(properties);

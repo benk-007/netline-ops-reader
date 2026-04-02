@@ -168,14 +168,16 @@ function VolTab({ leg, sc }) {
             <div className="bp-vol-data">
                 <div className="bp-vol-grid">
                     {[
-                        ["Flight",  leg.fn,      sc.bar],
-                        ["Reg.",    leg.reg,     null],
-                        ["Type",    leg.subtype,  null],
-                        ["Service", leg.service,  sc.text],
-                        ["Dep",     leg.dep,     null],
-                        ["Arr",     leg.arr,     null],
-                        ["Status",  leg.state,   STATE_COLORS[leg.state]],
-                        ["Date",    leg.date,    null],
+                        ["Flight",  leg.fn,                      sc.bar],
+                        ["Reg.",    leg.reg,                     null],
+                        ["Type",    leg.subtype,                  null],
+                        ["Service", leg.service,                  sc.text],
+                        ["Dep",     leg.dep,                     null],
+                        ["Arr",     leg.arr,                     null],
+                        ["Status",  leg.state,                   STATE_COLORS[leg.state]],
+                        ["Date",    leg.date,                    null],
+                        ["ETD",     leg.ETD_TIME  || "—",        "#f59e0b"],
+                        ["ETA",     leg.ETA_TIME  || "—",        "#f59e0b"],
                     ].map(([k, v, color]) => (
                         <div key={k} className="bp-card-lg">
                             <div className="bp-card-label-lg">{k}</div>
@@ -312,15 +314,17 @@ function TrajectoryTab({ leg, sc }) {
                 </div>
             </div>
 
-            {/* Timing grid */}
+            {/* Timing grid — 8 cells: STD/ETD/OOOI/ETA/STA */}
             <div className="bp-traj-timing">
                 {[
-                    ["STD",         leg.DEP_TIME_SCHED || "—"],
-                    ["Off Block",   leg.OFF_BLOCK_TIME || "—"],
-                    ["Airborne",    leg.AIRBORNE_TIME  || "—"],
-                    ["Landing",     leg.LANDING_TIME   || "—"],
-                    ["On Block",    leg.ON_BLOCK_TIME  || "—"],
-                    ["STA",         leg.ARR_TIME_SCHED || "—"],
+                    ["STD",       leg.DEP_TIME_SCHED || "—"],
+                    ["ETD",       leg.ETD_TIME       || "—"],
+                    ["Off Block", leg.OFF_BLOCK_TIME || "—"],
+                    ["Airborne",  leg.AIRBORNE_TIME  || "—"],
+                    ["Landing",   leg.LANDING_TIME   || "—"],
+                    ["On Block",  leg.ON_BLOCK_TIME  || "—"],
+                    ["ETA",       leg.ETA_TIME       || "—"],
+                    ["STA",       leg.ARR_TIME_SCHED || "—"],
                 ].map(([k, v]) => (
                     <div key={k} className="bp-traj-time-cell">
                         <div className="bp-traj-time-label">{k}</div>

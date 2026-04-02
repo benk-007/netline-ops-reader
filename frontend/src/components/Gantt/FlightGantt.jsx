@@ -220,13 +220,14 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     if (!el) return;
 
     function applyScale(width) {
-      // Scale item height linearly: 20px at 800px width, 32px at 1600px+
-      const itemH = Math.round(Math.min(32, Math.max(18, 18 + (width - 800) * 0.018)));
-      const itemActH = Math.round(itemH * 0.75);
-      const fs = itemH <= 20 ? "9px" : itemH <= 26 ? "10px" : "11px";
-      el.style.setProperty("--gantt-item-h",     `${itemH}px`);
-      el.style.setProperty("--gantt-item-act-h",  `${itemActH}px`);
-      el.style.setProperty("--gantt-item-fs",     fs);
+      // Planned bar: 16px (narrow) → 22px (wide). Keep bars compact & readable.
+      const itemH    = Math.round(Math.min(22, Math.max(16, 16 + (width - 900) * 0.007)));
+      // Actual bar: slightly shorter than planned
+      const itemActH = Math.round(Math.min(18, Math.max(13, 13 + (width - 900) * 0.005)));
+      const fs       = itemH <= 18 ? "9px" : "10px";
+      el.style.setProperty("--gantt-item-h",    `${itemH}px`);
+      el.style.setProperty("--gantt-item-act-h", `${itemActH}px`);
+      el.style.setProperty("--gantt-item-fs",    fs);
     }
 
     const ro = new ResizeObserver(entries => {

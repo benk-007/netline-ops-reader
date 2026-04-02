@@ -143,6 +143,21 @@
 			<scope>runtime</scope>
 		</dependency>
 
+		<!-- ── Flyway — Database schema version control ── -->
+		<!-- Manages schema migrations with versioned SQL scripts (V1__, V2__…) -->
+		<!-- so every environment (dev, staging, prod) always runs the exact     -->
+		<!-- same DDL in the exact same order. Eliminates "works on my machine"  -->
+		<!-- schema drift and provides a full audit trail of every DDL change.   -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-core</artifactId>
+		</dependency>
+		<!-- Flyway 10+ moved each DB dialect into its own artifact -->
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+
 		<!-- ── Lombok (boilerplate reduction) ── -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
