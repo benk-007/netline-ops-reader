@@ -1,4 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { meApi } from "../../api";
+
+/* ── Normalize backend UPPERCASE states → PascalCase used by filters ── */
+const STATE_NORM = {
+    SCHEDULED: "Scheduled", BOARDING: "Boarding", AIRBORNE: "Airborne",
+    LANDED:    "Arrived",   ARRIVED:  "Arrived",  DELAYED:  "Delayed",
+    CANCELLED: "Cancelled",
+    // pass-through for already-PascalCase values (mock data in flightsData.js)
+    Scheduled: "Scheduled", Boarding: "Boarding", Airborne: "Airborne",
+    Arrived:   "Arrived",   Delayed:  "Delayed",  Cancelled: "Cancelled",
+};
 
 /* ── Convert Leg objects to schedule-row format ── */
 function legToScheduleRow(leg) {
@@ -31,7 +42,7 @@ function legToScheduleRow(leg) {
         delay_time_01:         leg.DELAY_TIME_01 || 0,
         delay_code_02:         leg.DELAY_CODE_02,
         delay_code_03:         leg.DELAY_CODE_03,
-        leg_state:             leg.LEG_STATE,
+        leg_state:             STATE_NORM[leg.LEG_STATE] ?? "Scheduled",
         leg_type:              leg.LEG_TYPE,
         boarding_time:         null,
         closing_time:          null,
@@ -43,10 +54,69 @@ function legToScheduleRow(leg) {
 }
 
 const delayCodes = {
+    "11": "Retard avion précédent",
+    "12": "Retard vol en correspondance",
+    "13": "Équipement/programmation avion",
+    "14": "Manque de personnel navigant commercial",
     "15": "Embarquement tardif passagers",
+    "16": "Convenance commerciale / passagers",
+    "17": "Erreur enregistrement",
+    "18": "Retard bagage restitué",
+    "19": "Passager en transit irrégulier",
+    "21": "Documentation / informatique",
+    "22": "Enregistrement tardif",
+    "23": "Erreur d'enregistrement",
+    "24": "Provisions cabine en excédent",
+    "25": "Surclassement/déclassement passager",
+    "26": "Passager malade",
+    "27": "Passager débarqué tardivement",
+    "28": "Passager débarqué / INAD / DEPO",
+    "31": "Commande catering non reçue",
+    "32": "Catering tardif",
+    "33": "Erreur catering",
+    "34": "Services de piste tardifs",
+    "41": "Documentation avion en retard ou inexacte",
+    "42": "Documentation masse/centrage tardive",
+    "43": "Recalcul de la masse et du centrage",
+    "44": "Ajustement de la charge",
+    "45": "Déséquilibre de la charge",
+    "46": "Sécurité — procédure de sûreté",
+    "47": "Douanes/immigration",
+    "51": "DCS — système de contrôle départ",
+    "52": "Contrôle de charge / documentation",
+    "55": "Réservation irrégulière",
+    "56": "Surréservation",
+    "57": "Coupons invalides",
+    "61": "Bagages en soute tardifs",
+    "62": "Courrier / fret tardif",
+    "63": "Chargement avion tardif",
+    "64": "Bagages en excédent",
+    "68": "Transfert bagages retardé",
     "71": "Technique avion — Maintenance",
+    "72": "Dommages avion",
+    "73": "Services aéroportuaires techniques tardifs",
+    "74": "Avion prévu indisponible",
+    "75": "Maintenance programmée",
+    "76": "Maintenance non programmée",
+    "77": "Avion de remplacement",
+    "81": "Dommages au sol",
+    "82": "Dommages aéroportuaires",
+    "83": "Restrictions aéroportuaires",
+    "84": "Restrictions aéroport de départ",
+    "85": "Équipements aéroportuaires",
+    "86": "Restrictions en route / destination",
+    "87": "Correspondances en attente — décision commerciale",
+    "88": "Correspondances — avion de remplacement",
     "89": "Météo — Conditions défavorables",
-    "93": "Restrictions ATC",
+    "91": "Indisponibilité porte / parking",
+    "92": "Congestion aéroport",
+    "93": "Restrictions ATC en route",
+    "94": "Restrictions ATC départ / destination",
+    "95": "Manque de personnel ATC",
+    "96": "Panne équipement ATC",
+    "97": "Restrictions gouvernementales",
+    "98": "Restriction militaire",
+    "99": "Autre cause",
 };
 
 const stateConfig = {
@@ -63,6 +133,31 @@ const statusDot = (val) => {
     if (val === "Planned" || val === "In Progress" || val === "Pending") return "#f59e0b";
     return "#22c55e";
 };
+
+/* ── Weighted Operational Score (0–100): higher = more urgent/risky ── */
+function computeWOS(f) {
+    let score = 0;
+    // Delay component (0–40 pts): 60 min of delay = full 40 pts
+    const delay = f.delay_time_01 || 0;
+    score += Math.min(40, Math.round((delay / 60) * 40));
+    // State component
+    const stateScores = { Delayed: 30, Boarding: 15, Scheduled: 10, Airborne: 5, Arrived: 0, Cancelled: 0 };
+    score += stateScores[f.leg_state] ?? 10;
+    // Multiple delay codes (+5 each)
+    const numCodes = [f.delay_code_01, f.delay_code_02, f.delay_code_03].filter(Boolean).length;
+    score += numCodes * 5;
+    return Math.min(100, score);
+}
+function wosColor(s) {
+    if (s >= 61) return "#ef4444";
+    if (s >= 31) return "#f59e0b";
+    return "#22c55e";
+}
+function wosLabel(s) {
+    if (s >= 61) return "HIGH";
+    if (s >= 31) return "MED";
+    return "LOW";
+}
 
 const themes = {
     dark: {
@@ -316,14 +411,40 @@ const STATE_COLORS_SCH = {
     Arrived:   { color: "#22c55e", bg: "rgba(34,197,94,0.12)" },
 };
 
-export default function SchedulePage({ isDark, legs = [] }) {
+export default function SchedulePage({ isDark, legs = [], currentUser = null }) {
     const [selected, setSelected] = useState(null);
     const [filter, setFilter] = useState("All");
+    const [airportFilter, setAirportFilter] = useState("All");
+
+    /* ── Station-manager scoping: chef_escale sees only their assigned airports ── */
+    const isStation = currentUser?.role === "chef_escale";
+    const [assignedAirports, setAssignedAirports] = useState([]);
+
+    useEffect(() => {
+        if (!isStation) return;
+        meApi.get()
+            .then(u => {
+                const aps = u.assignedAirports ?? [];
+                setAssignedAirports(aps);
+                // Lock the airport filter to the first assigned airport if only one,
+                // or keep "All" so they can switch between their own airports
+                if (aps.length === 1) setAirportFilter(aps[0]);
+            })
+            .catch(() => {});
+    }, [isStation]);
 
     const t = themes[isDark ? "dark" : "light"];
 
     /* ── Derive schedule rows from legs prop ── */
-    const scheduleFlights = useMemo(() => legs.map(legToScheduleRow), [legs]);
+    const allFlights = useMemo(() => legs.map(legToScheduleRow), [legs]);
+
+    /* chef_escale: restrict to legs that touch their assigned airports */
+    const scheduleFlights = useMemo(() => {
+        if (!isStation || assignedAirports.length === 0) return allFlights;
+        return allFlights.filter(f =>
+            assignedAirports.includes(f.provenance) || assignedAirports.includes(f.destination)
+        );
+    }, [allFlights, isStation, assignedAirports]);
 
     /* ── Next 3h banner data ── */
     const nowMins = NOW_H * 60 + NOW_M;
@@ -339,22 +460,64 @@ export default function SchedulePage({ isDark, legs = [] }) {
 
     /* ── KPIs from real data ── */
     const computedKpis = useMemo(() => {
-        const total = scheduleFlights.length;
-        const onTime = scheduleFlights.filter(f => f.leg_state === 'Arrived' && (f.delay_time_01 || 0) === 0).length;
-        const delayed = scheduleFlights.filter(f => f.leg_state === 'Delayed' || (f.delay_time_01 || 0) > 0).length;
+        const total     = scheduleFlights.length;
+        const arrived   = scheduleFlights.filter(f => f.leg_state === 'Arrived').length;
+        const airborne  = scheduleFlights.filter(f => f.leg_state === 'Airborne').length;
+        const boarding  = scheduleFlights.filter(f => f.leg_state === 'Boarding').length;
+        const scheduled = scheduleFlights.filter(f => f.leg_state === 'Scheduled').length;
         const cancelled = scheduleFlights.filter(f => f.leg_state === 'Cancelled').length;
+        const delayed   = scheduleFlights.filter(f => f.leg_state === 'Delayed' || (f.delay_time_01 || 0) > 0).length;
+        const onTime    = scheduleFlights.filter(f => f.leg_state === 'Arrived' && (f.delay_time_01 || 0) === 0).length;
         const delayedFlights = scheduleFlights.filter(f => (f.delay_time_01 || 0) > 0);
+        const totalDelayMins = delayedFlights.reduce((s, f) => s + (f.delay_time_01 || 0), 0);
         const avgDelay = delayedFlights.length > 0
-            ? Math.round((delayedFlights.reduce((s, f) => s + (f.delay_time_01 || 0), 0) / delayedFlights.length) * 10) / 10
+            ? Math.round((totalDelayMins / delayedFlights.length) * 10) / 10
             : 0;
         const otp = total > 0 ? Math.round(((total - delayed - cancelled) / total) * 100) : 0;
-        return { otp, avg_delay: avgDelay, turnaround_avg: "—", total_flights: total, on_time: onTime, delayed, cancelled };
+        const delayRate = total > 0 ? Math.round((delayed / total) * 100) : 0;
+        return {
+            otp, avg_delay: avgDelay, total_flights: total,
+            on_time: onTime, delayed, cancelled, arrived, airborne, boarding, scheduled,
+            totalDelayMins, delayRate,
+        };
     }, [scheduleFlights]);
 
-    const states = ["All", "Scheduled", "Boarding", "Airborne", "Arrived", "Delayed", "Cancelled"];
-    const filtered = filter === "All" ? scheduleFlights : scheduleFlights.filter(f => f.leg_state === filter);
+    /* ── Unique airports for the dropdown ── */
+    const airports = useMemo(() => {
+        if (isStation && assignedAirports.length > 0) {
+            // station manager: only their assigned airports
+            return ["All", ...assignedAirports.slice().sort()];
+        }
+        const set = new Set();
+        scheduleFlights.forEach(f => { if (f.provenance) set.add(f.provenance); if (f.destination) set.add(f.destination); });
+        return ["All", ...Array.from(set).sort()];
+    }, [scheduleFlights, isStation, assignedAirports]);
 
-    const COLS = "90px 70px 1fr 120px 140px 120px 80px 100px";
+    /* ── Top 5 airports by total delay impact — COO only ── */
+    const topAirports = useMemo(() => {
+        if (isStation) return [];
+        const map = {};
+        allFlights.forEach(f => {
+            const delay = f.delay_time_01 || 0;
+            if (delay <= 0 && f.leg_state !== "Delayed") return;
+            [f.provenance, f.destination].filter(Boolean).forEach(ap => {
+                if (!map[ap]) map[ap] = { airport: ap, totalDelay: 0, count: 0 };
+                map[ap].totalDelay += delay;
+                map[ap].count += 1;
+            });
+        });
+        return Object.values(map).sort((a, b) => b.totalDelay - a.totalDelay).slice(0, 5);
+    }, [allFlights, isStation]);
+
+    const states = ["All", "Scheduled", "Boarding", "Airborne", "Arrived", "Delayed", "Cancelled"];
+    const filtered = useMemo(() =>
+        scheduleFlights
+            .filter(f => filter === "All" || f.leg_state === filter)
+            .filter(f => airportFilter === "All" || f.provenance === airportFilter || f.destination === airportFilter),
+        [scheduleFlights, filter, airportFilter]
+    );
+
+    const COLS = "90px 70px 1fr 120px 140px 120px 80px 72px 100px";
 
     return (
         <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: "'DM Sans', system-ui, sans-serif", transition: "background 0.3s, color 0.3s" }}>
@@ -406,34 +569,82 @@ export default function SchedulePage({ isDark, legs = [] }) {
                     </div>
                 </div>
 
-                {/* KPIs */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 14, marginBottom: 22 }}>
+                {/* ── KPI Dashboard Strip ── */}
+                {isStation && assignedAirports.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, color: t.textDim }}>Vue station :</span>
+                        {assignedAirports.map(a => (
+                            <span key={a} style={{ background: "rgba(200,16,46,0.12)", color: "#e05f72", border: "1px solid rgba(200,16,46,0.3)", borderRadius: 5, padding: "2px 10px", fontSize: 11, fontWeight: 700, letterSpacing: 1 }}>{a}</span>
+                        ))}
+                        <span style={{ fontSize: 10, color: t.textDim }}>— données filtrées à votre aéroport</span>
+                    </div>
+                )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 10, marginBottom: 10 }}>
                     {[
-                        { label: "OTP", value: `${computedKpis.otp}%`, sub: "On Time Performance", warn: true },
-                        { label: "Retard moyen", value: `${computedKpis.avg_delay} min`, sub: "Vols retardés", warn: true },
-                        { label: "Rotation moy.", value: computedKpis.turnaround_avg, sub: "Temps de rotation avion", warn: false },
-                        { label: "Vols du jour", value: computedKpis.total_flights, sub: `${computedKpis.on_time} à l'heure · ${computedKpis.delayed} retardés · ${computedKpis.cancelled} annulé`, warn: false },
-                    ].map(({ label, value, sub, warn }) => (
-                        <div key={label} style={{ background: t.kpiBg, border: `1px solid ${warn ? "rgba(200,16,46,0.22)" : t.border}`, borderRadius: 12, padding: "20px 22px", position: "relative", overflow: "hidden", boxShadow: isDark ? "none" : "0 1px 8px rgba(0,0,0,0.05)", transition: "background 0.3s" }}>
-                            {warn && <div style={{ position: "absolute", top: 0, right: 0, width: 3, height: "100%", background: "linear-gradient(180deg,#c8102e,transparent)" }} />}
-                            <div style={{ color: t.textDim, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
-                            <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 40, color: warn ? "#c8102e" : t.text, letterSpacing: 1, lineHeight: 1 }}>{value}</div>
-                            <div style={{ color: t.textDim, fontSize: 10, marginTop: 6 }}>{sub}</div>
+                        { label: "OTP",          value: `${computedKpis.otp}%`,            sub: "On Time Performance",  accent: "#c8102e",  bar: computedKpis.otp },
+                        { label: "Retard moy.",  value: `${computedKpis.avg_delay}m`,       sub: `${computedKpis.delayed} vol(s) en retard`, accent: "#ef4444",  bar: null },
+                        { label: "Total retard", value: `${computedKpis.totalDelayMins}m`,  sub: `Taux ${computedKpis.delayRate}%`,          accent: "#f59e0b",  bar: computedKpis.delayRate },
+                        { label: "Vols du jour", value: computedKpis.total_flights,         sub: `${computedKpis.on_time} à l'heure`,        accent: t.text,     bar: null },
+                        { label: "En vol",       value: computedKpis.airborne,              sub: `+ ${computedKpis.boarding} emb.`,          accent: "#3b82f6",  bar: null },
+                        { label: "Arrivés",      value: computedKpis.arrived,               sub: `${computedKpis.scheduled} planifiés`,      accent: "#22c55e",  bar: null },
+                        { label: "Annulés",      value: computedKpis.cancelled,             sub: "vols supprimés",                           accent: "#6b7280",  bar: null },
+                    ].map(({ label, value, sub, accent, bar }) => (
+                        <div key={label} style={{ background: t.kpiBg, border: `1px solid ${accent === "#c8102e" || accent === "#ef4444" ? "rgba(200,16,46,0.2)" : t.border}`, borderRadius: 10, padding: "14px 16px", position: "relative", overflow: "hidden", transition: "background 0.3s" }}>
+                            <div style={{ color: t.textDim, fontSize: 8, letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 }}>{label}</div>
+                            <div style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 32, color: accent, letterSpacing: 1, lineHeight: 1 }}>{value}</div>
+                            <div style={{ color: t.textDim, fontSize: 9, marginTop: 5 }}>{sub}</div>
+                            {bar !== null && (
+                                <div style={{ marginTop: 8, height: 3, background: t.otpTrack, borderRadius: 2, overflow: "hidden" }}>
+                                    <div style={{ width: `${bar}%`, height: "100%", background: accent, borderRadius: 2 }} />
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
 
                 {/* OTP bar */}
-                <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "14px 22px", marginBottom: 22, display: "flex", alignItems: "center", gap: 18, boxShadow: isDark ? "none" : "0 1px 5px rgba(0,0,0,0.04)", transition: "background 0.3s" }}>
-                    <span style={{ color: t.textDim, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap" }}>Performance OTP</span>
-                    <div style={{ flex: 1, height: 5, background: t.otpTrack, borderRadius: 3, overflow: "hidden" }}>
-                        <div style={{ width: `${computedKpis.otp}%`, height: "100%", background: "linear-gradient(90deg,#c8102e,#e8223a)", borderRadius: 3 }} />
+                <div style={{ background: t.surface, border: `1px solid ${t.border}`, borderRadius: 10, padding: "10px 20px", marginBottom: 18, display: "flex", alignItems: "center", gap: 18, transition: "background 0.3s" }}>
+                    <span style={{ color: t.textDim, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", whiteSpace: "nowrap" }}>OTP global</span>
+                    <div style={{ flex: 1, height: 4, background: t.otpTrack, borderRadius: 2, overflow: "hidden" }}>
+                        <div style={{ width: `${computedKpis.otp}%`, height: "100%", background: "linear-gradient(90deg,#c8102e,#e8223a)", borderRadius: 2 }} />
                     </div>
-                    <span style={{ color: t.text, fontSize: 12, fontWeight: 700, fontFamily: "monospace", whiteSpace: "nowrap" }}>{computedKpis.otp}%</span>
+                    <span style={{ color: "#c8102e", fontSize: 13, fontWeight: 800, fontFamily: "monospace", whiteSpace: "nowrap" }}>{computedKpis.otp}%</span>
+                    <span style={{ color: t.textDim, fontSize: 9, whiteSpace: "nowrap" }}>{computedKpis.on_time}/{computedKpis.total_flights} vols à l'heure</span>
                 </div>
 
+                {/* Top 5 Affected Airports — COO only */}
+                {!isStation && topAirports.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                        <div style={{ color: t.textDim, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700, marginBottom: 8 }}>
+                            Top 5 aéroports impactés par les retards
+                        </div>
+                        <div style={{ display: "flex", gap: 10 }}>
+                            {topAirports.map((ap, i) => {
+                                const isActive = airportFilter === ap.airport;
+                                return (
+                                    <button key={ap.airport} onClick={() => setAirportFilter(isActive ? "All" : ap.airport)} style={{
+                                        background: isActive ? "rgba(239,68,68,0.12)" : (isDark ? "rgba(239,68,68,0.05)" : "#fff5f6"),
+                                        border: `1px solid ${isActive ? "rgba(239,68,68,0.45)" : "rgba(239,68,68,0.15)"}`,
+                                        borderRadius: 9, padding: "10px 16px", cursor: "pointer",
+                                        display: "flex", alignItems: "center", gap: 10, transition: "all 0.18s", textAlign: "left"
+                                    }}>
+                                        <span style={{ fontFamily: "'Bebas Neue',cursive", fontSize: 22, color: "#ef4444", letterSpacing: 1, lineHeight: 1 }}>
+                                            {i + 1}
+                                        </span>
+                                        <div>
+                                            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 700, fontSize: 14, color: isActive ? "#ef4444" : t.text }}>{ap.airport}</div>
+                                            <div style={{ color: t.textDim, fontSize: 10 }}>{ap.count} vol{ap.count > 1 ? "s" : ""} · +{ap.totalDelay} min retard</div>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+
                 {/* Filters */}
-                <div style={{ display: "flex", gap: 7, marginBottom: 16, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 7, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
                     {states.map(s => {
                         const active = filter === s;
                         return (
@@ -447,11 +658,37 @@ export default function SchedulePage({ isDark, legs = [] }) {
                             }}>{s === "All" ? `All (${scheduleFlights.length})` : s}</button>
                         );
                     })}
+                    <span style={{ width: 1, height: 20, background: t.filterBorder, margin: "0 4px" }} />
+                    {/* Airport selector — disabled (locked) for station managers */}
+                    {isStation ? (
+                        <div style={{ display: "flex", gap: 5 }}>
+                            {assignedAirports.map(a => (
+                                <span key={a} style={{ background: "rgba(200,16,46,0.12)", color: "#e05f72", border: "1px solid rgba(200,16,46,0.3)", borderRadius: 7, padding: "6px 12px", fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>
+                                    {a}
+                                </span>
+                            ))}
+                        </div>
+                    ) : (
+                        <select
+                            value={airportFilter}
+                            onChange={e => setAirportFilter(e.target.value)}
+                            style={{
+                                background: airportFilter !== "All" ? "rgba(59,130,246,0.12)" : "transparent",
+                                border: `1px solid ${airportFilter !== "All" ? "rgba(59,130,246,0.42)" : t.filterBorder}`,
+                                borderRadius: 7, padding: "6px 12px",
+                                color: airportFilter !== "All" ? "#60a5fa" : t.filterText,
+                                fontSize: 10, fontWeight: 600, letterSpacing: 1,
+                                textTransform: "uppercase", cursor: "pointer", outline: "none"
+                            }}
+                        >
+                            {airports.map(ap => <option key={ap} value={ap}>{ap === "All" ? "Tous les aéroports" : ap}</option>)}
+                        </select>
+                    )}
                 </div>
 
                 {/* Table header */}
                 <div style={{ display: "grid", gridTemplateColumns: COLS, padding: "6px 18px", color: t.textDimmer, fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", fontWeight: 700 }}>
-                    {["Vol", "Dir.", "Route", "Avion", "Scheduled", "Actual OOOI", "Delay", "Status"].map(h => <span key={h}>{h}</span>)}
+                    {["Vol", "Dir.", "Route", "Avion", "Scheduled", "Actual OOOI", "Delay", "WOS", "Status"].map(h => <span key={h}>{h}</span>)}
                 </div>
 
                 {/* Rows */}
@@ -459,6 +696,8 @@ export default function SchedulePage({ isDark, legs = [] }) {
                     {filtered.map(f => {
                         const state = stateConfig[f.leg_state] || stateConfig.Scheduled;
                         const isLive = f.leg_state === "Airborne" || f.leg_state === "Boarding";
+                        const wos = computeWOS(f);
+                        const wc = wosColor(wos);
                         return (
                             <div
                                 key={f.id}
@@ -492,6 +731,15 @@ export default function SchedulePage({ isDark, legs = [] }) {
                                 <div style={{ color: t.textDim, fontSize: 11, fontFamily: "monospace" }}>{f.off_block || "--:--"} / {f.on_block || "--:--"}</div>
                                 <div style={{ color: f.delay_time_01 > 0 ? "#ef4444" : "#22c55e", fontSize: 13, fontWeight: 700, fontFamily: "monospace" }}>
                                     {f.delay_time_01 > 0 ? `+${f.delay_time_01}m` : "—"}
+                                </div>
+                                <div title={`Weighted Operational Score: ${wos}/100`}>
+                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 2 }}>
+                                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontWeight: 800, fontSize: 13, color: wc }}>{wos}</span>
+                                        <div style={{ width: 40, height: 3, background: isDark ? "rgba(255,255,255,0.07)" : "#e2e8f0", borderRadius: 2, overflow: "hidden" }}>
+                                            <div style={{ width: `${wos}%`, height: "100%", background: wc, borderRadius: 2 }} />
+                                        </div>
+                                        <span style={{ fontSize: 8, fontWeight: 700, letterSpacing: 1, color: wc }}>{wosLabel(wos)}</span>
+                                    </div>
                                 </div>
                                 <div>
                                     <span style={{ background: state.bg, color: state.color, border: `1px solid ${state.color}30`, borderRadius: 5, padding: "3px 9px", fontSize: 9, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", display: "inline-flex", alignItems: "center", gap: 5 }}>

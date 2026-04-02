@@ -1,15 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
-   FILTER BAR — Modern glassmorphism design
+   FILTER BAR
    ═══════════════════════════════════════════════════════════════ */
 
 .filter-bar {
   background: var(--bg-surface);
   border-bottom: 1px solid var(--color-border);
   padding: 0 16px;
-  height: 60px;
+  height: 56px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
@@ -24,6 +24,7 @@
   right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, rgba(200, 16, 46, 0.15), transparent);
+  pointer-events: none;
 }
 
 .filter-bar::-webkit-scrollbar { height: 2px; }
@@ -45,7 +46,7 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
+  padding: 5px 10px;
   border: none;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -66,7 +67,7 @@
 
 .view-switch-btn--active {
   background: rgba(200, 16, 46, 0.15);
-  color: #fca5a5;
+  color: #ff6b6b;
   box-shadow: 0 1px 4px rgba(200, 16, 46, 0.12);
 }
 
@@ -75,41 +76,53 @@
   color: #fff;
 }
 
-/* ── Filter bar label ── */
-.filter-bar-label {
+/* ── Filter group: visually clusters related chips ── */
+.filter-group {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  flex-shrink: 0;
-  padding: 5px 10px;
+  gap: 2px;
+  background: var(--filter-bg);
+  border: 1px solid var(--filter-border);
   border-radius: var(--radius-md);
-  background: var(--bg-surface-2);
-  border: 1px solid var(--color-border);
+  padding: 0 2px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.filter-group-divider {
+  width: 1px;
+  height: 16px;
+  background: var(--filter-border);
+  flex-shrink: 0;
+  margin: 0 1px;
 }
 
 /* ── Filter chip wrapper ── */
 .filter-chip {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0;
   flex-shrink: 0;
   position: relative;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s;
+}
+
+.filter-chip:hover {
+  background: var(--bg-surface-2);
 }
 
 .filter-chip-label {
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 800;
-  letter-spacing: 1.3px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
-  margin-bottom: 2px;
+  margin-bottom: 1px;
   display: flex;
   align-items: center;
   gap: 4px;
+  white-space: nowrap;
 }
 
 .filter-chip-dot {
@@ -119,7 +132,7 @@
   flex-shrink: 0;
 }
 
-/* Label color per filter type */
+/* Label / dot colors per filter type */
 .filter-chip[data-type="date"]    .filter-chip-label { color: #60a5fa; }
 .filter-chip[data-type="dep"]     .filter-chip-label { color: #34d399; }
 .filter-chip[data-type="arr"]     .filter-chip-label { color: #a78bfa; }
@@ -128,15 +141,15 @@
 .filter-chip[data-type="flight"]  .filter-chip-label { color: #fca5a5; }
 .filter-chip[data-type="reg"]     .filter-chip-label { color: #2dd4bf; }
 
-.filter-chip[data-type="date"]    .filter-chip-dot { background: #60a5fa; box-shadow: 0 0 6px rgba(96, 165, 250, 0.4); }
-.filter-chip[data-type="dep"]     .filter-chip-dot { background: #34d399; box-shadow: 0 0 6px rgba(52, 211, 153, 0.4); }
-.filter-chip[data-type="arr"]     .filter-chip-dot { background: #a78bfa; box-shadow: 0 0 6px rgba(167, 139, 250, 0.4); }
-.filter-chip[data-type="service"] .filter-chip-dot { background: #fbbf24; box-shadow: 0 0 6px rgba(251, 191, 36, 0.4); }
-.filter-chip[data-type="type"]    .filter-chip-dot { background: #67e8f9; box-shadow: 0 0 6px rgba(103, 232, 249, 0.4); }
-.filter-chip[data-type="flight"]  .filter-chip-dot { background: #fca5a5; box-shadow: 0 0 6px rgba(252, 165, 165, 0.4); }
-.filter-chip[data-type="reg"]     .filter-chip-dot { background: #2dd4bf; box-shadow: 0 0 6px rgba(45, 212, 191, 0.4); }
+.filter-chip[data-type="date"]    .filter-chip-dot { background: #60a5fa; box-shadow: 0 0 5px rgba(96,165,250,0.5); }
+.filter-chip[data-type="dep"]     .filter-chip-dot { background: #34d399; box-shadow: 0 0 5px rgba(52,211,153,0.5); }
+.filter-chip[data-type="arr"]     .filter-chip-dot { background: #a78bfa; box-shadow: 0 0 5px rgba(167,139,250,0.5); }
+.filter-chip[data-type="service"] .filter-chip-dot { background: #fbbf24; box-shadow: 0 0 5px rgba(251,191,36,0.5); }
+.filter-chip[data-type="type"]    .filter-chip-dot { background: #67e8f9; box-shadow: 0 0 5px rgba(103,232,249,0.5); }
+.filter-chip[data-type="flight"]  .filter-chip-dot { background: #fca5a5; box-shadow: 0 0 5px rgba(252,165,165,0.5); }
+.filter-chip[data-type="reg"]     .filter-chip-dot { background: #2dd4bf; box-shadow: 0 0 5px rgba(45,212,191,0.5); }
 
-/* Legacy label (used in zoom) */
+/* Legacy label (zoom etc.) */
 .filter-label {
   font-size: 8px;
   font-weight: 800;
@@ -145,7 +158,7 @@
   color: var(--color-dim);
 }
 
-/* ── Separator dot ── */
+/* ── Thin separator dot between groups ── */
 .filter-sep {
   width: 3px;
   height: 3px;
@@ -153,8 +166,8 @@
   background: var(--color-border);
   flex-shrink: 0;
   align-self: center;
-  margin: 0 2px;
-  opacity: 0.6;
+  margin: 0 3px;
+  opacity: 0.5;
 }
 
 /* ── Flight number search ── */
@@ -162,18 +175,12 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--filter-bg);
-  border: 1px solid var(--filter-border);
-  border-radius: var(--radius-md);
-  padding: 5px 10px;
-  min-width: 120px;
-  height: 30px;
+  background: transparent;
+  border: none;
+  padding: 3px 4px;
+  min-width: 110px;
+  height: 28px;
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
-}
-
-.filter-search-wrap:focus-within {
-  border-color: #fca5a5;
-  box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.12);
 }
 
 .filter-input {
@@ -183,9 +190,9 @@
   color: var(--color-text);
   font-size: 11px;
   font-weight: 600;
-  font-family: 'Inter', sans-serif;
+  font-family: 'JetBrains Mono', monospace;
   letter-spacing: 0.5px;
-  width: 80px;
+  width: 75px;
 }
 
 .filter-input::placeholder { color: var(--color-dim); }
@@ -195,7 +202,7 @@
   border: none;
   color: var(--color-dim);
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   padding: 0;
   line-height: 1;
   display: flex;
@@ -214,17 +221,18 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-dim);
-  padding: 5px 14px;
+  padding: 0 14px;
   cursor: default;
   font-family: 'Inter', sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
   transition: all 0.2s ease;
   height: 28px;
   white-space: nowrap;
   flex-shrink: 0;
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .filter-apply-btn:disabled {
@@ -232,60 +240,73 @@
 }
 
 .filter-apply-btn--active {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.18), rgba(34, 197, 94, 0.08));
-  border-color: rgba(34, 197, 94, 0.4);
-  color: #6ee7b7;
+  background: linear-gradient(135deg, rgba(34,197,94,0.18), rgba(34,197,94,0.08));
+  border-color: rgba(34,197,94,0.45);
+  color: #4ade80;
   cursor: pointer;
   opacity: 1;
-  animation: apply-pulse 1.5s ease-in-out infinite;
+  animation: apply-pulse 2s ease-in-out infinite;
 }
 
 .filter-apply-btn--active:hover {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(34, 197, 94, 0.15));
-  border-color: rgba(34, 197, 94, 0.6);
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(34, 197, 94, 0.25);
+  background: linear-gradient(135deg, rgba(34,197,94,0.3), rgba(34,197,94,0.15));
+  border-color: rgba(34,197,94,0.65);
+  color: #052e16;
+  box-shadow: 0 2px 14px rgba(34,197,94,0.28);
   transform: translateY(-1px);
 }
 
 @keyframes apply-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.2); }
-  50%      { box-shadow: 0 0 8px 2px rgba(34, 197, 94, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.25); }
+  50%       { box-shadow: 0 0 0 3px rgba(34,197,94,0.08); }
 }
 
-[data-theme='light'] .filter-apply-btn--active {
-  color: #059669;
+[data-theme='light'] .filter-apply-btn--active { color: #059669; }
+
+/* ── Pending indicator dot on apply button when changes exist ── */
+.filter-apply-btn--active::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+  animation: dot-blink 1.2s ease-in-out infinite;
 }
 
-/* ── Active filter badge ── */
+@keyframes dot-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ── Active filter badge (clear all) ── */
 .filter-active-badge {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: rgba(200, 16, 46, 0.08);
-  border: 1px solid rgba(200, 16, 46, 0.25);
+  background: rgba(200,16,46,0.08);
+  border: 1px solid rgba(200,16,46,0.22);
   border-radius: var(--radius-pill);
-  color: #fca5a5;
-  font-size: 10px;
+  color: #f87171;
+  font-size: 9.5px;
   font-weight: 700;
-  padding: 4px 12px;
+  padding: 3px 10px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
   transition: all var(--transition-fast);
   white-space: nowrap;
   flex-shrink: 0;
   align-self: center;
-  backdrop-filter: blur(4px);
 }
 
 .filter-active-badge:hover {
-  background: rgba(200, 16, 46, 0.18);
-  border-color: rgba(200, 16, 46, 0.5);
+  background: rgba(200,16,46,0.18);
+  border-color: rgba(200,16,46,0.5);
   color: #fff;
-  box-shadow: 0 0 12px rgba(200, 16, 46, 0.15);
+  box-shadow: 0 0 10px rgba(200,16,46,0.18);
 }
 
-.filter-clear-all { font-size: 13px; opacity: 0.7; }
+.filter-clear-all { font-size: 12px; opacity: 0.65; margin-left: 1px; }
 
 /* ── Right section ── */
 .filter-right {
@@ -296,7 +317,7 @@
   flex-shrink: 0;
 }
 
-/* ── Day navigation control ── */
+/* ── Day navigation ── */
 .day-nav-group {
   display: flex;
   flex-direction: column;
@@ -329,7 +350,7 @@
 }
 
 .day-nav-arrow:hover {
-  background: rgba(200, 16, 46, 0.1);
+  background: rgba(200,16,46,0.1);
   color: var(--ram-red);
 }
 
@@ -359,13 +380,13 @@
 }
 
 .day-nav-btn--active {
-  background: rgba(200, 16, 46, 0.18);
+  background: rgba(200,16,46,0.18);
   color: #fca5a5;
-  box-shadow: inset 0 -2px 0 0 rgba(200, 16, 46, 0.5);
+  box-shadow: inset 0 -2px 0 0 rgba(200,16,46,0.5);
 }
 
 .day-nav-btn--active:hover {
-  background: rgba(200, 16, 46, 0.28);
+  background: rgba(200,16,46,0.28);
   color: #fff;
 }
 
@@ -393,26 +414,25 @@
   background: var(--bg-surface-3);
 }
 
-/* ── Action buttons group ── */
+/* ── Action buttons ── */
 .filter-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
-/* ── Import button ── */
 .import-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(34, 197, 94, 0.06));
-  border: 1px solid rgba(34, 197, 94, 0.25);
+  background: linear-gradient(135deg, rgba(34,197,94,0.12), rgba(34,197,94,0.06));
+  border: 1px solid rgba(34,197,94,0.25);
   border-radius: var(--radius-md);
   color: #6ee7b7;
-  padding: 5px 12px;
+  padding: 0 12px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
   transition: all var(--transition-fast);
@@ -420,51 +440,49 @@
 }
 
 .import-btn:hover {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.25), rgba(34, 197, 94, 0.12));
-  border-color: rgba(34, 197, 94, 0.5);
+  background: linear-gradient(135deg, rgba(34,197,94,0.25), rgba(34,197,94,0.12));
+  border-color: rgba(34,197,94,0.5);
   color: #fff;
-  box-shadow: 0 2px 12px rgba(34, 197, 94, 0.2);
+  box-shadow: 0 2px 10px rgba(34,197,94,0.2);
   transform: translateY(-1px);
 }
 
-/* ── Profiles button ── */
 .profiles-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, rgba(200, 16, 46, 0.12), rgba(200, 16, 46, 0.06));
-  border: 1px solid rgba(200, 16, 46, 0.25);
+  background: linear-gradient(135deg, rgba(200,16,46,0.12), rgba(200,16,46,0.06));
+  border: 1px solid rgba(200,16,46,0.22);
   border-radius: var(--radius-md);
   color: #fca5a5;
-  padding: 5px 12px;
+  padding: 0 12px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
   transition: all var(--transition-fast);
+  height: 28px;
   position: relative;
   overflow: hidden;
-  height: 28px;
 }
 
 .profiles-btn::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.04), transparent);
+  background: linear-gradient(135deg, rgba(255,255,255,0.04), transparent);
   pointer-events: none;
 }
 
 .profiles-btn:hover {
-  background: linear-gradient(135deg, rgba(200, 16, 46, 0.25), rgba(200, 16, 46, 0.12));
-  border-color: rgba(200, 16, 46, 0.5);
+  background: linear-gradient(135deg, rgba(200,16,46,0.25), rgba(200,16,46,0.12));
+  border-color: rgba(200,16,46,0.5);
   color: #fff;
-  box-shadow: 0 2px 12px rgba(200, 16, 46, 0.2);
+  box-shadow: 0 2px 10px rgba(200,16,46,0.2);
   transform: translateY(-1px);
 }
 
-/* ── Export button ── */
 .export-btn {
   display: flex;
   align-items: center;
@@ -473,10 +491,10 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text-2);
-  padding: 5px 12px;
+  padding: 0 12px;
   cursor: pointer;
   font-family: 'Inter', sans-serif;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.5px;
   transition: all var(--transition-fast);
@@ -488,24 +506,24 @@
   border-color: var(--color-muted);
   color: var(--color-text);
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 }
 
 /* ── Light theme tweaks ── */
 [data-theme='light'] .filter-bar {
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
 }
 
 [data-theme='light'] .filter-bar::after {
-  background: linear-gradient(90deg, transparent, rgba(200, 16, 46, 0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgba(200,16,46,0.07), transparent);
 }
 
-[data-theme='light'] .filter-bar-label {
-  background: var(--bg-surface-3);
+[data-theme='light'] .filter-group {
+  background: rgba(0,0,0,0.02);
 }
 
 [data-theme='light'] .filter-active-badge {
-  background: rgba(200, 16, 46, 0.06);
+  background: rgba(200,16,46,0.06);
   color: var(--ram-red);
 }
 

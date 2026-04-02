@@ -153,12 +153,12 @@ function DelayCodeRow({ code, time }) {
 
 /* ── Vol Tab (redesigned) ──────────────────────────────────── */
 function VolTab({ leg, sc }) {
-    const hasDelay = leg.totalDelay > 0;
     const delayCodes = [
         { code: leg.DELAY_CODE_01, time: leg.DELAY_TIME_01 },
         { code: leg.DELAY_CODE_02, time: leg.DELAY_TIME_02 },
         { code: leg.DELAY_CODE_03, time: leg.DELAY_TIME_03 },
     ].filter(d => d.code || d.time);
+    const hasDelay = leg.totalDelay > 0 || delayCodes.length > 0;
 
     const totalSevColor = delaySeverityColor(leg.totalDelay);
 
@@ -361,6 +361,24 @@ export default function GanttBottomPanel({ leg, onClose, isDark }) {
                     >
                         {leg.state}
                     </span>
+                    {/* Delay code badges — shown immediately in the header */}
+                    {[
+                        { code: leg.DELAY_CODE_01, time: leg.DELAY_TIME_01 },
+                        { code: leg.DELAY_CODE_02, time: leg.DELAY_TIME_02 },
+                        { code: leg.DELAY_CODE_03, time: leg.DELAY_TIME_03 },
+                    ].filter(d => d.code).map((d, i) => {
+                        const sev = delaySeverityColor(d.time);
+                        return (
+                            <span key={i} style={{
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                background: `${sev}18`, color: sev, border: `1px solid ${sev}40`,
+                                borderRadius: 5, padding: "2px 7px", fontSize: 11, fontWeight: 700,
+                                fontFamily: "'JetBrains Mono', monospace", letterSpacing: 0.5,
+                            }}>
+                                {d.code}{d.time ? ` +${d.time}m` : ""}
+                            </span>
+                        );
+                    })}
                     <div className="bp-sub">{leg.reg} · {leg.subtype} · {leg.service}</div>
                 </div>
 

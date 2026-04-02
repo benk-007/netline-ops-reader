@@ -78,7 +78,7 @@
   color: var(--gantt-label-text) !important;
   font-family: 'JetBrains Mono', monospace !important;
   font-weight: 700 !important;
-  font-size: 10px !important;
+  font-size: 12px !important;
   letter-spacing: 1px !important;
   padding: 0 10px !important;
   text-transform: uppercase !important;

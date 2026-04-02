@@ -506,7 +506,7 @@ function App({ keycloakFailed }) {
           {safePage === "station-gantt" && <StationGanttPage isDark={isDark} />}
 
           {/* ── SCHEDULE PAGE ── */}
-          {safePage === "schedule" && <SchedulePage isDark={isDark} legs={legsData} />}
+          {safePage === "schedule" && <SchedulePage isDark={isDark} legs={legsData} currentUser={currentUser} />}
 
           {/* ── REPORTS PAGE ── */}
           {safePage === "reports" && <ReportsPage isDark={isDark} legs={legsData} />}

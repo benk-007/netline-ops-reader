@@ -174,21 +174,21 @@ export const legsApi = {
     return request(`/legs/search${qs ? `?${qs}` : ""}`);
   },
 
-  /** Legs by flight number + date. */
+  /** Legs by flight number + date. Maps to GET /api/legs/by-flight?flightNumber=&date= */
   getByFlightAndDate: (flightNumber, date) =>
-    request(`/legs/flight/${encodeURIComponent(flightNumber)}?date=${date}`),
+    request(`/legs/by-flight?flightNumber=${encodeURIComponent(flightNumber)}&date=${date}`),
 
-  /** Legs by departure airport + date. */
+  /** Legs by departure airport + date. Maps to GET /api/legs/by-departure?airport=&date= */
   getByDeparture: (iata, date) =>
-    request(`/legs/departure/${encodeURIComponent(iata)}?date=${date}`),
+    request(`/legs/by-departure?airport=${encodeURIComponent(iata)}&date=${date}`),
 
-  /** Legs by arrival airport + date. */
+  /** Legs by arrival airport + date. Maps to GET /api/legs/by-arrival?airport=&date= */
   getByArrival: (iata, date) =>
-    request(`/legs/arrival/${encodeURIComponent(iata)}?date=${date}`),
+    request(`/legs/by-arrival?airport=${encodeURIComponent(iata)}&date=${date}`),
 
-  /** Legs by aircraft registration + date. */
+  /** Legs by aircraft registration + date. Maps to GET /api/legs/by-aircraft?registration=&date= */
   getByAircraft: (registration, date) =>
-    request(`/legs/aircraft/${encodeURIComponent(registration)}?date=${date}`),
+    request(`/legs/by-aircraft?registration=${encodeURIComponent(registration)}&date=${date}`),
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
