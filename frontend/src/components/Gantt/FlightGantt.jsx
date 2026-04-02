@@ -55,6 +55,33 @@ function buildActualTemplate(leg, actStart, actEnd) {
   return container;
 }
 
+// ── Overnight helpers (used by both applyFilters and window strategies) ──
+
+/** "HH:MM[:SS]" → total minutes since midnight. */
+function hhmmToMin(hhmm) {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.slice(0, 5).split(":").map(Number);
+  return h * 60 + m;
+}
+
+/** ISO date string for the calendar day after dateStr. */
+function nextISODay(dateStr) {
+  const d = new Date(dateStr + "T00:00:00");
+  d.setDate(d.getDate() + 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/**
+ * Given a departure and arrival "HH:MM" on the same base date, return
+ * the correct ISO date for the arrival — next day when the clock wraps.
+ */
+function arrISODate(baseDate, depHHMM, arrHHMM) {
+  const depMin = hhmmToMin(depHHMM);
+  const arrMin = hhmmToMin(arrHHMM);
+  if (depMin !== null && arrMin !== null && arrMin < depMin) return nextISODay(baseDate);
+  return baseDate;
+}
+
 /** Apply active filters to legs and return filtered groups + items DataSets */
 function applyFilters(allLegs, filters) {
   const { fDate, fService, fDep, fArr, fFlight, fSubtype, fReg } = filters || {};
@@ -112,6 +139,7 @@ function applyFilters(allLegs, filters) {
     ].filter(Boolean).join(" ");
 
     /* ── PLANNED bar (always created) ── */
+    const planEndDate = arrISODate(leg.date, leg.depUtc, leg.arrUtc);
     itemsArr.push({
       id: `${baseId}-plan`,
       group: leg.reg,
@@ -119,7 +147,7 @@ function applyFilters(allLegs, filters) {
       subgroupOrder: 0,
       content: buildLegTemplate(leg),
       start: `${leg.date}T${leg.depUtc}:00`,
-      end: `${leg.date}T${leg.arrUtc}:00`,
+      end: `${planEndDate}T${leg.arrUtc}:00`,
       className: plannedClasses,
       legId: leg.id,
     });
@@ -135,6 +163,7 @@ function applyFilters(allLegs, filters) {
         isDelayed && "leg-delayed",
       ].filter(Boolean).join(" ");
 
+      const actEndDate = arrISODate(leg.date, actStart, actEnd);
       itemsArr.push({
         id: `${baseId}-act`,
         group: leg.reg,
@@ -142,7 +171,7 @@ function applyFilters(allLegs, filters) {
         subgroupOrder: 1,
         content: buildActualTemplate(leg, actStart, actEnd),
         start: `${leg.date}T${actStart}:00`,
-        end: `${leg.date}T${actEnd}:00`,
+        end: `${actEndDate}T${actEnd}:00`,
         className: actualClasses,
         legId: leg.id,
       });
@@ -164,46 +193,159 @@ const LEGEND_ENTRIES = [
   { label: "Annulé",      color: "#374151" },
 ];
 
-/** Compute the visible date window from dayCount + referenceDate.
- *  - 1 day: just referenceDate (00:00 → 23:59)
- *  - 2 days: referenceDate .. referenceDate + 1  (today + tomorrow)
- *  - 3 days: referenceDate - 1 .. referenceDate + 1  (yesterday + today + tomorrow)
- *
- *  Scroll arrows shift referenceDate by ±1 day, translating the entire window.
+// ─────────────────────────────────────────────────────────────
+// Window Strategy Pattern
+// ─────────────────────────────────────────────────────────────
+//
+// Each strategy is a pure function:
+//   (referenceDate: string, dayCount: number, legs: Leg[]) => { start: Date, end: Date }
+//
+// To switch algorithm, pass a different WINDOW_STRATEGIES value
+// to FlightGantt via the `windowStrategy` prop.
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Convert a leg date + "HH:MM" time to a Date object.
+ * Pass nextDay=true when the time wraps past midnight.
  */
-function computeWindow(referenceDate, dayCount) {
+function toDateTime(dateStr, hhmm, nextDay = false) {
+  const [h, m] = hhmm.slice(0, 5).split(":").map(Number);
+  const d = new Date(`${dateStr}T00:00:00`);
+  if (nextDay) d.setDate(d.getDate() + 1);
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+/** Format a Date as "YYYY-MM-DD" using LOCAL calendar values (not UTC). */
+function toISODateLocal(d) {
+  const y  = d.getFullYear();
+  const m  = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+
+/**
+ * FIXED strategy — classic 00:00–23:59 window over the reference day(s).
+ * Predictable; does not depend on actual flight data.
+ */
+function fixedDayStrategy(referenceDate, dayCount, _legs) {
   const ref = new Date(referenceDate + "T00:00:00");
-  let startDay, endDay;
-  if (dayCount === 1) {
-    startDay = new Date(ref);
-    endDay = new Date(ref);
-  } else if (dayCount === 2) {
-    // today + tomorrow
-    startDay = new Date(ref);
-    endDay = new Date(ref);
+  let startDay = new Date(ref);
+  let endDay   = new Date(ref);
+  if (dayCount === 2) {
     endDay.setDate(endDay.getDate() + 1);
-  } else {
-    // yesterday + today + tomorrow
-    startDay = new Date(ref);
+  } else if (dayCount >= 3) {
     startDay.setDate(startDay.getDate() - 1);
-    endDay = new Date(ref);
     endDay.setDate(endDay.getDate() + 1);
   }
-  const windowStart = new Date(startDay);
-  windowStart.setHours(0, 0, 0, 0);
-  const windowEnd = new Date(endDay);
-  windowEnd.setHours(23, 59, 59, 999);
+  const start = new Date(startDay); start.setHours(0,  0,  0,   0);
+  const end   = new Date(endDay);   end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+/**
+ * DATA_DRIVEN strategy — window is anchored as follows:
+ *
+ *   1 day  : earliest departure of referenceDate  →  latest arrival of referenceDate
+ *   2 days : earliest departure of day 0          →  latest arrival of day +1
+ *   3 days : earliest departure of day -1         →  latest arrival of day +1
+ *
+ * "Latest arrival" accounts for overnight legs: a flight departing at
+ * 22:59 and arriving at 02:00 extends the window into the next calendar day.
+ *
+ * Time precedence:
+ *   departure: OFF_BLOCK_TIME > AIRBORNE_TIME > depUtc (STD)
+ *   arrival:   ON_BLOCK_TIME  > LANDING_TIME  > arrUtc (STA)
+ *
+ * Padding: ±20 min so the first/last bar is never flush against the edge.
+ * Falls back to fixedDayStrategy when no leg data is available.
+ */
+function dataDrivenStrategy(referenceDate, dayCount, legs) {
+  if (!legs || legs.length === 0) return fixedDayStrategy(referenceDate, dayCount, legs);
+
+  const PAD = 20 * 60 * 1000; // 20 min in ms
+  const ref = new Date(referenceDate + "T00:00:00");
+
+  // Resolve the first and last calendar dates of the current view
+  let firstDate = referenceDate;
+  let lastDate  = referenceDate;
+
+  if (dayCount === 2) {
+    const d = new Date(ref); d.setDate(d.getDate() + 1);
+    lastDate = toISODateLocal(d);
+  } else if (dayCount >= 3) {
+    const d0 = new Date(ref); d0.setDate(d0.getDate() - 1);
+    firstDate = toISODateLocal(d0);
+    const d2 = new Date(ref); d2.setDate(d2.getDate() + 1);
+    lastDate  = toISODateLocal(d2);
+  }
+
+  // earliest departure  — scoped to firstDate only
+  let earliest = null;
+  // latest arrival      — scoped to lastDate only (overnight detection applied)
+  let latest   = null;
+
+  legs.forEach(leg => {
+    const depHHMM = (leg.OFF_BLOCK_TIME || leg.AIRBORNE_TIME || leg.depUtc || "").slice(0, 5);
+    const arrHHMM = (leg.ON_BLOCK_TIME  || leg.LANDING_TIME  || leg.arrUtc  || "").slice(0, 5);
+
+    // ── Window START: earliest departure on the first day ──
+    if (leg.date === firstDate && depHHMM) {
+      const depDt = toDateTime(leg.date, depHHMM);
+      if (!earliest || depDt < earliest) earliest = depDt;
+    }
+
+    // ── Window END: latest arrival on the last day ──
+    if (leg.date === lastDate && arrHHMM && depHHMM) {
+      const isOvernight = hhmmToMin(arrHHMM) < hhmmToMin(depHHMM);
+      const arrDt = toDateTime(leg.date, arrHHMM, isOvernight);
+      if (!latest || arrDt > latest) latest = arrDt;
+    }
+  });
+
+  // Fallback to day boundaries when no legs exist on the anchor days
+  if (!earliest) earliest = toDateTime(firstDate, "00:00");
+  if (!latest)   latest   = toDateTime(lastDate,  "23:59");
+
   return {
-    start: windowStart,
-    end: windowEnd,
+    start: new Date(earliest.getTime() - PAD),
+    end:   new Date(latest.getTime()   + PAD),
   };
 }
 
-export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCount = 1, referenceDate }) {
+/**
+ * Registry of window strategies.
+ * Import this in any parent component to pass a strategy to FlightGantt:
+ *
+ *   import { WINDOW_STRATEGIES } from "../Gantt/FlightGantt";
+ *   <FlightGantt windowStrategy={WINDOW_STRATEGIES.FIXED_DAY} ... />
+ *
+ * Default (when prop is omitted): DATA_DRIVEN
+ */
+export const WINDOW_STRATEGIES = {
+  /** Classic fixed 00:00–23:59 day window. */
+  FIXED_DAY:   fixedDayStrategy,
+  /** Dynamic window based on actual departure / arrival times. */
+  DATA_DRIVEN: dataDrivenStrategy,
+};
+
+export default function FlightGantt({
+  legs: allLegs,
+  filters,
+  onSelectLeg,
+  dayCount = 1,
+  referenceDate,
+  /** Swap to WINDOW_STRATEGIES.FIXED_DAY to revert to classic 00:00–23:59. */
+  windowStrategy = WINDOW_STRATEGIES.DATA_DRIVEN,
+}) {
   const container = useRef(null);
   const wrapperRef = useRef(null);
   const timelineRef = useRef(null);
   const filteredRef = useRef([]);
+  /** Always holds the latest strategy so navigation useEffect never goes stale. */
+  const strategyRef = useRef(windowStrategy);
+  useEffect(() => { strategyRef.current = windowStrategy; }, [windowStrategy]);
 
   const [hoveredLeg, setHoveredLeg] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -249,15 +391,15 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     filteredRef.current = filtered;
     itemsRef.current = items;
 
-    const win = computeWindow(refDateRef.current, dayCountRef.current);
+    const win = strategyRef.current(refDateRef.current, dayCountRef.current, filtered);
     const TIME_STEPS = { 1: 1, 2: 2, 3: 3 };
     const timeStep = TIME_STEPS[dayCountRef.current] || 1;
 
     const options = {
       stack: true,
       editable: false,
-      zoomable: false,
-      horizontalScroll: false,
+      zoomable: true,
+      horizontalScroll: true,
       verticalScroll: true,
       moveable: false,
       orientation: "top",
@@ -300,7 +442,7 @@ export default function FlightGantt({ legs: allLegs, filters, onSelectLeg, dayCo
     refDateRef.current = referenceDate;
     if (!timelineRef.current) return;
 
-    const win = computeWindow(referenceDate, dayCount);
+    const win = strategyRef.current(referenceDate, dayCount, filteredRef.current);
     const TIME_STEPS = { 1: 1, 2: 2, 3: 3 };
     const timeStep = TIME_STEPS[dayCount] || 1;
 
