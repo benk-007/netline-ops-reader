@@ -81,13 +81,17 @@ public class PostgresDataSourceConfig {
         LocalContainerEntityManagerFactoryBean em = new LocalContainerEntityManagerFactoryBean();
         em.setDataSource(dataSource);
 
-        // IMPORTANT: packagesToScan does NOT scan sub-packages by default in
-        // LocalContainerEntityManagerFactoryBean — it uses exact package matching.
-        // So "entity" here will NOT include "entity.oracle".
+        // Scan entity and entity.fake packages, then strip out any oracle sub-package
+        // classes. setPackagesToScan is recursive, so entity.oracle.* gets picked up
+        // unintentionally — the post-processor removes them before Hibernate validates
+        // the schema, preventing "missing column AC_REGISTRATION in MV_AIRCRAFT" errors.
         em.setPackagesToScan(
                 "com.ram.netline_reader_backend.entity",
                 "com.ram.netline_reader_backend.entity.fake"
         );
+        em.setPersistenceUnitPostProcessors(pui ->
+                pui.getManagedClassNames().removeIf(name ->
+                        name.startsWith("com.ram.netline_reader_backend.entity.oracle.")));
         em.setPersistenceUnitName("postgres");
 
         HibernateJpaVendorAdapter vendorAdapter = new HibernateJpaVendorAdapter();

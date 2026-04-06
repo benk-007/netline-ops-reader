@@ -37,10 +37,13 @@ import java.util.Map;
  *   3. oracleTransactionManager   — read-only transaction support
  *
  * Managed entities (read-only):
- *   - Leg, FlightTime, FlightLoad, Delay, Airport, Aircraft
+ *   - MvLegRow  ← flat Oracle MV row (primary data source on prod path)
+ *   - Leg, FlightTime, FlightLoad, Delay, Airport, Aircraft  (structured domain model)
  *
  * Managed repositories:
- *   - LegRepository, AirportRepository, AircraftRepository
+ *   - MvLegRowRepository  ← used by OracleLegDataProvider (prod data flow)
+ *   - AirportRepository, AircraftRepository  ← reference table lookups
+ *   - LegRepository  ← retained for direct structured-view access if DBA provides split MVs
  */
 @Configuration
 @Profile("prod")

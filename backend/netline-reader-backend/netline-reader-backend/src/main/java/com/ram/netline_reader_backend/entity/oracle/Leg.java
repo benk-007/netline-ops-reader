@@ -1,6 +1,7 @@
 package com.ram.netline_reader_backend.entity.oracle;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -56,17 +57,33 @@ public class Leg {
     @Column(name = "LEG_NO")
     private Long legNo;
 
-    /** Flight number (e.g. "AT205"). */
-    @Column(name = "FLIGHT_NUMBER")
+    /** Technical key used to detect updates/version changes. Maps to MV column UPDATE_KEY. */
+    @Column(name = "UPDATE_KEY")
+    private Long updateKey;
+
+    /** Flight number (e.g. "201"). Maps to MV column FN_NUMBER. Combined with carrierCode to form "AT201". */
+    @Column(name = "FN_NUMBER")
     private String flightNumber;
 
-    /** IATA carrier code (e.g. "AT" for Royal Air Maroc). */
-    @Column(name = "CARRIER_CODE")
+    /** IATA carrier code (e.g. "AT" for Royal Air Maroc). Maps to MV column FN_CARRIER. */
+    @Column(name = "FN_CARRIER")
     private String carrierCode;
 
-    /** Operational date — the date the flight is scheduled to operate. */
-    @Column(name = "OPERATIONAL_DATE")
+    /** Optional suffix for flight number variants (e.g. "A" → AT201A). Maps to MV column FN_SUFFIX. */
+    @Column(name = "FN_SUFFIX", nullable = true)
+    private String fnSuffix;
+
+    /** Business date of the flight. Maps to MV column DAY_OF_ORIGIN. */
+    @Column(name = "DAY_OF_ORIGIN")
     private LocalDate operationalDate;
+
+    /** Timestamp of the last modification. Maps to MV column CHANGE_TIME. */
+    @Column(name = "CHANGE_TIME", nullable = true)
+    private LocalDateTime changeTime;
+
+    /** User or system that last updated the record. Maps to MV column ENTRY_USER. */
+    @Column(name = "ENTRY_USER", nullable = true)
+    private String entryUser;
 
     /**
      * Current state of the leg in the operational lifecycle.
@@ -110,27 +127,41 @@ public class Leg {
     // ── Association relationships ─────────────────────────────────────
 
     /**
-     * Departure airport — the airport this leg departs from.
-     * Joined via the IATA code stored in the departure station column.
+     * Scheduled departure airport. Maps to MV column DEP_AP_SCHED.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "DEP_AIRPORT", referencedColumnName = "IATA_CODE")
+    @JoinColumn(name = "DEP_AP_SCHED", referencedColumnName = "IATA_CODE")
     private Airport departureAirport;
 
     /**
-     * Arrival airport — the airport this leg arrives at.
-     * Joined via the IATA code stored in the arrival station column.
+     * Scheduled arrival airport. Maps to MV column ARR_AP_SCHED.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "ARR_AIRPORT", referencedColumnName = "IATA_CODE")
+    @JoinColumn(name = "ARR_AP_SCHED", referencedColumnName = "IATA_CODE")
     private Airport arrivalAirport;
 
     /**
-     * Aircraft assigned to operate this leg.
-     * Joined via the aircraft registration code.
+     * Actual departure airport — may differ from scheduled if diverted.
+     * Maps to MV column DEP_AP_ACTUAL.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "AIRCRAFT_REGISTRATION", referencedColumnName = "REGISTRATION")
+    @JoinColumn(name = "DEP_AP_ACTUAL", referencedColumnName = "IATA_CODE", nullable = true)
+    private Airport actualDepartureAirport;
+
+    /**
+     * Actual arrival airport — may differ from scheduled if diverted.
+     * Maps to MV column ARR_AP_ACTUAL.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ARR_AP_ACTUAL", referencedColumnName = "IATA_CODE", nullable = true)
+    private Airport actualArrivalAirport;
+
+    /**
+     * Aircraft assigned to operate this leg.
+     * Joined via the aircraft registration code. Maps to MV column AC_REGISTRATION.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "AC_REGISTRATION", referencedColumnName = "AC_REGISTRATION")
     private Aircraft aircraft;
 
     // ── Derived / computed methods ────────────────────────────────────

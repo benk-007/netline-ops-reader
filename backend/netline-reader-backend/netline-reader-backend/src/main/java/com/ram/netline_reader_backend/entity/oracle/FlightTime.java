@@ -47,27 +47,27 @@ public class FlightTime {
     private LocalDateTime sta;
 
     /** Estimated Time of Departure — updated departure estimate. */
-    @Column(name = "ETD")
+    @Column(name = "ETD",nullable= true)
     private LocalDateTime etd;
 
     /** Estimated Time of Arrival — updated arrival estimate. */
-    @Column(name = "ETA")
+    @Column(name = "ETA",nullable= true)
     private LocalDateTime eta;
 
-    /** Off-Block time — actual moment the aircraft pushes back from the gate. */
-    @Column(name = "OFF_BLOCK")
+    /** Off-Block time — actual moment the aircraft pushes back from the gate. Maps to MV column OFF_BLOCK_TIME. */
+    @Column(name = "OFF_BLOCK_TIME")
     private LocalDateTime offBlock;
 
-    /** Airborne time — actual moment of takeoff (wheels off). */
-    @Column(name = "AIRBORNE")
+    /** Airborne time — actual moment of takeoff (wheels off). Maps to MV column AIRBORNE_TIME. */
+    @Column(name = "AIRBORNE_TIME")
     private LocalDateTime airborne;
 
-    /** Landing time — actual moment of touchdown (wheels on). */
-    @Column(name = "LANDING")
+    /** Landing time — actual moment of touchdown (wheels on). Maps to MV column LANDING_TIME. */
+    @Column(name = "LANDING_TIME")
     private LocalDateTime landing;
 
-    /** On-Block time — actual moment the aircraft reaches the arrival gate. */
-    @Column(name = "ON_BLOCK")
+    /** On-Block time — actual moment the aircraft reaches the arrival gate. Maps to MV column ON_BLOCK_TIME. */
+    @Column(name = "ON_BLOCK_TIME")
     private LocalDateTime onBlock;
 
     /** The leg this flight time record belongs to. */

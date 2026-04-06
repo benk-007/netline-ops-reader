@@ -31,35 +31,36 @@ import lombok.*;
 public class FlightLoad {
 
     @Id
-    @Column(name = "ID")
+    @Column(name = "ID", nullable = true)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)    
     private Long id;
 
     /** Total reserved passengers (booked, may include no-shows). */
-    @Column(name = "PAX_BOOKED")
+    @Column(name = "PAX_BOOKED", nullable = true)
     private Integer paxBooked;
 
     /** Actual passengers on board (after boarding closes). */
-    @Column(name = "PAX_FLOWN")
+    @Column(name = "PAX_FLOWN" ,nullable = true)
     private Integer paxFlown;
 
     /** Business class passenger count. */
-    @Column(name = "PAX_BUSINESS")
+    @Column(name = "PAX_BUSINESS" ,nullable = true)
     private Integer paxBusiness;
 
     /** Economy class passenger count. */
-    @Column(name = "PAX_ECONOMY")
+    @Column(name = "PAX_ECONOMY" ,nullable = true)
     private Integer paxEconomy;
 
     /** Cargo (freight) weight in kilograms. */
-    @Column(name = "CARGO_WEIGHT")
+    @Column(name = "CARGO_WEIGHT", nullable = true)
     private Double cargoWeight;
 
     /** Passenger baggage weight in kilograms. */
-    @Column(name = "BAGGAGE_WEIGHT")
+    @Column(name = "BAGGAGE_WEIGHT", nullable = true)
     private Double baggageWeight;
 
     /** The leg this load record belongs to. */
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "LEG_NO", referencedColumnName = "LEG_NO")
+    @JoinColumn(name = "LEG_NO", referencedColumnName = "LEG_NO", nullable = true)
     private Leg leg;
 }

@@ -42,19 +42,15 @@ public class Airport {
     @Column(name = "TIME_ZONE")
     private String timeZone;
 
-    /** Geographic latitude in decimal degrees. */
-    @Column(name = "LATITUDE")
+    /** City where the airport is located (e.g. "Casablanca", "Paris"). */
+    @Column(name = "CITY")
+    private String city;
+
+    /** Geographical latitude (decimal degrees). */
+    @Column(name = "LATITUDE", nullable = true)
     private Double latitude;
 
-    /** Geographic longitude in decimal degrees. */
-    @Column(name = "LONGITUDE")
+    /** Geographical longitude (decimal degrees). */
+    @Column(name = "LONGITUDE", nullable = true)
     private Double longitude;
-
-    /** Actual departure station code as reported by operations. */
-    @Column(name = "ACTUAL_DEP_STATION")
-    private String actualDepStation;
-
-    /** Actual arrival station code as reported by operations. */
-    @Column(name = "ACTUAL_ARR_STATION")
-    private String actualArrStation;
 }
