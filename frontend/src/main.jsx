@@ -7,10 +7,15 @@
  */
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "./index.css";
 import App from "./App.jsx";
 import { initKeycloak } from "./auth";
 import ToastProvider from "./components/Toast/ToastProvider.jsx";
+
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+});
 
 const root = createRoot(document.getElementById("root"));
 
@@ -19,9 +24,11 @@ initKeycloak()
   .then(() => {
     root.render(
       <StrictMode>
-        <ToastProvider>
-          <App />
-        </ToastProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <App />
+          </ToastProvider>
+        </QueryClientProvider>
       </StrictMode>
     );
   })
@@ -30,9 +37,11 @@ initKeycloak()
     console.warn("[Auth] Keycloak unavailable — using mock login");
     root.render(
       <StrictMode>
-        <ToastProvider>
-          <App keycloakFailed />
-        </ToastProvider>
+        <QueryClientProvider client={queryClient}>
+          <ToastProvider>
+            <App keycloakFailed />
+          </ToastProvider>
+        </QueryClientProvider>
       </StrictMode>
     );
   });

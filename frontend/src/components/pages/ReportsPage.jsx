@@ -514,11 +514,31 @@ function LegDetailModal({ leg, flight, onClose }) {
     );
 }
 
-const DAYS = [
-    { label: "Dimanche", date: "8 Mars", key: "sun" },
-    { label: "Lundi", date: "9 Mars", key: "mon" },
-    { label: "Mardi", date: "10 Mars", key: "tue" },
-];
+function todayISO() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function shiftISO(iso, offset) {
+    const d = new Date(iso + "T00:00:00");
+    d.setDate(d.getDate() + offset);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function isoToLabel(iso) {
+    return new Date(iso + "T00:00:00").toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+}
+
+function buildDays(referenceISO) {
+    const yesterday = shiftISO(referenceISO, -1);
+    const today     = referenceISO;
+    const tomorrow  = shiftISO(referenceISO, 1);
+    return [
+        { key: "yesterday", iso: yesterday, label: isoToLabel(yesterday) },
+        { key: "today",     iso: today,     label: isoToLabel(today) },
+        { key: "tomorrow",  iso: tomorrow,  label: isoToLabel(tomorrow) },
+    ];
+}
 
 /* ── Shared field shell ── */
 function FieldShell({ label, children, focused, onClick }) {
@@ -821,13 +841,13 @@ export default function FlightSearch({ isDark, legs: ALL_LEGS = [] }) {
     // Number
     const [airline, setAirline] = useState("");
     const [flightNum, setFlightNum] = useState("");
-    const [date, setDate] = useState("2026-03-09");
+    const [date, setDate] = useState(todayISO);
 
     // Results
     const [results, setResults] = useState(null);
     const [loading, setLoading] = useState(false);
     const [searched, setSearched] = useState(false);
-    const [selectedDay, setSelectedDay] = useState("mon");
+    const [selectedDay, setSelectedDay] = useState("today");
 
     // Modal
     const [selectedFlight, setSelectedFlight] = useState(null);
@@ -975,12 +995,12 @@ export default function FlightSearch({ isDark, legs: ALL_LEGS = [] }) {
                 {/* ── Results ── */}
                 {searched && results && (
                     <>
-                        {/* Day tabs */}
+                        {/* Day tabs — yesterday / today / tomorrow, centred on the searched date */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 16 }}>
-                            {DAYS.map(d => (
+                            {buildDays(date).map(d => (
                                 <div
                                     key={d.key}
-                                    onClick={() => setSelectedDay(d.key)}
+                                    onClick={() => { setSelectedDay(d.key); setDate(d.iso); }}
                                     style={{
                                         background: "var(--bg-surface-2)",
                                         border: selectedDay === d.key ? "2px solid var(--ram-red)" : "1px solid var(--color-border-2)",
@@ -989,8 +1009,10 @@ export default function FlightSearch({ isDark, legs: ALL_LEGS = [] }) {
                                         boxShadow: selectedDay === d.key ? "0 2px 12px rgba(200,16,46,0.2)" : "none",
                                     }}
                                 >
-                                    <div style={{ fontSize: 12, fontWeight: 600, color: selectedDay === d.key ? "var(--ram-red)" : "var(--color-muted)", marginBottom: 2 }}>{d.label}</div>
-                                    <div style={{ fontSize: 16, fontWeight: 700, color: selectedDay === d.key ? "var(--color-text)" : "var(--color-text-2)" }}>{d.date}</div>
+                                    <div style={{ fontSize: 12, fontWeight: 600, color: selectedDay === d.key ? "var(--ram-red)" : "var(--color-muted)", marginBottom: 2, textTransform: "capitalize" }}>
+                                        {d.key === "yesterday" ? "Hier" : d.key === "today" ? "Aujourd'hui" : "Demain"}
+                                    </div>
+                                    <div style={{ fontSize: 13, fontWeight: 700, color: selectedDay === d.key ? "var(--color-text)" : "var(--color-text-2)", textTransform: "capitalize" }}>{d.label}</div>
                                 </div>
                             ))}
                         </div>

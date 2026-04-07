@@ -2,15 +2,23 @@
  * StationGanttPage — dedicated Gantt view for the chef_escale role.
  *
  * - Reads the current user's assignedAirports from meApi
- * - Fetches legs from the backend (station-scoped automatically server-side)
- * - Subscribes to SSE for live refresh
+ * - Fetches legs via React Query (keepPreviousData → zero flicker on refetch)
+ * - Subscribes to SSE for live refresh — invalidates the query without blanking
  * - Provides single-day navigation
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { meApi, legsApi, subscribeToLegEvents } from "../../api";
 import FlightGantt from "../Gantt/FlightGantt";
 import GanttBottomPanel from "../BottomBar/GanttBottomPanel";
 import { Leg } from "../../data/flightsData";
+
+// ── Stable constant — defined outside component so FlightGantt's
+//    [allLegs, filters] effect never fires just because the parent re-renders.
+const EMPTY_FILTERS = {
+  fDate: [], fService: [], fDep: [], fArr: [],
+  fFlight: "", fSubtype: [], fReg: [],
+};
 
 function dtoToLeg(dto) {
   const ft  = dto.flightTime      ?? {};
@@ -59,12 +67,13 @@ function shiftDate(iso, offset) {
 }
 
 export default function StationGanttPage({ isDark }) {
-  const [date, setDate]           = useState(todayISO);
-  const [legs, setLegs]           = useState([]);
-  const [airports, setAirports]   = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState(null);
+  const [date, setDate]             = useState(todayISO);
+  const [airports, setAirports]     = useState([]);
   const [selectedLeg, setSelectedLeg] = useState(null);
+  const queryClient                 = useQueryClient();
+  // Keep a ref so the SSE callback always sees the current date
+  const dateRef = useRef(date);
+  useEffect(() => { dateRef.current = date; }, [date]);
 
   /* Fetch the current user's assignedAirports once on mount */
   useEffect(() => {
@@ -73,30 +82,34 @@ export default function StationGanttPage({ isDark }) {
       .catch(() => {});
   }, []);
 
-  const fetchLegs = useCallback(async (d) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await legsApi.getByDate(d);
-      setLegs(data.map(dtoToLeg));
-    } catch (err) {
-      setError("Failed to load legs: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  /* ── React Query: fetch legs for the selected date ───────────────────────
+     placeholderData keeps the previous day's data visible while the new
+     request is in flight → no blank flash when switching days or on SSE
+     refresh.
+  ── */
+  const {
+    data: legs = [],
+    isFetching,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["station-legs", date],
+    queryFn:  () => legsApi.getByDate(date).then(rows => rows.map(dtoToLeg)),
+    placeholderData: (prev) => prev,   // keepPreviousData equivalent in v5
+    staleTime: 30_000,
+  });
 
-  useEffect(() => { fetchLegs(date); }, [date, fetchLegs]);
-
-  /* SSE — re-fetch on data change */
+  /* SSE — invalidate query on data change instead of manually re-fetching.
+     The query re-runs in the background; old data stays visible until new
+     data arrives — zero blank flash.                                        */
   useEffect(() => {
     const es = subscribeToLegEvents((evt) => {
-      if (evt.hasChanges) fetchLegs(date);
+      if (evt.hasChanges) {
+        queryClient.invalidateQueries({ queryKey: ["station-legs", dateRef.current] });
+      }
     });
     return () => es.close();
-  }, [date, fetchLegs]);
-
-  const emptyFilters = { fDate: [], fService: [], fDep: [], fArr: [], fFlight: "", fSubtype: [], fReg: [] };
+  }, [queryClient]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
@@ -150,14 +163,14 @@ export default function StationGanttPage({ isDark }) {
         >Today</button>
 
         <span style={{ fontSize: 11, color: "var(--color-dim, #64748b)", marginLeft: 8 }}>
-          {loading ? "Loading…" : `${legs.length} leg${legs.length !== 1 ? "s" : ""}`}
+          {isFetching ? "Refreshing…" : `${legs.length} leg${legs.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
       {/* ── Error banner ── */}
-      {error && (
+      {isError && (
         <div style={{ padding: "10px 18px", background: "rgba(239,68,68,0.1)", color: "#fca5a5", fontSize: 12, borderBottom: "1px solid rgba(239,68,68,0.2)" }}>
-          {error}
+          {"Failed to load legs: " + (error?.message ?? "Unknown error")}
         </div>
       )}
 
@@ -165,7 +178,7 @@ export default function StationGanttPage({ isDark }) {
       <div style={{ flex: 1, minHeight: 0, overflow: "hidden" }}>
         <FlightGantt
           legs={legs}
-          filters={emptyFilters}
+          filters={EMPTY_FILTERS}
           onSelectLeg={setSelectedLeg}
           dayCount={1}
           referenceDate={date}

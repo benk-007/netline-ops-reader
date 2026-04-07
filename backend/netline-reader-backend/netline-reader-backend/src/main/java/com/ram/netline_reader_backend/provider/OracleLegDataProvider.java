@@ -1,14 +1,15 @@
 package com.ram.netline_reader_backend.provider;
 
 import com.ram.netline_reader_backend.dto.LegResponseDTO;
+import com.ram.netline_reader_backend.enrichment.AircraftEnrichmentSource;
+import com.ram.netline_reader_backend.enrichment.AirportEnrichmentSource;
+import com.ram.netline_reader_backend.enrichment.StaticAircraftEnrichmentSource;
 import com.ram.netline_reader_backend.entity.oracle.Aircraft;
 import com.ram.netline_reader_backend.entity.oracle.Airport;
 import com.ram.netline_reader_backend.entity.oracle.Leg;
 import com.ram.netline_reader_backend.entity.oracle.MvLegRow;
 import com.ram.netline_reader_backend.mapper.LegMapper;
 import com.ram.netline_reader_backend.mapper.MvLegMapper;
-import com.ram.netline_reader_backend.repository.oracle.AircraftRepository;
-import com.ram.netline_reader_backend.repository.oracle.AirportRepository;
 import com.ram.netline_reader_backend.repository.oracle.MvLegRowRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -27,37 +28,42 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Production implementation of {@link LegDataProvider}.
  *
- * ┌──────────────────────────────────────────────────────────────────────┐
- * │  DATA FLOW (prod path)                                              │
- * │                                                                      │
- * │  Oracle flat MV                                                      │
- * │    ↓  MvLegRowRepository  (native Oracle query → MvLegRow POJOs)   │
- * │  MvLegRow  (flat, every column from the Oracle MV)                  │
- * │    ↓  MvLegMapper.toEntity()                                        │
- * │  Leg  (rich structured graph with Aircraft, Airport, FlightTime…)   │
- * │    ↓  Airport/Aircraft enrichment (batch lookup from ref tables)    │
- * │  Leg  (airports and aircraft populated from MV_AIRPORT / MV_AIRCRAFT)│
- * │    ↓  LegMapper.toResponseDTO()                                     │
- * │  LegResponseDTO  (API payload)                                      │
- * └──────────────────────────────────────────────────────────────────────┘
+ * ┌──────────────────────────────────────────────────────────────────────────┐
+ * │  DATA FLOW (prod path)                                                   │
+ * │                                                                          │
+ * │  Oracle flat MV                                                          │
+ * │    ↓  MvLegRowRepository  (native Oracle query → MvLegRow POJOs)       │
+ * │  MvLegRow  (flat, every column from the Oracle MV)                      │
+ * │    ↓  MvLegMapper.toEntity()                                            │
+ * │  Leg  (rich structured graph — airports/aircraft are stubs at this point)│
+ * │    ↓  enrichLeg()  — static in-memory lookup (no DB calls)              │
+ * │  Leg  (airports and aircraft populated from StaticXxxEnrichmentSource)  │
+ * │    ↓  LegMapper.toResponseDTO()                                         │
+ * │  LegResponseDTO  (API payload)                                          │
+ * └──────────────────────────────────────────────────────────────────────────┘
  *
- * Enrichment strategy:
- *   MvLegMapper builds minimal Airport/Aircraft stubs (IATA code / registration
- *   only). Before mapping to DTOs, this provider batch-fetches all referenced
- *   airports and aircraft from their dedicated Oracle reference views in a single
- *   query each, then replaces the stubs with the enriched entities. This avoids
- *   N+1 queries while keeping MvLegMapper free of database dependencies.
+ * Enrichment strategy (no N+1, no reference-table queries):
+ *   MvLegMapper builds minimal Airport stubs (IATA code only) and minimal
+ *   Aircraft stubs (registration / subType / owner / version from the MV).
+ *   {@link #enrichLeg} then replaces these stubs with fully populated objects
+ *   sourced from the static in-memory registries:
+ *
+ *     • {@link AirportEnrichmentSource}  → adds fullName, city, timeZone, lat/lon
+ *     • {@link AircraftEnrichmentSource} → adds maxWeight, cargoCapacity
+ *       (with a subType-level fallback for unknown registrations)
+ *
+ *   If a code/registration is absent from the static registry the original
+ *   MV-provided stub is kept — the response is degraded but never broken.
+ *
+ * Swapping the enrichment source:
+ *   Both sources are injected as interfaces.  To move to a real database or
+ *   external API, implement the interface and register it as a Spring bean —
+ *   no changes required here.
  *
  * Active only on the {@code prod} profile — never instantiated in dev.
  * All queries are read-only and run within the Oracle transaction manager.
@@ -69,16 +75,16 @@ import java.util.stream.Stream;
 @Transactional(value = "oracleTransactionManager", readOnly = true)
 public class OracleLegDataProvider implements LegDataProvider {
 
-    private final MvLegRowRepository mvLegRowRepository;
-    private final MvLegMapper        mvLegMapper;
-    private final LegMapper          legMapper;
-    private final AirportRepository  airportRepository;
-    private final AircraftRepository aircraftRepository;
+    private final MvLegRowRepository       mvLegRowRepository;
+    private final MvLegMapper              mvLegMapper;
+    private final LegMapper                legMapper;
+    private final AirportEnrichmentSource  airportEnrichmentSource;
+    private final AircraftEnrichmentSource aircraftEnrichmentSource;
 
     @PersistenceContext(unitName = "oracle")
     private EntityManager entityManager;
 
-    // ── LegDataProvider implementation ──────────────────────────────────
+    // ── LegDataProvider implementation ───────────────────────────────────
 
     @Override
     public Optional<LegResponseDTO> findByLegNo(Long legNo) {
@@ -171,16 +177,15 @@ public class OracleLegDataProvider implements LegDataProvider {
         return result;
     }
 
-    // ── Core mapping pipeline ────────────────────────────────────────────
+    // ── Core mapping pipeline ─────────────────────────────────────────────
 
     /**
      * Maps a batch of flat MV rows into response DTOs.
      *
-     * Steps:
-     *   1. Collect all unique IATA codes referenced by this result set.
-     *   2. Collect all unique aircraft registrations referenced.
-     *   3. Batch-fetch enriched Airport and Aircraft entities (2 queries total).
-     *   4. For each row: MvLegMapper → Leg, enrich airports/aircraft, LegMapper → DTO.
+     * Steps (per row — no bulk DB look-ups needed with static enrichment):
+     *   1. MvLegMapper.toEntity()  — builds Leg with minimal stubs
+     *   2. enrichLeg()             — replaces stubs from in-memory registries
+     *   3. LegMapper.toResponseDTO() — produces the API payload
      *
      * @param rows flat MvLegRow records from the Oracle MV query
      * @return list of fully populated LegResponseDTO objects
@@ -188,59 +193,98 @@ public class OracleLegDataProvider implements LegDataProvider {
     private List<LegResponseDTO> mapRows(List<MvLegRow> rows) {
         if (rows == null || rows.isEmpty()) return Collections.emptyList();
 
-        // Collect all IATA codes appearing in this result set (dep/arr, sched/actual)
-        Set<String> iatas = rows.stream()
-                .flatMap(r -> Stream.of(r.getDepApSched(), r.getArrApSched(),
-                                        r.getDepApActual(), r.getArrApActual()))
-                .filter(s -> s != null && !s.isBlank())
-                .collect(Collectors.toSet());
-
-        // Collect all aircraft registrations
-        Set<String> registrations = rows.stream()
-                .map(MvLegRow::getAcRegistration)
-                .filter(s -> s != null && !s.isBlank())
-                .collect(Collectors.toSet());
-
-        // Batch-fetch reference data (1 query each — no N+1)
-        Map<String, Airport> airportMap = airportRepository.findAllById(iatas).stream()
-                .collect(Collectors.toMap(Airport::getIataCode, Function.identity()));
-
-        Map<String, Aircraft> aircraftMap = aircraftRepository.findAllById(registrations).stream()
-                .collect(Collectors.toMap(Aircraft::getRegistration, Function.identity()));
-
         return rows.stream()
                 .map(row -> {
                     Leg leg = mvLegMapper.toEntity(row);
-                    enrichLeg(leg, row, airportMap, aircraftMap);
+                    enrichLeg(leg, row);
                     return legMapper.toResponseDTO(leg);
                 })
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    // ── Enrichment ────────────────────────────────────────────────────────
+
+    /**
+     * Replaces the minimal Airport / Aircraft stubs created by {@link MvLegMapper}
+     * with fully populated objects from the static in-memory registries.
+     *
+     * Airport enrichment:
+     *   Looks up each IATA code (dep/arr, sched/actual) in
+     *   {@link AirportEnrichmentSource}.  Adds fullName, city, timeZone,
+     *   latitude, longitude.  Falls back to the IATA-only stub on a miss.
+     *
+     * Aircraft enrichment:
+     *   Primary:  exact registration match in {@link AircraftEnrichmentSource}
+     *             → replaces the whole stub with the fully enriched record.
+     *   Fallback: subType-level template from
+     *             {@link StaticAircraftEnrichmentSource#findBySubType}
+     *             → merges only maxWeight / cargoCapacity into the MV stub,
+     *             preserving the registration / subType / owner / version
+     *             that the MV already provides.
+     *
+     * @param leg the Leg entity to enrich in-place
+     * @param row the source MV row (provides codes for look-up keys)
+     */
+    private void enrichLeg(Leg leg, MvLegRow row) {
+
+        // ── Airports ──────────────────────────────────────────────────────
+        enrichAirport(row.getDepApSched(),   leg::setDepartureAirport);
+        enrichAirport(row.getArrApSched(),   leg::setArrivalAirport);
+        enrichAirport(row.getDepApActual(),  leg::setActualDepartureAirport);
+        enrichAirport(row.getArrApActual(),  leg::setActualArrivalAirport);
+
+        // ── Aircraft ──────────────────────────────────────────────────────
+        if (row.getAcRegistration() != null) {
+            aircraftEnrichmentSource.findByRegistration(row.getAcRegistration())
+                    .ifPresentOrElse(
+                            // Full registration hit — replace the entire stub
+                            leg::setAircraft,
+                            // No exact hit — try subType fallback to fill weight/capacity
+                            () -> mergeAircraftWeightFallback(leg, row)
+                    );
+        }
     }
 
     /**
-     * Replaces the minimal Airport/Aircraft stubs created by MvLegMapper with the
-     * fully enriched entities loaded from Oracle reference tables.
+     * Replaces the airport stub on the given setter only when the static registry
+     * has a match — otherwise the MV-provided IATA-only stub is kept unchanged.
      *
-     * Falls back to the mapper-built stub when the reference table does not contain
-     * the IATA code / registration (so the IATA code is still available in the DTO).
+     * @param iataCode IATA code from the MV row (may be null)
+     * @param setter   method reference to the Leg setter for this airport slot
      */
-    private void enrichLeg(Leg leg, MvLegRow row,
-                            Map<String, Airport> airportMap,
-                            Map<String, Aircraft> aircraftMap) {
-        if (row.getDepApSched() != null && airportMap.containsKey(row.getDepApSched())) {
-            leg.setDepartureAirport(airportMap.get(row.getDepApSched()));
-        }
-        if (row.getArrApSched() != null && airportMap.containsKey(row.getArrApSched())) {
-            leg.setArrivalAirport(airportMap.get(row.getArrApSched()));
-        }
-        if (row.getDepApActual() != null && airportMap.containsKey(row.getDepApActual())) {
-            leg.setActualDepartureAirport(airportMap.get(row.getDepApActual()));
-        }
-        if (row.getArrApActual() != null && airportMap.containsKey(row.getArrApActual())) {
-            leg.setActualArrivalAirport(airportMap.get(row.getArrApActual()));
-        }
-        if (row.getAcRegistration() != null && aircraftMap.containsKey(row.getAcRegistration())) {
-            leg.setAircraft(aircraftMap.get(row.getAcRegistration()));
-        }
+    private void enrichAirport(String iataCode, java.util.function.Consumer<Airport> setter) {
+        if (iataCode == null || iataCode.isBlank()) return;
+        airportEnrichmentSource.findByIataCode(iataCode).ifPresent(setter);
+    }
+
+    /**
+     * When the exact aircraft registration is not in the static registry, this
+     * method attempts a subType-level look-up to at least fill in maxWeight and
+     * cargoCapacity on the existing MV stub.
+     *
+     * The MV already provides registration / subType / owner / version, so we
+     * build a merged Aircraft that keeps those fields and adds the weight data
+     * from the subType template.
+     *
+     * @param leg the Leg whose aircraft stub should be enriched
+     * @param row the MV row providing subType for the fallback look-up
+     */
+    private void mergeAircraftWeightFallback(Leg leg, MvLegRow row) {
+        if (!(aircraftEnrichmentSource instanceof StaticAircraftEnrichmentSource staticSource)) return;
+        if (row.getAcSubtype() == null) return;
+
+        staticSource.findBySubType(row.getAcSubtype()).ifPresent(template -> {
+            Aircraft existing = leg.getAircraft(); // stub from MvLegMapper
+            if (existing == null) return;
+            // Merge: keep MV fields, add weight/cargo from the type template
+            leg.setAircraft(Aircraft.builder()
+                    .registration(existing.getRegistration())
+                    .subType(existing.getSubType())
+                    .owner(existing.getOwner())
+                    .version(existing.getVersion())
+                    .maxWeight(template.getMaxWeight())
+                    .cargoCapacity(template.getCargoCapacity())
+                    .build());
+        });
     }
 }

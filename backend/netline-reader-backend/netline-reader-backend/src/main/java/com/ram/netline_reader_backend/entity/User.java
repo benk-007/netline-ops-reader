@@ -31,7 +31,7 @@ public class User {
     private Long id;
 
     /** Keycloak subject UUID — the stable bridge between Keycloak identity and this DB record. */
-    @Column(unique = true)
+    @Column(name = "keycloak_id", unique = true)
     private String keycloakId;
 
     /** Unique employee identifier (matricule). */
@@ -39,7 +39,7 @@ public class User {
     private String matricule;
 
     /** Full display name. */
-    @Column(nullable = false)
+    @Column(name = "full_name", nullable = false)
     private String fullName;
 
     /** Hashed or plain password (for local auth fallback). */
@@ -52,7 +52,7 @@ public class User {
     private Role role;
 
     /** Soft-disable flag — false = account revoked. */
-    @Column(nullable = false)
+    @Column(name = "is_activated", nullable = false)
     @Builder.Default
     private Boolean isActivated = true;
 
